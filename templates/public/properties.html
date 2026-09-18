@@ -1,0 +1,183 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	.page-header {
+		background: #0f172a;
+		color: white;
+		padding: 3.5rem 1.5rem 4rem;
+	}
+
+	.page-header-content {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.page-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+
+	.page-desc {
+		color: #94a3b8;
+		font-size: 1.1rem;
+		max-width: 600px;
+	}
+
+	/* Filter bar */
+	.filter-bar {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1.25rem;
+		margin-top: -2.5rem;
+		margin-bottom: 2.5rem;
+		box-shadow: var(--shadow-md);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
+	}
+
+	.filter-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.filter-pill {
+		padding: 0.45rem 1rem;
+		border-radius: var(--radius-full);
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		background: #f1f5f9;
+		transition: all 0.15s ease;
+	}
+
+	.filter-pill:hover, .filter-pill.active {
+		background: var(--primary);
+		color: white;
+	}
+
+	.filter-form-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.filter-form-row select, .filter-form-row input {
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.55rem 0.85rem;
+		font-family: inherit;
+		font-size: 0.9rem;
+	}
+
+	.filter-form-row button {
+		background: var(--primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius);
+		padding: 0.55rem 1.15rem;
+		font-weight: 700;
+		font-size: 0.9rem;
+		cursor: pointer;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+	<div class="page-header-content">
+		<h1 class="page-title">Find Properties</h1>
+		<p class="page-desc">Discover apartments, villas, commercial office spaces, and investment plots with verified specifications.</p>
+	</div>
+</section>
+
+<div class="container" style="padding-top: 0;">
+	<div class="filter-bar">
+		<div class="filter-pills">
+			<a href="/properties" class="filter-pill {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
+			<a href="/properties?category=RESIDENTIAL{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"RESIDENTIAL" %}active{% endif %}{% endif %}">Residential</a>
+			<a href="/properties?category=COMMERCIAL{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"COMMERCIAL" %}active{% endif %}{% endif %}">Commercial</a>
+			<a href="/properties?category=LAND{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"LAND" %}active{% endif %}{% endif %}">Land & Plots</a>
+		</div>
+
+		<form action="/properties" method="get" class="filter-form-row">
+			{% if let Some(cat) = category_filter %}
+			<input type="hidden" name="category" value="{{ cat }}">
+			{% endif %}
+
+			<select name="listing_type">
+				<option value="">All Listing Types</option>
+				<option value="sale" {% if let Some(lt) = listing_type_filter %}{% if lt == &"sale" %}selected{% endif %}{% endif %}>For Sale</option>
+				<option value="rent" {% if let Some(lt) = listing_type_filter %}{% if lt == &"rent" %}selected{% endif %}{% endif %}>For Rent</option>
+				<option value="lease" {% if let Some(lt) = listing_type_filter %}{% if lt == &"lease" %}selected{% endif %}{% endif %}>For Lease</option>
+			</select>
+
+			<input type="text" name="q" placeholder="Search keywords, project..." value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+			<button type="submit">Filter</button>
+		</form>
+	</div>
+
+	{% if properties.is_empty() %}
+	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 3rem; text-align: center;">
+		<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No properties match your criteria</h3>
+		<p style="color: var(--text-muted); margin-bottom: 1.25rem;">Try adjusting the category, listing type, or search terms.</p>
+		<a href="/properties" style="color: var(--primary); font-weight: 600;">Reset All Filters &rarr;</a>
+	</div>
+	{% else %}
+	<div class="cards-grid">
+		{% for prop in properties %}
+		<article class="prop-card">
+			<div class="card-thumb-wrap">
+				{% if let Some(url) = prop.hero_thumb_url %}
+				<img src="{{ url }}" alt="{{ prop.title }}" loading="lazy">
+				{% else %}
+				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏠</div>
+				{% endif %}
+				<span class="card-badge">{{ prop.property_type_name }}</span>
+				<span class="card-type-badge">{{ prop.listing_type }}</span>
+			</div>
+			<div class="card-body">
+				<h2 class="card-title" style="font-size: 1.15rem;">
+					<a href="/properties/{{ prop.slug }}">{{ prop.title }}</a>
+				</h2>
+				<div class="card-subtitle">
+					<span>📍 {{ prop.location_name }}</span>
+					<span>&bull;</span>
+					<a href="/projects/{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
+				</div>
+				<div class="card-specs">
+					{% if let Some(bhk) = prop.bedroom_count %}
+					<div class="spec-item">
+						<strong>{{ bhk }} BHK</strong>
+					</div>
+					{% endif %}
+					{% if let Some(area) = prop.built_up_area %}
+					<div class="spec-item">
+						<strong>{{ area }} sq.ft</strong>
+					</div>
+					{% endif %}
+					{% if let Some(baths) = prop.bathroom_count %}
+					<div class="spec-item">
+						<span>{{ baths }} Bath</span>
+					</div>
+					{% endif %}
+				</div>
+				<div class="card-footer">
+					<div class="price-tag">{{ prop.price_formatted }}</div>
+					<a href="/properties/{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
+				</div>
+			</div>
+		</article>
+		{% endfor %}
+	</div>
+	{% endif %}
+</div>
+{% endblock %}

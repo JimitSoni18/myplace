@@ -1,0 +1,512 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	/* Hero Section */
+	.hero-section {
+		position: relative;
+		background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+		color: white;
+		padding: 5rem 1.5rem 6rem;
+		text-align: center;
+		overflow: hidden;
+	}
+
+	.hero-content {
+		max-width: 820px;
+		margin: 0 auto;
+		position: relative;
+		z-index: 2;
+	}
+
+	.hero-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: rgba(255, 255, 255, 0.12);
+		backdrop-filter: blur(8px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		padding: 0.35rem 0.9rem;
+		border-radius: var(--radius-full);
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #e2e8f0;
+		margin-bottom: 1.5rem;
+	}
+
+	.hero-title {
+		font-size: 3.25rem;
+		font-weight: 800;
+		line-height: 1.15;
+		margin-bottom: 1.25rem;
+		letter-spacing: -0.03em;
+	}
+
+	.hero-title span {
+		background: linear-gradient(to right, #60a5fa, #f59e0b);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.hero-desc {
+		font-size: 1.2rem;
+		color: #cbd5e1;
+		margin-bottom: 2.5rem;
+		line-height: 1.6;
+	}
+
+	/* Search Bar */
+	.hero-search-box {
+		background: white;
+		border-radius: var(--radius-lg);
+		padding: 0.75rem;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		align-items: center;
+		max-width: 760px;
+		margin: 0 auto;
+		color: var(--text-main);
+	}
+
+	.search-input-wrap {
+		flex: 1;
+		min-width: 220px;
+		display: flex;
+		align-items: center;
+		padding: 0.5rem 1rem;
+	}
+
+	.search-input-wrap input {
+		width: 100%;
+		border: none;
+		outline: none;
+		font-size: 1rem;
+		font-family: inherit;
+		color: var(--text-main);
+	}
+
+	.search-select-wrap {
+		border-left: 1px solid var(--border);
+		padding: 0.5rem 1rem;
+	}
+
+	.search-select-wrap select {
+		border: none;
+		outline: none;
+		background: transparent;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--text-main);
+		cursor: pointer;
+	}
+
+	.hero-search-box button {
+		background: var(--primary);
+		color: white;
+		border: none;
+		padding: 0.85rem 1.75rem;
+		border-radius: var(--radius);
+		font-weight: 700;
+		font-size: 1rem;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.hero-search-box button:hover {
+		background: var(--primary-dark);
+	}
+
+	/* Section Headings */
+	.section-header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		margin-bottom: 2rem;
+	}
+
+	.section-title h2 {
+		font-size: 1.85rem;
+		font-weight: 800;
+		color: var(--text-main);
+		letter-spacing: -0.02em;
+	}
+
+	.section-title p {
+		color: var(--text-muted);
+		font-size: 0.95rem;
+		margin-top: 0.25rem;
+	}
+
+	.section-link {
+		color: var(--primary);
+		font-weight: 700;
+		font-size: 0.95rem;
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.section-link:hover {
+		text-decoration: underline;
+	}
+
+	/* Categories */
+	.categories-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1.25rem;
+		margin-bottom: 4rem;
+	}
+
+	.cat-card {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		box-shadow: var(--shadow-sm);
+		transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+	}
+
+	.cat-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
+		border-color: var(--primary-light);
+	}
+
+	.cat-icon {
+		width: 48px;
+		height: 48px;
+		border-radius: var(--radius);
+		background: #eff6ff;
+		color: var(--primary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.5rem;
+	}
+
+	.cat-info h3 {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-main);
+	}
+
+	.cat-info p {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	/* Developer cards */
+	.owners-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+		gap: 1.5rem;
+	}
+
+	.owner-card {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 1.5rem;
+		text-align: center;
+		box-shadow: var(--shadow-sm);
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.owner-card:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-md);
+	}
+
+	.owner-avatar {
+		width: 72px;
+		height: 72px;
+		border-radius: var(--radius-full);
+		object-fit: cover;
+		margin: 0 auto 1rem;
+		background: #f1f5f9;
+		border: 2px solid var(--border);
+	}
+
+	.owner-card h4 {
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 0.25rem;
+	}
+
+	.owner-badge {
+		display: inline-block;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--primary);
+		background: #eff6ff;
+		padding: 0.2rem 0.6rem;
+		border-radius: var(--radius-full);
+		margin-top: 0.5rem;
+	}
+
+	/* CTA Section */
+	.cta-banner {
+		background: linear-gradient(135deg, var(--primary-dark) 0%, #1e1b4b 100%);
+		border-radius: var(--radius-lg);
+		padding: 3.5rem 2.5rem;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		margin-top: 4rem;
+	}
+
+	.cta-text h3 {
+		font-size: 2rem;
+		font-weight: 800;
+		margin-bottom: 0.5rem;
+	}
+
+	.cta-text p {
+		color: #cbd5e1;
+		font-size: 1.05rem;
+		max-width: 540px;
+	}
+
+	.cta-btn {
+		background: var(--accent);
+		color: #0f172a;
+		padding: 0.9rem 2rem;
+		border-radius: var(--radius);
+		font-weight: 700;
+		font-size: 1rem;
+		white-space: nowrap;
+		transition: background 0.15s ease, transform 0.1s ease;
+	}
+
+	.cta-btn:hover {
+		background: var(--accent-hover);
+		transform: translateY(-1px);
+	}
+
+	@media (max-width: 768px) {
+		.hero-title {
+			font-size: 2.25rem;
+		}
+		.hero-search-box {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.search-select-wrap {
+			border-left: none;
+			border-top: 1px solid var(--border);
+		}
+		.cta-banner {
+			flex-direction: column;
+			text-align: center;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+	<div class="hero-content">
+		<div class="hero-badge">
+			<span>✨</span> Verified Developments & Real-Time Availability
+		</div>
+		<h1 class="hero-title">Discover Your Next <span>Home & Workspace</span></h1>
+		<p class="hero-desc">Explore handpicked residential communities, high-yield commercial hubs, and verified plots from the region's most reputable developers.</p>
+
+		<form action="/properties" method="get" class="hero-search-box">
+			<div class="search-input-wrap">
+				<input type="text" name="q" placeholder="Search by location, project, or keyword...">
+			</div>
+			<div class="search-select-wrap">
+				<select name="category">
+					<option value="">All Categories</option>
+					<option value="RESIDENTIAL">Residential</option>
+					<option value="COMMERCIAL">Commercial</option>
+					<option value="LAND">Land & Plots</option>
+				</select>
+			</div>
+			<button type="submit">Search Spaces</button>
+		</form>
+	</div>
+</section>
+
+<div class="container">
+	<!-- Categories Overview -->
+	<div class="categories-grid">
+		{% for cat in categories_stats %}
+		<a href="/properties?category={{ cat.slug }}" class="cat-card">
+			<div class="cat-icon">{{ cat.icon }}</div>
+			<div class="cat-info">
+				<h3>{{ cat.name }}</h3>
+				<p>{{ cat.count }} Active Units Available</p>
+			</div>
+		</a>
+		{% endfor %}
+	</div>
+
+	<!-- Featured Projects -->
+	<section style="margin-bottom: 4rem;">
+		<div class="section-header">
+			<div class="section-title">
+				<h2>Premier Developments</h2>
+				<p>Explore flagship master-planned residential and commercial projects</p>
+			</div>
+			<a href="/projects" class="section-link">View All Projects &rarr;</a>
+		</div>
+
+		{% if featured_projects.is_empty() %}
+		<p style="color: var(--text-muted);">No active projects listed yet.</p>
+		{% else %}
+		<div class="cards-grid">
+			{% for p in featured_projects %}
+			<article class="prop-card">
+				<div class="card-thumb-wrap">
+					{% if let Some(url) = p.hero_thumb_url %}
+					<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
+					{% else %}
+					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏢</div>
+					{% endif %}
+					<span class="card-badge">{{ p.category }}</span>
+				</div>
+				<div class="card-body">
+					<h3 class="card-title">
+						<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+					</h3>
+					<div class="card-subtitle">
+						<span>📍 {{ p.location_name }}</span>
+					</div>
+					<div class="card-specs">
+						<div class="spec-item">
+							<span>Developer:</span>
+							<strong>
+								<a href="/owners/{{ p.owner_slug }}">{{ p.owner_name }}</a>
+							</strong>
+						</div>
+						<div class="spec-item">
+							<span>Units:</span>
+							<strong>{{ p.property_count }}</strong>
+						</div>
+					</div>
+					<div class="card-footer">
+						<span style="font-size: 0.85rem; color: var(--text-muted);">
+							{% if let Some(pos) = p.possession_date %}
+							Possession: {{ pos }}
+							{% else %}
+							Ready / Ongoing
+							{% endif %}
+						</span>
+						<a href="/projects/{{ p.slug }}" class="btn-card">Explore Project</a>
+					</div>
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+		{% endif %}
+	</section>
+
+	<!-- Featured Properties -->
+	<section style="margin-bottom: 4rem;">
+		<div class="section-header">
+			<div class="section-title">
+				<h2>Featured Available Properties</h2>
+				<p>Ready units, upcoming flats, and prime commercial spaces for sale and lease</p>
+			</div>
+			<a href="/properties" class="section-link">View All Listings &rarr;</a>
+		</div>
+
+		{% if featured_properties.is_empty() %}
+		<p style="color: var(--text-muted);">No properties listed currently.</p>
+		{% else %}
+		<div class="cards-grid">
+			{% for prop in featured_properties %}
+			<article class="prop-card">
+				<div class="card-thumb-wrap">
+					{% if let Some(url) = prop.hero_thumb_url %}
+					<img src="{{ url }}" alt="{{ prop.title }}" loading="lazy">
+					{% else %}
+					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏠</div>
+					{% endif %}
+					<span class="card-badge">{{ prop.property_type_name }}</span>
+					<span class="card-type-badge">{{ prop.listing_type }}</span>
+				</div>
+				<div class="card-body">
+					<h3 class="card-title">
+						<a href="/properties/{{ prop.slug }}">{{ prop.title }}</a>
+					</h3>
+					<div class="card-subtitle">
+						<span>📍 {{ prop.location_name }}</span>
+						<span>&bull;</span>
+						<a href="/projects/{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
+					</div>
+					<div class="card-specs">
+						{% if let Some(bhk) = prop.bedroom_count %}
+						<div class="spec-item">
+							<strong>{{ bhk }} BHK</strong>
+						</div>
+						{% endif %}
+						{% if let Some(area) = prop.built_up_area %}
+						<div class="spec-item">
+							<strong>{{ area }} sq.ft</strong>
+						</div>
+						{% endif %}
+						{% if let Some(baths) = prop.bathroom_count %}
+						<div class="spec-item">
+							<span>{{ baths }} Bath</span>
+						</div>
+						{% endif %}
+					</div>
+					<div class="card-footer">
+						<div class="price-tag">{{ prop.price_formatted }}</div>
+						<a href="/properties/{{ prop.slug }}" class="btn-card">View Details</a>
+					</div>
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+		{% endif %}
+	</section>
+
+	<!-- Featured Developers -->
+	{% if !featured_owners.is_empty() %}
+	<section style="margin-bottom: 4rem;">
+		<div class="section-header">
+			<div class="section-title">
+				<h2>Trusted Real-Estate Developers</h2>
+				<p>Partnering with premier real estate developers with verified track records</p>
+			</div>
+		</div>
+
+		<div class="owners-grid">
+			{% for o in featured_owners %}
+			<a href="/owners/{{ o.slug }}" class="owner-card">
+				{% if let Some(img) = o.image_url %}
+				<img src="{{ img }}" alt="{{ o.name }}" class="owner-avatar" loading="lazy">
+				{% else %}
+				<div class="owner-avatar" style="display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🏛️</div>
+				{% endif %}
+				<h4>{{ o.name }}</h4>
+				<span class="owner-badge">{{ o.project_count }} Projects</span>
+			</a>
+			{% endfor %}
+		</div>
+	</section>
+	{% endif %}
+
+	<!-- CTA Banner -->
+	<section class="cta-banner">
+		<div class="cta-text">
+			<h3>Are You a Real-Estate Developer?</h3>
+			<p>Showcase your residential communities, commercial spaces, and layout schemes directly to qualified homebuyers and high-net-worth investors.</p>
+		</div>
+		<a href="/auth/owner-login" class="cta-btn">Access Developer Portal &rarr;</a>
+	</section>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends "owner/base.html" %}
+
+{% block title %}{{ project.name }} - Developer Portal{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/owner/projects" class="back-link">&larr; Back to My Projects</a>
+		<h2>{{ project.name }}</h2>
+		<p class="subtitle">Category: <strong>{{ project.category }}</strong> &bull; Location: <strong>{{ project.location_name }}</strong></p>
+	</div>
+</header>
+
+<div class="stats-row">
+	<div class="stat-box">
+		<span class="stat-label">Total Units</span>
+		<span class="stat-number">{{ properties_count }}</span>
+	</div>
+	<div class="stat-box">
+		<span class="stat-label">Media Items</span>
+		<span class="stat-number">{{ media.len() }}</span>
+	</div>
+	<div class="stat-box">
+		<span class="stat-label">Documents</span>
+		<span class="stat-number">{{ documents.len() }}</span>
+	</div>
+</div>
+
+<div class="grid-2-col">
+	<div class="card">
+		<h3>Project Description</h3>
+		{% if description_html.is_empty() %}
+			<p class="muted">No description provided.</p>
+		{% else %}
+			<div class="markdown-body">
+				{{ description_html|safe }}
+			</div>
+		{% endif %}
+	</div>
+
+	<div class="card">
+		<h3>Project Timeline</h3>
+		<ul class="timeline-list">
+			<li>
+				<span class="label">Construction Start</span>
+				<span class="val">{% if let Some(d) = project.start_date %}{{ d }}{% else %}—{% endif %}</span>
+			</li>
+			<li>
+				<span class="label">Public Launch</span>
+				<span class="val">{% if let Some(d) = project.launch_date %}{{ d }}{% else %}—{% endif %}</span>
+			</li>
+			<li>
+				<span class="label">Expected Possession</span>
+				<span class="val">{% if let Some(d) = project.possession_date %}{{ d }}{% else %}—{% endif %}</span>
+			</li>
+		</ul>
+
+		<h3 style="margin-top: 1.5rem;">Compliance & Documents</h3>
+		{% if documents.is_empty() %}
+			<p class="muted">No documents uploaded.</p>
+		{% else %}
+			<ul class="doc-list">
+				{% for d in documents %}
+					<li>
+						<a href="{{ d.url }}" target="_blank" rel="noopener" class="doc-link">
+							📄 {{ d.display_name }} ({{ d.doc_type | upper }})
+						</a>
+					</li>
+				{% endfor %}
+			</ul>
+		{% endif %}
+	</div>
+</div>
+
+{% if !media.is_empty() %}
+	<div class="card" style="margin-top: 1.25rem;">
+		<h3>Media Photography Preview</h3>
+		<div class="gallery-grid">
+			{% for m in media %}
+				<div class="gallery-item">
+					<img src="{{ m.thumbnail_url }}" alt="Project image" loading="lazy">
+				</div>
+			{% endfor %}
+		</div>
+	</div>
+{% endif %}
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #8b4a2b);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.subtitle {
+	color: #7b6252;
+	font-size: 0.88rem;
+	margin: 0.25rem 0 0;
+}
+
+.stats-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 1rem;
+	margin-bottom: 1.25rem;
+}
+
+.stat-box {
+	background: #fff;
+	border: 1px solid var(--border, #e3d2c1);
+	border-radius: 8px;
+	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+}
+
+.stat-label {
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	color: #7b6252;
+	font-weight: 600;
+}
+
+.stat-number {
+	font-size: 1.7rem;
+	font-weight: 700;
+	color: var(--accent-dark, #632e18);
+	margin-top: 0.2rem;
+}
+
+.grid-2-col {
+	display: grid;
+	grid-template-columns: 1fr 340px;
+	gap: 1.25rem;
+}
+
+@media (max-width: 800px) {
+	.grid-2-col {
+		grid-template-columns: 1fr;
+	}
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e3d2c1);
+	border-radius: 8px;
+	padding: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #632e18);
+}
+
+.timeline-list, .doc-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	font-size: 0.88rem;
+}
+
+.timeline-list li {
+	display: flex;
+	justify-content: space-between;
+	border-bottom: 1px solid #f7eee6;
+	padding-bottom: 0.4rem;
+}
+
+.doc-link {
+	color: var(--accent, #8b4a2b);
+	text-decoration: none;
+}
+
+.doc-link:hover {
+	text-decoration: underline;
+}
+
+.gallery-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+	gap: 0.75rem;
+}
+
+.gallery-item img {
+	width: 100%;
+	height: 100px;
+	object-fit: cover;
+	border-radius: 6px;
+	border: 1px solid var(--border, #e3d2c1);
+}
+
+.muted {
+	color: #8c7262;
+	font-style: italic;
+	font-size: 0.85rem;
+}
+</style>
+
+{% endblock %}

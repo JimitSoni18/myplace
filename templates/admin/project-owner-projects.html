@@ -1,0 +1,150 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Projects - {{ owner_name }}{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/admin/owners/{{ owner_id }}" class="back-link">&larr; Back to Owner Profile</a>
+		<h2>Projects by {{ owner_name }}</h2>
+	</div>
+
+	<a href="/admin/projects/new?owner_id={{ owner_id }}" class="primary-btn">+ New Project for this Owner</a>
+</header>
+
+<div class="table-card">
+	{% if projects.is_empty() %}
+		<div class="empty-state">
+			<p>No projects registered for this owner yet.</p>
+			<a href="/admin/projects/new?owner_id={{ owner_id }}" class="primary-btn">Create Project</a>
+		</div>
+	{% else %}
+		<table class="data-table">
+			<thead>
+				<tr>
+					<th align="left">Project Name</th>
+					<th align="left">Category</th>
+					<th align="left">Location</th>
+					<th align="right">Properties Count</th>
+					<th align="left">Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for p in projects %}
+					<tr>
+						<td>
+							<strong><a href="/admin/projects/{{ p.id }}" class="item-link">{{ p.name }}</a></strong>
+						</td>
+						<td><span class="category-badge">{{ p.category }}</span></td>
+						<td>{{ p.location }}</td>
+						<td align="right">{{ p.properties_count }}</td>
+						<td class="actions">
+							<a href="/admin/projects/{{ p.id }}" class="action-link">View</a>
+							<a href="/admin/projects/{{ p.id }}/edit" class="action-link">Edit</a>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	{% endif %}
+</div>
+
+<style>
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.table-card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	text-decoration: none;
+	padding: 0.45rem 0.9rem;
+	border-radius: 5px;
+	font-size: 0.88rem;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 1px solid var(--border, #f0e6dd);
+	font-size: 0.88rem;
+}
+
+.data-table th {
+	font-weight: 600;
+	color: #6f5546;
+	background: #fdfaf7;
+}
+
+.item-link {
+	color: var(--accent-dark, #332014);
+	text-decoration: none;
+}
+
+.item-link:hover {
+	text-decoration: underline;
+}
+
+.category-badge {
+	display: inline-block;
+	background: #f5ebe1;
+	color: #593e2d;
+	padding: 0.2rem 0.45rem;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.action-link {
+	margin-right: 8px;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	font-size: 0.88rem;
+}
+
+.action-link:hover {
+	text-decoration: underline;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2.5rem 1rem;
+	color: #7b6252;
+}
+</style>
+
+{% endblock %}

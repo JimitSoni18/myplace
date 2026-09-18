@@ -1,0 +1,169 @@
+{% extends "admin/listing-base.html" %}
+
+{% block filters %}
+<select name="project_id" onchange="this.form.submit()">
+	<option value="">All Projects</option>
+	{% for p in projects %}
+		<option value="{{ p.id }}" {% if let Some(sel) = selected_project_id %}{% if *sel == p.id %}selected{% endif %}{% endif %}>
+			{{ p.name }}
+		</option>
+	{% endfor %}
+</select>
+
+<select name="category" onchange="this.form.submit()">
+	<option value="">All Categories</option>
+	<option value="RESIDENTIAL" {% if let Some(cat) = selected_category %}{% if cat == "RESIDENTIAL" %}selected{% endif %}{% endif %}>Residential</option>
+	<option value="COMMERCIAL" {% if let Some(cat) = selected_category %}{% if cat == "COMMERCIAL" %}selected{% endif %}{% endif %}>Commercial</option>
+	<option value="LAND" {% if let Some(cat) = selected_category %}{% if cat == "LAND" %}selected{% endif %}{% endif %}>Land Plots</option>
+</select>
+{% endblock %}
+
+{% block table_content %}
+
+{% if properties.is_empty() %}
+	<div class="empty-state">
+		<p>No properties found matching your criteria.</p>
+		<p class="hint">Properties are created within specific projects. Go to a project to add units.</p>
+		<a href="/admin/projects" class="btn">View Projects &rarr;</a>
+	</div>
+{% else %}
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th align="left">Unit / Title</th>
+				<th align="left">Project</th>
+				<th align="left">Type</th>
+				<th align="left">Price</th>
+				<th align="left">Status</th>
+				<th align="left">Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for p in properties %}
+				<tr id="row-{{ p.id }}">
+					<td>
+						<strong>
+							<a href="/admin/projects/{{ p.project_id }}/properties/{{ p.id }}/edit" class="item-title">
+								{{ p.unit_title }}
+							</a>
+						</strong>
+					</td>
+					<td>
+						<a href="/admin/projects/{{ p.project_id }}" class="project-link">
+							{{ p.project_name }}
+						</a>
+					</td>
+					<td>
+						<span class="type-badge">{{ p.type_name }}</span>
+					</td>
+					<td><strong>{{ p.price_formatted }}</strong></td>
+					<td>
+						{% if p.status == "active" %}
+							<span class="status-badge active">Active</span>
+						{% else %}
+							<span class="status-badge inactive">{{ p.status }}</span>
+						{% endif %}
+					</td>
+					<td class="actions">
+						<a href="/admin/projects/{{ p.project_id }}/properties/{{ p.id }}/edit" class="action-link">Edit</a>
+						<a href="/admin/projects/{{ p.project_id }}/properties/{{ p.id }}/media" class="action-link">Media</a>
+						<button onclick="deleteProperty('{{ p.project_id }}', '{{ p.id }}')" class="action-link danger">Delete</button>
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% endif %}
+
+<script>
+async function deleteProperty(projectId, propId) {
+	if (!confirm("Are you sure you want to delete this property?")) return;
+
+	try {
+		const res = await fetch(`/admin/projects/${projectId}/properties/${propId}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+
+		if (!res.ok) {
+			alert("Failed to delete property");
+			return;
+		}
+
+		document.getElementById(`row-${propId}`)?.remove();
+	} catch (e) {
+		alert("Network error");
+	}
+}
+</script>
+
+<style>
+.item-title {
+	color: var(--accent-dark, #332014);
+	text-decoration: none;
+}
+
+.item-title:hover {
+	text-decoration: underline;
+}
+
+.project-link {
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+}
+
+.project-link:hover {
+	text-decoration: underline;
+}
+
+.type-badge {
+	display: inline-block;
+	background: #f5ebe1;
+	color: #593e2d;
+	padding: 0.2rem 0.45rem;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	font-weight: 500;
+}
+
+.status-badge {
+	display: inline-block;
+	padding: 0.15rem 0.45rem;
+	border-radius: 999px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.status-badge.active {
+	background: #e6f4ea;
+	color: #137333;
+}
+
+.status-badge.inactive {
+	background: #fce8e6;
+	color: #c5221f;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 3rem 1rem;
+	color: #7b6252;
+}
+
+.empty-state .hint {
+	font-size: 0.88rem;
+	margin: 0.5rem 0 1rem;
+}
+
+select {
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 4px;
+	font-size: 0.88rem;
+	background: #fff;
+	color: var(--text);
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<header class="dashboard-header">
+	<div>
+		<h2>Overview</h2>
+		<p class="welcome-text">Welcome back, <strong>{{ admin_name }}</strong></p>
+	</div>
+</header>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+	<div class="stat-card">
+		<span class="stat-label">Project Owners</span>
+		<div class="stat-val">{{ total_owners }}</div>
+		<a href="/admin/owners" class="stat-link">Manage owners &rarr;</a>
+	</div>
+
+	<div class="stat-card">
+		<span class="stat-label">Projects</span>
+		<div class="stat-val">{{ total_projects }}</div>
+		<a href="/admin/projects" class="stat-link">Manage projects &rarr;</a>
+	</div>
+
+	<div class="stat-card">
+		<span class="stat-label">Total Properties</span>
+		<div class="stat-val">{{ total_properties }}</div>
+		<span class="stat-sub">Across all developments</span>
+	</div>
+
+	<div class="stat-card">
+		<span class="stat-label">Residential Units</span>
+		<div class="stat-val">{{ total_residential }}</div>
+		<span class="stat-sub">Apartments, villas, flats</span>
+	</div>
+
+	<div class="stat-card">
+		<span class="stat-label">Commercial Units</span>
+		<div class="stat-val">{{ total_commercial }}</div>
+		<span class="stat-sub">Offices, retail, shops</span>
+	</div>
+</div>
+
+<!-- Recent Projects -->
+<section class="dashboard-section">
+	<div class="section-header">
+		<h3>Recent Projects</h3>
+		<a href="/admin/projects/new" class="action-btn">+ New Project</a>
+	</div>
+
+	{% if recent_projects.is_empty() %}
+		<div class="empty-state">
+			<p>No projects registered yet.</p>
+			<a href="/admin/projects/new" class="action-btn">Create your first project</a>
+		</div>
+	{% else %}
+		<table class="data-table">
+			<thead>
+				<tr>
+					<th align="left">Project Name</th>
+					<th align="left">Owner / Developer</th>
+					<th align="left">Location</th>
+					<th align="left">Category</th>
+					<th align="right">Properties</th>
+					<th align="right">Available</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for p in recent_projects %}
+					<tr>
+						<td>
+							<strong><a href="/admin/projects/{{ p.id }}" class="item-title">{{ p.name }}</a></strong>
+						</td>
+						<td>{{ p.owner_name }}</td>
+						<td>{{ p.location }}</td>
+						<td><span class="badge">{{ p.category }}</span></td>
+						<td align="right">{{ p.total_properties }}</td>
+						<td align="right">{{ p.available_properties }}</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	{% endif %}
+</section>
+
+<style>
+.dashboard-header {
+	margin-bottom: 1.5rem;
+}
+
+.welcome-text {
+	color: #6f5546;
+	font-size: 0.95rem;
+	margin-top: 0.25rem;
+}
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 1rem;
+	margin-bottom: 2rem;
+}
+
+.stat-card {
+	background: var(--bg-panel, #faf5f0);
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.stat-label {
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #7b6252;
+	font-weight: 600;
+}
+
+.stat-val {
+	font-size: 1.85rem;
+	font-weight: 700;
+	color: var(--accent-dark, #402c20);
+	line-height: 1.2;
+}
+
+.stat-sub {
+	font-size: 0.78rem;
+	color: #8c7262;
+}
+
+.stat-link {
+	font-size: 0.82rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	font-weight: 500;
+	margin-top: 0.2rem;
+}
+
+.stat-link:hover {
+	text-decoration: underline;
+}
+
+.dashboard-section {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+	margin-top: 1.5rem;
+}
+
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.section-header h3 {
+	margin: 0;
+	font-size: 1.15rem;
+}
+
+.action-btn {
+	background: var(--accent, #9e5b32);
+	color: #fff;
+	text-decoration: none;
+	padding: 0.4rem 0.8rem;
+	border-radius: 5px;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.action-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2rem 1rem;
+	color: #7b6252;
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 1px solid var(--border, #f0e6dd);
+	font-size: 0.88rem;
+}
+
+.data-table th {
+	font-weight: 600;
+	color: #6f5546;
+	background: #fdfaf7;
+}
+
+.item-title {
+	color: var(--accent-dark, #332014);
+	text-decoration: none;
+}
+
+.item-title:hover {
+	text-decoration: underline;
+}
+
+.badge {
+	display: inline-block;
+	background: #f0e6dc;
+	color: #5d3d29;
+	padding: 0.2rem 0.5rem;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+</style>
+
+{% endblock %}

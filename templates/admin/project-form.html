@@ -1,0 +1,314 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if edit_project.is_some() %}Edit Project{% else %}New Project{% endif %}{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/admin/projects" class="back-link">&larr; Back to Projects</a>
+		<h2>{% if edit_project.is_some() %}Edit Project{% else %}New Project{% endif %}</h2>
+	</div>
+</header>
+
+<div class="form-container">
+	<form
+		method="POST"
+		action="{% if let Some(edit) = edit_project %}/admin/projects/{{ edit.id }}/edit{% else %}/admin/projects/new{% endif %}"
+		class="project-form"
+	>
+		<!-- Basic Info Card -->
+		<div class="card">
+			<h3>Project Overview</h3>
+
+			<div class="form-grid-2">
+				<section>
+					<label for="name">Project Name *</label>
+					<input
+						type="text"
+						id="name"
+						name="name"
+						required
+						placeholder="e.g. Prestige Lavender Hills"
+						value="{% if let Some(edit) = edit_project %}{{ edit.name }}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="category">Category *</label>
+					<select id="category" name="category" required>
+						<option value="Residential" {% if let Some(edit) = edit_project %}{% if edit.category == "Residential" %}selected{% endif %}{% endif %}>Residential</option>
+						<option value="Commercial" {% if let Some(edit) = edit_project %}{% if edit.category == "Commercial" %}selected{% endif %}{% endif %}>Commercial</option>
+						<option value="Mixed" {% if let Some(edit) = edit_project %}{% if edit.category == "Mixed" %}selected{% endif %}{% endif %}>Mixed Use</option>
+					</select>
+				</section>
+			</div>
+
+			<div class="form-grid-2">
+				<section>
+					<label for="project_owner_id">Developer / Project Owner *</label>
+					<select id="project_owner_id" name="project_owner_id" required>
+						<option value="">Select Developer...</option>
+						{% for o in owners %}
+							<option
+								value="{{ o.id }}"
+								{% if let Some(edit) = edit_project %}{% if edit.owner_id == o.id %}selected{% endif %}{% endif %}
+							>
+								{{ o.name }}
+							</option>
+						{% endfor %}
+					</select>
+				</section>
+
+				<section>
+					<label for="location_id">Location / Area *</label>
+					<select id="location_id" name="location_id" required>
+						<option value="">Select Location...</option>
+						{% for loc in locations %}
+							<option
+								value="{{ loc.id }}"
+								{% if let Some(edit) = edit_project %}{% if edit.location_id == loc.id %}selected{% endif %}{% endif %}
+							>
+								{{ loc.address }}
+							</option>
+						{% endfor %}
+					</select>
+				</section>
+			</div>
+		</div>
+
+		<!-- Schedule & Dates Card -->
+		<div class="card">
+			<h3>Project Timeline</h3>
+			<div class="form-grid-3">
+				<section>
+					<label for="start_date">Construction Start</label>
+					<input
+						type="date"
+						id="start_date"
+						name="start_date"
+						value="{% if let Some(edit) = edit_project %}{% if let Some(d) = edit.start_date %}{{ d }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="launch_date">Public Launch</label>
+					<input
+						type="date"
+						id="launch_date"
+						name="launch_date"
+						value="{% if let Some(edit) = edit_project %}{% if let Some(d) = edit.launch_date %}{{ d }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="possession_date">Expected Possession</label>
+					<input
+						type="date"
+						id="possession_date"
+						name="possession_date"
+						value="{% if let Some(edit) = edit_project %}{% if let Some(d) = edit.possession_date %}{{ d }}{% endif %}{% endif %}"
+					>
+				</section>
+			</div>
+		</div>
+
+		<!-- Description Card (Markdown) -->
+		<div class="card">
+			<h3>Detailed Description</h3>
+			<p class="field-hint">Supports full Markdown formatting (headings, lists, bold text, links, quotes).</p>
+			<section>
+				<textarea
+					id="description"
+					name="description"
+					rows="8"
+					placeholder="Describe the architectural design, master plan, connectivity, and standout highlights..."
+				>{% if let Some(edit) = edit_project %}{% if let Some(desc) = edit.description %}{{ desc }}{% endif %}{% endif %}</textarea>
+			</section>
+		</div>
+
+		<!-- Amenities Checklist Card -->
+		<div class="card">
+			<h3>Amenities Included</h3>
+			<p class="field-hint">Select all amenities available within this project.</p>
+			<div class="amenities-grid">
+				{% for a in amenities %}
+					<label class="amenity-checkbox">
+						<input
+							type="checkbox"
+							name="amenities"
+							value="{{ a.id }}"
+							{% if a.selected %}checked{% endif %}
+						>
+						<span>{{ a.name }}</span>
+					</label>
+				{% endfor %}
+			</div>
+		</div>
+
+		<!-- Form Actions -->
+		<div class="form-actions">
+			<button type="submit" class="primary-btn">
+				{% if edit_project.is_some() %}Save Project Changes{% else %}Create Project{% endif %}
+			</button>
+			<a href="/admin/projects" class="secondary-btn">Cancel</a>
+		</div>
+	</form>
+</div>
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.form-container {
+	max-width: 820px;
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+	margin-bottom: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.field-hint {
+	font-size: 0.82rem;
+	color: #7b6252;
+	margin: -0.5rem 0 0.85rem;
+}
+
+.form-grid-2 {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+	margin-bottom: 0.85rem;
+}
+
+.form-grid-3 {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 1rem;
+}
+
+@media (max-width: 680px) {
+	.form-grid-2, .form-grid-3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+section {
+	margin-bottom: 0.5rem;
+}
+
+label {
+	display: block;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #4a3b32;
+	margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 4px;
+	font-size: 0.9rem;
+	font-family: inherit;
+	background: #fff;
+}
+
+textarea {
+	resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+	outline: none;
+	border-color: var(--accent, #9e5b32);
+}
+
+.amenities-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 0.75rem;
+}
+
+.amenity-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.88rem;
+	font-weight: normal;
+	cursor: pointer;
+}
+
+.amenity-checkbox input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.form-actions {
+	display: flex;
+	gap: 0.75rem;
+	margin-top: 1rem;
+	margin-bottom: 2rem;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	border: none;
+	padding: 0.5rem 1.25rem;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 0.92rem;
+	font-weight: 600;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.secondary-btn {
+	text-decoration: none;
+	padding: 0.5rem 1.25rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 5px;
+	font-size: 0.92rem;
+	color: var(--text);
+	display: inline-flex;
+	align-items: center;
+	background: #fff;
+}
+
+.secondary-btn:hover {
+	background: #f0e3d6;
+}
+</style>
+
+{% endblock %}

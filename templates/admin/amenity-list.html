@@ -1,0 +1,232 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Amenities{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<h2>Amenities Management</h2>
+		<p class="subtitle">Platform-wide amenities assignable to projects and properties</p>
+	</div>
+</header>
+
+<div class="amenities-container">
+	<!-- Add Amenity Form Card -->
+	<div class="card add-card">
+		<h3>Add New Amenity</h3>
+		<form method="POST" action="/admin/amenities" class="amenity-form">
+			<label for="name">Amenity Name *</label>
+			<div class="input-row">
+				<input
+					type="text"
+					id="name"
+					name="name"
+					required
+					placeholder="e.g. Swimming Pool, Clubhouse, 24/7 Security"
+				>
+				<button type="submit" class="primary-btn">Add Amenity</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Amenities Table -->
+	<div class="card table-card">
+		<h3>Existing Amenities</h3>
+		{% if amenities.is_empty() %}
+			<div class="empty-state">
+				<p>No amenities created yet. Add your first amenity above.</p>
+			</div>
+		{% else %}
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th align="left">Name</th>
+						<th align="left">Slug</th>
+						<th align="left">Status</th>
+						<th align="right">Linked Projects</th>
+						<th align="left">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for a in amenities %}
+						<tr id="row-{{ a.id }}">
+							<td><strong>{{ a.name }}</strong></td>
+							<td><code>{{ a.slug }}</code></td>
+							<td>
+								{% if a.is_active %}
+									<span class="badge-active">Active</span>
+								{% else %}
+									<span class="badge-inactive">Inactive</span>
+								{% endif %}
+							</td>
+							<td align="right">{{ a.projects_count }}</td>
+							<td class="actions">
+								<form method="POST" action="/admin/amenities/{{ a.id }}/toggle" style="display:inline;">
+									<button type="submit" class="action-link">
+										{% if a.is_active %}Deactivate{% else %}Activate{% endif %}
+									</button>
+								</form>
+								<button onclick="deleteAmenity('{{ a.id }}')" class="action-link danger">Delete</button>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+	</div>
+</div>
+
+<script>
+async function deleteAmenity(id) {
+	if (!confirm("Are you sure you want to delete this amenity?")) return;
+
+	try {
+		const res = await fetch(`/admin/amenities/${id}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+
+		if (!res.ok) {
+			alert("Failed to delete amenity (it may be linked to existing projects)");
+			return;
+		}
+
+		document.getElementById(`row-${id}`)?.remove();
+	} catch (e) {
+		alert("Network error");
+	}
+}
+</script>
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.subtitle {
+	color: #7b6252;
+	font-size: 0.88rem;
+	margin: 0.25rem 0 0;
+}
+
+.amenities-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.input-row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.input-row input {
+	flex: 1;
+	max-width: 400px;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 4px;
+	font-size: 0.9rem;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	border: none;
+	padding: 0.45rem 0.9rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 1px solid var(--border, #f0e6dd);
+	font-size: 0.88rem;
+}
+
+.data-table th {
+	font-weight: 600;
+	color: #6f5546;
+	background: #fdfaf7;
+}
+
+.badge-active {
+	display: inline-block;
+	background: #e6f4ea;
+	color: #137333;
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 0.2rem 0.5rem;
+	border-radius: 999px;
+	text-transform: uppercase;
+}
+
+.badge-inactive {
+	display: inline-block;
+	background: #fce8e6;
+	color: #c5221f;
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 0.2rem 0.5rem;
+	border-radius: 999px;
+	text-transform: uppercase;
+}
+
+.action-link {
+	margin-right: 8px;
+	color: var(--accent, #9e5b32);
+	background: none;
+	border: none;
+	cursor: pointer;
+	text-decoration: none;
+	font-size: 0.88rem;
+	padding: 0;
+	font-family: inherit;
+}
+
+.action-link:hover {
+	text-decoration: underline;
+}
+
+.action-link.danger {
+	color: #a33;
+}
+
+.action-link.danger:hover {
+	color: #822;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2rem 1rem;
+	color: #7b6252;
+}
+</style>
+
+{% endblock %}

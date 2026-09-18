@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>Access Required</title>
+
+		<style>
+		:root {
+			--bg-main: #f7efe6;
+			--bg-panel: #fffaf5;
+			--accent: #6b3e26;
+			--accent-dark: #4b2a1a;
+			--border: #e6d5c3;
+			--text: #3e2b21;
+		}
+
+		body {
+			margin: 0;
+			font-family: system-ui, sans-serif;
+			background: var(--bg-main);
+			color: var(--text);
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+		}
+
+		main {
+			background: var(--bg-panel);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+
+			max-width: 420px;
+			width: 90%;
+
+			padding: 1.5rem;
+		}
+
+		header {
+			margin-bottom: 1rem;
+		}
+
+		header h1 {
+			margin: 0;
+			font-size: 1.25rem;
+			color: var(--accent-dark);
+		}
+
+		section p {
+			margin: 0.5rem 0 1rem 0;
+		}
+
+		nav a {
+			display: inline-block;
+			text-decoration: none;
+
+			background: var(--accent);
+			color: white;
+
+			padding: 0.4rem 0.75rem;
+			border-radius: 4px;
+		}
+
+		nav a:hover {
+			background: var(--accent-dark);
+		}
+
+		footer {
+			margin-top: 1rem;
+			font-size: 0.85rem;
+			color: #7a5a49;
+		}
+		</style>
+	</head>
+
+	<body>
+		<main>
+			<header>
+				<h1>Access Required</h1>
+			</header>
+
+			<section>
+				<p>You are not logged in or your session has expired.</p>
+
+				<p>Please sign in to access the admin panel.</p>
+
+				<nav><a href="/auth/admin-login">Go to Login</a></nav>
+			</section>
+
+			<footer>Real Estate Administration</footer>
+		</main>
+	</body>
+</html>

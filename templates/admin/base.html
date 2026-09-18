@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>{{ page }}</title>
+		<style>
+			:root {
+				--bg-main: #f7efe6;
+				--bg-panel: #fffaf5;
+				--accent: #6b3e26;
+				--accent-dark: #4b2a1a;
+				--border: #e6d5c3;
+				--text: #3e2b21;
+				--sidebar-width: 200px;
+		}
+			body {
+				height: 100vh;
+				margin: 0;
+				font-family: system-ui, sans-serif;
+				background: var(--bg-main);
+				color: var(--text);
+			}
+			/* ------------ layout ------------ */
+			#layout {
+				height: 100%;
+				display: grid;
+				grid-template-columns: var(--sidebar-width) auto;
+			}
+			/* ---------- top navbar ---------- */
+			header.topbar {
+				background: var(--bg-panel);
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				text-align: center;
+				padding: 0.5rem 0.75rem;
+			}
+			header.topbar h1 {
+				font-size: 1rem;
+				margin: 0;
+				font-weight: 600;
+				color: var(--accent-dark);
+			}
+			header.topbar .user {
+				font-size: 0.9rem;
+			}
+			/* ---------- sidebar ---------- */
+			#sidebar {
+				background: var(--bg-panel);
+				border-right: 1px solid var(--border);
+				display: flex;
+				flex-direction: column;
+				min-height: 0;
+				transition: transform ease-out 0.1s;
+				width: var(--sidebar-width);
+			}
+			#close-btn-container {
+				padding: 0.5rem 0.75rem;
+			}
+			.close-btn {
+				/* padding: 0.2rem 0.4rem; */
+				border-radius: 4px;
+				display: none;
+				font-size: 1.2rem;
+				cursor: pointer;
+			}
+			#resources {
+				overflow-y: auto;
+			}
+			#resources ul {
+				list-style: none;
+				padding: 0.5rem;
+				margin: 0;
+			}
+			#resources li {
+				margin: 0.1rem 0;
+			}
+			#resources a {
+				display: block;
+				padding: 0.35rem 0.5rem;
+				text-decoration: none;
+				color: var(--text);
+				border-radius: 4px;
+			}
+			#resources a:hover {
+				background: #f0e3d6;
+			}
+			#resources a.active{
+				background:var(--accent);
+				color:white;
+				position:relative;
+			}
+
+			#resources a.active::before{
+				content:"";
+				position:absolute;
+				left:-0.5rem;
+				top:0;
+				bottom:0;
+				width:3px;
+				background:var(--accent-dark);
+				border-radius:2px;
+			}
+			#resources-separator {
+				width: 100%;
+				height: 1px;
+				background-color: var(--border);
+				border: 0;
+				margin: 0;
+			}
+			/* ---------- mobile drawer ---------- */
+			.menu-btn {
+				/* padding: 0.2rem 0.4rem; */
+				border-radius: 4px;
+				display: none;
+				font-size: 1.2rem;
+				cursor: pointer;
+			}
+			.menu-btn:hover {
+				background: #f0e3d6;
+			}
+			#main-container {
+				height: 100%;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+			}
+			/* ---------- main content ---------- */
+			#content {
+				overflow-y: auto;
+				padding: 0.75rem 1rem;
+			}
+
+			#overlay{
+				display:none;
+			}
+			/* ---------- responsive ---------- */
+			@media (max-width: 650px) {
+				.menu-btn {
+					display: unset;
+				}
+
+				.close-btn {
+					display: unset;
+				}
+
+				#layout {
+					grid-template-columns: 100%;
+				}
+
+				#sidebar {
+					position: fixed;
+					height: 100%;
+					transform: translateX(-100%);
+					box-shadow:2px 0 8px rgba(0,0,0,0.08);
+				}
+
+				#menu-toggle:checked ~ #sidebar {
+					transform: translateX(0%);
+				}
+
+				#menu-toggle:checked ~ #overlay {
+					display:block;
+					position:fixed;
+					inset:0;
+					background:rgba(0,0,0,0.25);
+				}
+			}
+		</style>
+		{% block head_tags %}{% endblock %}
+	</head>
+	<body>
+		<div id="layout">
+			<input type="checkbox" id="menu-toggle" hidden>
+			<label for="menu-toggle" id="overlay"></label>
+			<aside id="sidebar">
+				<div id="close-btn-container">
+					<label for="menu-toggle" class="close-btn">✕</label>
+				</div>
+				<nav id="resources">
+					<ul>
+						<li><a href="/admin"{% if page == AdminPage::Dashboard %} class="active"{% endif %}>Dashboard</a></li>
+						<li><a href="/admin/locations"{% if page == AdminPage::Locations %} class="active"{% endif %}>Locations</a></li>
+						<li><a href="/admin/owners"{% if page == AdminPage::Owners %} class="active"{% endif %}>Project Owners</a></li>
+						<li><a href="/admin/projects"{% if page == AdminPage::Projects %} class="active"{% endif %}>Projects</a></li>
+						<li><a href="/admin/properties"{% if page == AdminPage::Properties %} class="active"{% endif %}>Properties</a></li>
+						<li><a href="/admin/amenities"{% if page == AdminPage::Amenities %} class="active"{% endif %}>Amenities</a></li>
+					</ul>
+					<hr id="resources-separator"/>
+					<ul>
+						<li><a href="/admin/users"{% if page == AdminPage::AdminUsers %} class="active"{% endif %}>Admin Users</a></li>
+						<li><a href="/admin/admin-logout">Logout</a></li>
+					</ul>
+				</nav>
+			</aside>
+			<div id="main-container">
+				<header class="topbar">
+					<label for="menu-toggle" class="menu-btn">☰</label>
+					<h1>Real Estate Admin</h1>
+					<div class="user">
+						{{ admin_name }}
+					</div>
+				</header>
+				<main id="content">
+					{% block content %}{% endblock %}
+				</main>
+			</div>
+		</div>
+	</body>
+</html>
+

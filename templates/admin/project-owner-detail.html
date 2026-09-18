@@ -1,0 +1,448 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Owner Details - {{ owner.name }}{% endblock %}
+
+{% block content %}
+
+<div class="owner-detail-layout">
+	<!-- Top Overview Banner -->
+	<header class="owner-header-card">
+		<div class="owner-identity">
+			{% if let Some(thumb) = owner.profile_thumb_url %}
+				<img src="{{ thumb }}" alt="{{ owner.name }}" class="owner-avatar">
+			{% else %}
+				<div class="owner-avatar-placeholder">{{ owner.name.chars().next().unwrap_or('?') }}</div>
+			{% endif %}
+
+			<div class="owner-title-meta">
+				<div class="title-row">
+					<h2>{{ owner.name }}</h2>
+					{% if owner.active %}
+						<span class="status-badge active">Active</span>
+					{% else %}
+						<span class="status-badge inactive">Inactive</span>
+					{% endif %}
+				</div>
+				<p class="owner-submeta">
+					Username: <code>{{ owner.username }}</code> &bull; Member since {{ owner.created_at }}
+				</p>
+			</div>
+		</div>
+
+		<div class="header-actions">
+			<form method="POST" action="/admin/owners/{{ owner.id }}/toggle-active" style="display:inline;">
+				<button type="submit" class="secondary-btn">
+					{% if owner.active %}Deactivate Account{% else %}Activate Account{% endif %}
+				</button>
+			</form>
+			<a href="/admin/owners/{{ owner.id }}/edit" class="primary-btn">Edit Profile</a>
+		</div>
+	</header>
+
+	<div class="detail-columns">
+		<!-- Left: Profile info & Contact details -->
+		<div class="detail-sidebar">
+			<div class="info-card">
+				<h3>Contact Details</h3>
+				<ul class="meta-list">
+					<li>
+						<strong>Email:</strong>
+						{% if let Some(em) = owner.email %}
+							<a href="mailto:{{ em }}">{{ em }}</a>
+						{% else %}
+							<span class="muted">—</span>
+						{% endif %}
+					</li>
+					<li>
+						<strong>Phone:</strong>
+						{% if let Some(ph) = owner.phone %}
+							<a href="tel:{{ ph }}">{{ ph }}</a>
+						{% else %}
+							<span class="muted">—</span>
+						{% endif %}
+					</li>
+					<li>
+						<strong>Website:</strong>
+						{% if let Some(ws) = owner.website %}
+							<a href="{{ ws }}" target="_blank" rel="noopener">{{ ws }}</a>
+						{% else %}
+							<span class="muted">—</span>
+						{% endif %}
+					</li>
+					<li>
+						<strong>Slug:</strong>
+						<code>{{ owner.slug }}</code>
+					</li>
+				</ul>
+			</div>
+
+			<div class="info-card">
+				<h3>About / Bio</h3>
+				{% if let Some(bio) = owner.bio %}
+					<p class="bio-text">{{ bio }}</p>
+				{% else %}
+					<p class="muted">No biography provided.</p>
+				{% endif %}
+			</div>
+
+			<div class="info-card danger-zone">
+				<h3>Danger Zone</h3>
+				<button onclick="deleteOwner('{{ owner.id }}')" class="danger-btn full-width">
+					Delete Owner (Soft Delete)
+				</button>
+			</div>
+		</div>
+
+		<!-- Right: Projects breakdown -->
+		<div class="detail-main">
+			<div class="info-card">
+				<div class="card-header">
+					<div>
+						<h3>Projects Portfolio</h3>
+						<span class="count-pill">{{ owner.projects_count }} Total</span>
+					</div>
+					<div class="card-header-actions">
+						<a href="/admin/owners/{{ owner.id }}/projects" class="secondary-link">View all projects &rarr;</a>
+						<a href="/admin/projects/new?owner_id={{ owner.id }}" class="primary-btn small">+ New Project</a>
+					</div>
+				</div>
+
+				{% if recent_projects.is_empty() %}
+					<div class="empty-state">
+						<p>No projects created for this owner yet.</p>
+						<a href="/admin/projects/new?owner_id={{ owner.id }}" class="primary-btn small">Create first project</a>
+					</div>
+				{% else %}
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th align="left">Project Name</th>
+								<th align="left">Category</th>
+								<th align="left">Location</th>
+								<th align="right">Properties</th>
+								<th align="left">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for p in recent_projects %}
+								<tr>
+									<td>
+										<a href="/admin/projects/{{ p.id }}" class="item-link">
+											<strong>{{ p.name }}</strong>
+										</a>
+									</td>
+									<td><span class="category-badge">{{ p.category }}</span></td>
+									<td>{{ p.location }}</td>
+									<td align="right">{{ p.properties_count }}</td>
+									<td>
+										<a href="/admin/projects/{{ p.id }}" class="action-link">View</a>
+										<a href="/admin/projects/{{ p.id }}/edit" class="action-link">Edit</a>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+async function deleteOwner(id) {
+	if (!confirm("Are you sure you want to delete this owner? All their projects will remain archived.")) return;
+	try {
+		const res = await fetch(`/admin/owners/${id}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+		if (!res.ok) {
+			alert("Failed to delete owner");
+			return;
+		}
+		window.location.href = "/admin/owners";
+	} catch (e) {
+		alert("Network error");
+	}
+}
+</script>
+
+<style>
+.owner-detail-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.owner-header-card {
+	background: var(--bg-panel, #fffaf5);
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem 1.5rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+.owner-identity {
+	display: flex;
+	align-items: center;
+	gap: 1.25rem;
+}
+
+.owner-avatar {
+	width: 68px;
+	height: 68px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid var(--accent, #9e5b32);
+}
+
+.owner-avatar-placeholder {
+	width: 68px;
+	height: 68px;
+	border-radius: 50%;
+	background: #ecdcd0;
+	color: #614330;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.owner-title-meta .title-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.owner-title-meta h2 {
+	margin: 0;
+	font-size: 1.4rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.owner-submeta {
+	margin: 0.3rem 0 0;
+	font-size: 0.85rem;
+	color: #7d6555;
+}
+
+.header-actions {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.status-badge {
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0.2rem 0.55rem;
+	border-radius: 9999px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.status-badge.active {
+	background: #e6f4ea;
+	color: #137333;
+}
+
+.status-badge.inactive {
+	background: #fce8e6;
+	color: #c5221f;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	text-decoration: none;
+	padding: 0.45rem 0.9rem;
+	border-radius: 5px;
+	font-size: 0.88rem;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	border: none;
+	cursor: pointer;
+}
+
+.primary-btn.small {
+	padding: 0.35rem 0.7rem;
+	font-size: 0.82rem;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.secondary-btn {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	color: var(--text, #3e2b21);
+	padding: 0.45rem 0.85rem;
+	border-radius: 5px;
+	font-size: 0.88rem;
+	cursor: pointer;
+}
+
+.secondary-btn:hover {
+	background: #f7eee6;
+}
+
+.detail-columns {
+	display: grid;
+	grid-template-columns: 320px 1fr;
+	gap: 1.25rem;
+}
+
+@media (max-width: 860px) {
+	.detail-columns {
+		grid-template-columns: 1fr;
+	}
+}
+
+.info-card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+	margin-bottom: 1.25rem;
+}
+
+.info-card h3 {
+	margin: 0 0 0.85rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.meta-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	font-size: 0.88rem;
+}
+
+.meta-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #f9f5f0;
+	padding-bottom: 0.4rem;
+}
+
+.meta-list a {
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+}
+
+.meta-list a:hover {
+	text-decoration: underline;
+}
+
+.bio-text {
+	font-size: 0.9rem;
+	line-height: 1.5;
+	color: #554033;
+	white-space: pre-wrap;
+	margin: 0;
+}
+
+.muted {
+	color: #9c8373;
+	font-style: italic;
+	font-size: 0.85rem;
+}
+
+.card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.card-header h3 {
+	display: inline-block;
+	margin: 0 0.5rem 0 0;
+}
+
+.card-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.count-pill {
+	background: #f0e6dc;
+	color: #5d3d29;
+	font-size: 0.78rem;
+	padding: 0.2rem 0.5rem;
+	border-radius: 999px;
+	font-weight: 600;
+}
+
+.secondary-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+}
+
+.secondary-link:hover {
+	text-decoration: underline;
+}
+
+.danger-zone {
+	border-color: #f7d2cd;
+	background: #fffafa;
+}
+
+.danger-zone h3 {
+	color: #a33;
+}
+
+.danger-btn {
+	background: #a33;
+	color: white;
+	border: none;
+	padding: 0.45rem 0.85rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.88rem;
+}
+
+.danger-btn.full-width {
+	width: 100%;
+}
+
+.danger-btn:hover {
+	background: #822;
+}
+
+.category-badge {
+	display: inline-block;
+	background: #f5ebe1;
+	color: #593e2d;
+	padding: 0.2rem 0.45rem;
+	border-radius: 4px;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.item-link {
+	color: var(--accent-dark, #332014);
+	text-decoration: none;
+}
+
+.item-link:hover {
+	text-decoration: underline;
+}
+</style>
+
+{% endblock %}

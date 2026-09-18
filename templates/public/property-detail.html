@@ -1,0 +1,478 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	.prop-hero {
+		background: #0f172a;
+		color: white;
+		padding: 3.5rem 1.5rem 3rem;
+	}
+
+	.prop-hero-container {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: #94a3b8;
+		margin-bottom: 1rem;
+	}
+
+	.breadcrumb a:hover {
+		color: white;
+	}
+
+	.prop-header-flex {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1.5rem;
+	}
+
+	.prop-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+		margin-bottom: 0.5rem;
+	}
+
+	.prop-loc {
+		font-size: 1.1rem;
+		color: #cbd5e1;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.prop-hero-price {
+		font-size: 2.25rem;
+		font-weight: 800;
+		color: #60a5fa;
+		text-align: right;
+	}
+
+	.prop-hero-badges {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.badge-pill {
+		background: rgba(255, 255, 255, 0.15);
+		backdrop-filter: blur(4px);
+		padding: 0.3rem 0.8rem;
+		border-radius: var(--radius-full);
+		font-size: 0.82rem;
+		font-weight: 600;
+	}
+
+	/* Two-column layout */
+	.details-layout {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 2.5rem;
+		margin-top: 2rem;
+	}
+
+	/* Gallery */
+	.gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2.5rem;
+	}
+
+	.gallery-item {
+		height: 240px;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: #1e293b;
+	}
+
+	.gallery-item img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.2s ease;
+	}
+
+	.gallery-item img:hover {
+		transform: scale(1.05);
+	}
+
+	/* Section cards */
+	.content-card {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 2rem;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 2rem;
+	}
+
+	.content-card h2 {
+		font-size: 1.35rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 1.25rem;
+		border-bottom: 1px solid var(--border-subtle);
+		padding-bottom: 0.75rem;
+	}
+
+	/* Specs grid */
+	.specs-table-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+		gap: 1.25rem;
+	}
+
+	.spec-box {
+		background: #f8fafc;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 1rem;
+	}
+
+	.spec-box-label {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		font-weight: 700;
+		color: var(--text-muted);
+		margin-bottom: 0.25rem;
+	}
+
+	.spec-box-val {
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--text-main);
+	}
+
+	/* Amenity tags */
+	.amenity-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.amenity-tag {
+		background: #f1f5f9;
+		color: var(--text-main);
+		font-size: 0.88rem;
+		font-weight: 600;
+		padding: 0.4rem 0.85rem;
+		border-radius: var(--radius-full);
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	/* Sidebar */
+	.sticky-sidebar {
+		position: sticky;
+		top: 80px;
+	}
+
+	.sidebar-widget {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1.75rem;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group {
+		margin-bottom: 1rem;
+	}
+
+	.form-group label {
+		display: block;
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 0.35rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.form-group input, .form-group textarea {
+		width: 100%;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.65rem 0.85rem;
+		font-family: inherit;
+		font-size: 0.92rem;
+		color: var(--text-main);
+	}
+
+	.form-group input:focus, .form-group textarea:focus {
+		outline: none;
+		border-color: var(--primary);
+	}
+
+	.btn-submit {
+		width: 100%;
+		background: var(--primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius);
+		padding: 0.85rem;
+		font-weight: 700;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.btn-submit:hover {
+		background: var(--primary-dark);
+	}
+
+	.alert-success {
+		background: #dcfce7;
+		color: #166534;
+		border: 1px solid #bbf7d0;
+		border-radius: var(--radius);
+		padding: 0.85rem;
+		font-size: 0.9rem;
+		margin-bottom: 1.25rem;
+	}
+
+	@media (max-width: 900px) {
+		.details-layout {
+			grid-template-columns: 1fr;
+		}
+		.sticky-sidebar {
+			position: static;
+		}
+		.prop-hero-price {
+			text-align: left;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="prop-hero">
+	<div class="prop-hero-container">
+		<div class="breadcrumb">
+			<a href="/">Home</a> &rarr;
+			<a href="/properties">Properties</a> &rarr;
+			<a href="/projects/{{ project.slug }}">{{ project.name }}</a> &rarr;
+			<span>{{ property.property_type_name }}</span>
+		</div>
+		<div class="prop-header-flex">
+			<div>
+				<h1 class="prop-title">
+					{% if let Some(bhk) = property.bedroom_count %}{{ bhk }} BHK {% endif %}
+					{{ property.property_type_name }}
+					{% if let Some(unit) = property.unit_number %} - Unit {{ unit }}{% endif %}
+				</h1>
+				<div class="prop-loc">
+					<span>📍 {{ project.location_name }}</span>
+					<span>&bull;</span>
+					<span>Development: <a href="/projects/{{ project.slug }}" style="color: #60a5fa; text-decoration: underline;">{{ project.name }}</a></span>
+				</div>
+				<div class="prop-hero-badges">
+					<span class="badge-pill">{{ property.category }}</span>
+					<span class="badge-pill" style="text-transform: capitalize;">For {{ property.listing_type }}</span>
+					{% if let Some(period) = property.billing_period %}
+					<span class="badge-pill">Billed {{ period }}</span>
+					{% endif %}
+				</div>
+			</div>
+			<div>
+				<div class="prop-hero-price">{{ property.price_formatted }}</div>
+				<div style="color: #cbd5e1; font-size: 0.9rem; text-align: right;">Verified Listing</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<div class="container">
+	<!-- Gallery -->
+	{% if !gallery.is_empty() %}
+	<div class="gallery-grid">
+		{% for img in gallery %}
+		<div class="gallery-item">
+			<a href="{{ img.url }}" target="_blank" rel="noopener">
+				<img src="{{ img.thumbnail_url }}" alt="Property photo" loading="lazy">
+			</a>
+		</div>
+		{% endfor %}
+	</div>
+	{% endif %}
+
+	<div class="details-layout">
+		<!-- Left Main Content -->
+		<div>
+			<!-- Property Specifications -->
+			<div class="content-card">
+				<h2>Property Specifications</h2>
+				<div class="specs-table-grid">
+					{% if let Some(area) = property.built_up_area %}
+					<div class="spec-box">
+						<div class="spec-box-label">Built-Up Area</div>
+						<div class="spec-box-val">{{ area }} sq.ft</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(u_area) = property.usable_area %}
+					<div class="spec-box">
+						<div class="spec-box-label">Usable / Carpet Area</div>
+						<div class="spec-box-val">{{ u_area }} sq.ft</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(bhk) = property.bedroom_count %}
+					<div class="spec-box">
+						<div class="spec-box-label">Bedrooms</div>
+						<div class="spec-box-val">{{ bhk }} BHK</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(bath) = property.bathroom_count %}
+					<div class="spec-box">
+						<div class="spec-box-label">Bathrooms</div>
+						<div class="spec-box-val">{{ bath }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(balc) = property.balcony_count %}
+					<div class="spec-box">
+						<div class="spec-box-label">Balconies</div>
+						<div class="spec-box-val">{{ balc }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(floor) = property.floor_number %}
+					<div class="spec-box">
+						<div class="spec-box-label">Floor</div>
+						<div class="spec-box-val">{{ floor }}{% if let Some(tot) = property.total_floors %} of {{ tot }}{% endif %}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(bldg) = property.building %}
+					<div class="spec-box">
+						<div class="spec-box-label">Tower / Wing</div>
+						<div class="spec-box-val">{{ bldg }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(pkg) = property.parking %}
+					<div class="spec-box">
+						<div class="spec-box-label">Parking</div>
+						<div class="spec-box-val">{{ pkg }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(parcel) = property.parcel_number %}
+					<div class="spec-box">
+						<div class="spec-box-label">Parcel / Plot #</div>
+						<div class="spec-box-val">{{ parcel }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(zoning) = property.zoning %}
+					<div class="spec-box">
+						<div class="spec-box-label">Zoning</div>
+						<div class="spec-box-val">{{ zoning }}</div>
+					</div>
+					{% endif %}
+
+					{% if let Some(appr) = property.approval_status %}
+					<div class="spec-box">
+						<div class="spec-box-label">Approval</div>
+						<div class="spec-box-val">{{ appr }}</div>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+
+			<!-- Description -->
+			<div class="content-card">
+				<h2>Property Description</h2>
+				{% if description_html.is_empty() %}
+				<p style="color: var(--text-muted);">No description provided for this unit.</p>
+				{% else %}
+				<div style="line-height: 1.7; color: #334155;">
+					{{ description_html|safe }}
+				</div>
+				{% endif %}
+			</div>
+
+			<!-- Amenities -->
+			{% if !amenities.is_empty() %}
+			<div class="content-card">
+				<h2>Amenities & Highlights</h2>
+				<div class="amenity-tags">
+					{% for a in amenities %}
+					<span class="amenity-tag">✓ {{ a }}</span>
+					{% endfor %}
+				</div>
+			</div>
+			{% endif %}
+		</div>
+
+		<!-- Right Sidebar -->
+		<div>
+			<div class="sticky-sidebar">
+				<!-- Project & Developer quick widget -->
+				<div class="sidebar-widget">
+					<h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Development Details</h3>
+					<div style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 0.25rem;">
+						<a href="/projects/{{ project.slug }}">{{ project.name }}</a>
+					</div>
+					<div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+						Developer: <a href="/owners/{{ owner.slug }}" style="color: var(--text-main); font-weight: 600;">{{ owner.name }}</a>
+					</div>
+					<a href="/projects/{{ project.slug }}" class="btn-card" style="display: block; text-align: center;">View Entire Project &rarr;</a>
+				</div>
+
+				<!-- Enquiry Form -->
+				<div class="sidebar-widget" style="box-shadow: var(--shadow-md);">
+					<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem;">Enquire About This Unit</h3>
+					<p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">Directly connect with the property advisor.</p>
+
+					{% if enquiry_success %}
+					<div class="alert-success">
+						✓ Thank you! Your interest has been submitted. A representative will reach out to you shortly.
+					</div>
+					{% endif %}
+
+					{% if let Some(err) = enquiry_error %}
+					<div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;">
+						{{ err }}
+					</div>
+					{% endif %}
+
+					<form action="/properties/{{ property.id }}/enquire" method="post">
+						<div class="form-group">
+							<label for="name">Your Name *</label>
+							<input type="text" id="name" name="name" required placeholder="John Doe">
+						</div>
+						<div class="form-group">
+							<label for="phone">Phone Number *</label>
+							<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210">
+						</div>
+						<div class="form-group">
+							<label for="email">Email Address</label>
+							<input type="email" id="email" name="email" placeholder="john@example.com">
+						</div>
+						<div class="form-group">
+							<label for="message">Message</label>
+							<textarea id="message" name="message" rows="3" placeholder="I would like to schedule a site visit..."></textarea>
+						</div>
+						<button type="submit" class="btn-submit">Submit Enquiry</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>{% block title %}Developer Portal{% endblock %} - MyPlace</title>
+		<style>
+			:root {
+				--bg-main: #f4ede4;
+				--bg-panel: #fffbf7;
+				--accent: #8b4a2b;
+				--accent-dark: #632e18;
+				--border: #e3d2c1;
+				--text: #3d2b20;
+				--sidebar-width: 220px;
+			}
+			body {
+				height: 100vh;
+				margin: 0;
+				font-family: system-ui, -apple-system, sans-serif;
+				background: var(--bg-main);
+				color: var(--text);
+			}
+			#layout {
+				height: 100%;
+				display: grid;
+				grid-template-columns: var(--sidebar-width) 1fr;
+			}
+			header.topbar {
+				background: var(--bg-panel);
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 0.65rem 1.25rem;
+			}
+			header.topbar h1 {
+				font-size: 1.05rem;
+				margin: 0;
+				font-weight: 700;
+				color: var(--accent-dark);
+			}
+			.user-info {
+				font-size: 0.88rem;
+				color: #6d5445;
+			}
+			#sidebar {
+				background: var(--bg-panel);
+				border-right: 1px solid var(--border);
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				padding: 1rem 0;
+			}
+			#sidebar nav ul {
+				list-style: none;
+				padding: 0 0.75rem;
+				margin: 0;
+			}
+			#sidebar nav li {
+				margin-bottom: 0.25rem;
+			}
+			#sidebar nav a {
+				display: block;
+				padding: 0.5rem 0.75rem;
+				text-decoration: none;
+				color: var(--text);
+				border-radius: 6px;
+				font-size: 0.92rem;
+				font-weight: 500;
+			}
+			#sidebar nav a:hover {
+				background: #eee1d3;
+			}
+			#main-container {
+				height: 100%;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+			}
+			#content {
+				overflow-y: auto;
+				padding: 1.25rem 1.5rem;
+			}
+			.sidebar-footer {
+				padding: 0.75rem 1.25rem;
+				border-top: 1px solid var(--border);
+				font-size: 0.85rem;
+			}
+			.sidebar-footer a {
+				color: #a33;
+				text-decoration: none;
+				font-weight: 600;
+			}
+			.sidebar-footer a:hover {
+				text-decoration: underline;
+			}
+			@media (max-width: 768px) {
+				#layout {
+					grid-template-columns: 1fr;
+				}
+				#sidebar {
+					display: none;
+				}
+			}
+		</style>
+		{% block head_tags %}{% endblock %}
+	</head>
+	<body>
+		<div id="layout">
+			<aside id="sidebar">
+				<div>
+					<div style="padding: 0 1.25rem 1rem;">
+						<strong style="color: var(--accent-dark); font-size: 1.1rem;">MyPlace Portal</strong>
+					</div>
+					<nav>
+						<ul>
+							<li><a href="/owner">📊 Dashboard</a></li>
+							<li><a href="/owner/projects">🏢 My Projects</a></li>
+						</ul>
+					</nav>
+				</div>
+				<div class="sidebar-footer">
+					<a href="/owner/logout">Sign Out &rarr;</a>
+				</div>
+			</aside>
+
+			<div id="main-container">
+				<header class="topbar">
+					<h1>Partner Developer Portal</h1>
+					<div class="user-info">
+						Signed in as <strong>{{ owner_name }}</strong> (<code>{{ username }}</code>)
+					</div>
+				</header>
+				<main id="content">
+					{% block content %}{% endblock %}
+				</main>
+			</div>
+		</div>
+	</body>
+</html>

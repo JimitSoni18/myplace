@@ -1,0 +1,63 @@
+{% extends "admin/listing-base.html" %}
+
+{% block table_content %}
+
+	{% if locations.is_empty() %}
+		<p>No locations found</p>
+	{% else %}
+		<table>
+			<thead>
+				<tr>
+					<th align="left">Address</th>
+					<th align="left">City</th>
+					<th align="left">Area</th>
+					<th align="left">Actions</th>
+				</tr>
+			</thead>
+
+			<tbody>
+				{% for loc in locations %}
+					<tr>
+						<td>{{ loc.formatted_address }}</td>
+						<td>{% if let Some(city) = loc.city %}{{ city }}{% else %}—{% endif %}</td>
+						<td>{% if let Some(area) = loc.area %}{{ area }}{% else %}—{% endif %}</td>
+
+						<td class="actions">
+							<a href="/admin/locations/{{ loc.id }}" class="action-link">
+								Edit
+							</a>
+
+							<button onclick="deleteLocation('{{ loc.id }}')" class="action-link danger">
+								Delete
+							</button>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	{% endif %}
+
+
+<script>
+async function deleteLocation(id) {
+	if (!confirm("Delete this location?")) return;
+
+	try {
+		const res = await fetch(`/admin/locations/${id}`, {
+			method: "DELETE",
+		});
+
+		if (!res.ok) {
+			alert("Failed to delete");
+			return;
+		}
+
+		window.location.reload();
+	} catch (err) {
+		console.error(err);
+		alert("Network error");
+	}
+}
+</script>
+
+{% endblock %}

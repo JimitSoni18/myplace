@@ -1,0 +1,461 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	.project-hero {
+		background: #0f172a;
+		color: white;
+		padding: 3.5rem 1.5rem 3rem;
+	}
+
+	.project-hero-container {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: #94a3b8;
+		margin-bottom: 1rem;
+	}
+
+	.breadcrumb a:hover {
+		color: white;
+	}
+
+	.project-header-flex {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1.5rem;
+	}
+
+	.project-title {
+		font-size: 2.75rem;
+		font-weight: 800;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+		margin-bottom: 0.5rem;
+	}
+
+	.project-loc {
+		font-size: 1.15rem;
+		color: #cbd5e1;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.project-badges {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.badge-pill {
+		background: rgba(255, 255, 255, 0.15);
+		backdrop-filter: blur(4px);
+		padding: 0.3rem 0.8rem;
+		border-radius: var(--radius-full);
+		font-size: 0.82rem;
+		font-weight: 600;
+	}
+
+	/* Two-column layout */
+	.details-layout {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 2.5rem;
+		margin-top: 2rem;
+	}
+
+	/* Gallery */
+	.gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2.5rem;
+	}
+
+	.gallery-item {
+		height: 220px;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: #1e293b;
+	}
+
+	.gallery-item img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.2s ease;
+	}
+
+	.gallery-item img:hover {
+		transform: scale(1.05);
+	}
+
+	/* Section cards */
+	.content-card {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 2rem;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 2rem;
+	}
+
+	.content-card h2 {
+		font-size: 1.35rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 1.25rem;
+		border-bottom: 1px solid var(--border-subtle);
+		padding-bottom: 0.75rem;
+	}
+
+	.prose {
+		line-height: 1.7;
+		color: #334155;
+	}
+
+	.prose p {
+		margin-bottom: 1rem;
+	}
+
+	.prose ul, .prose ol {
+		margin-left: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	/* Amenity tags */
+	.amenity-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.amenity-tag {
+		background: #f1f5f9;
+		color: var(--text-main);
+		font-size: 0.88rem;
+		font-weight: 600;
+		padding: 0.4rem 0.85rem;
+		border-radius: var(--radius-full);
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	/* Sidebar widgets */
+	.sticky-sidebar {
+		position: sticky;
+		top: 80px;
+	}
+
+	.developer-widget {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1.75rem;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 1.5rem;
+		text-align: center;
+	}
+
+	.dev-avatar {
+		width: 80px;
+		height: 80px;
+		border-radius: var(--radius-full);
+		object-fit: cover;
+		margin: 0 auto 1rem;
+		background: #f1f5f9;
+		border: 2px solid var(--border);
+	}
+
+	.enquiry-card {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1.75rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.enquiry-card h3 {
+		font-size: 1.25rem;
+		font-weight: 800;
+		color: var(--text-main);
+		margin-bottom: 0.35rem;
+	}
+
+	.enquiry-card p {
+		font-size: 0.88rem;
+		color: var(--text-muted);
+		margin-bottom: 1.25rem;
+	}
+
+	.form-group {
+		margin-bottom: 1rem;
+	}
+
+	.form-group label {
+		display: block;
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: var(--text-main);
+		margin-bottom: 0.35rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.form-group input, .form-group textarea {
+		width: 100%;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.65rem 0.85rem;
+		font-family: inherit;
+		font-size: 0.92rem;
+		color: var(--text-main);
+	}
+
+	.form-group input:focus, .form-group textarea:focus {
+		outline: none;
+		border-color: var(--primary);
+	}
+
+	.btn-submit {
+		width: 100%;
+		background: var(--primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius);
+		padding: 0.85rem;
+		font-weight: 700;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.btn-submit:hover {
+		background: var(--primary-dark);
+	}
+
+	.alert-success {
+		background: #dcfce7;
+		color: #166534;
+		border: 1px solid #bbf7d0;
+		border-radius: var(--radius);
+		padding: 0.85rem;
+		font-size: 0.9rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.doc-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.doc-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		background: #f8fafc;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.75rem 1rem;
+	}
+
+	@media (max-width: 900px) {
+		.details-layout {
+			grid-template-columns: 1fr;
+		}
+		.sticky-sidebar {
+			position: static;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="project-hero">
+	<div class="project-hero-container">
+		<div class="breadcrumb">
+			<a href="/">Home</a> &rarr;
+			<a href="/projects">Projects</a> &rarr;
+			<span>{{ project.name }}</span>
+		</div>
+		<div class="project-header-flex">
+			<div>
+				<h1 class="project-title">{{ project.name }}</h1>
+				<div class="project-loc">
+					<span>📍 {{ project.location_name }}</span>
+				</div>
+				<div class="project-badges">
+					<span class="badge-pill">Category: {{ project.category }}</span>
+					{% if let Some(pos) = project.possession_date %}
+					<span class="badge-pill">Possession: {{ pos }}</span>
+					{% endif %}
+					{% if let Some(launch) = project.launch_date %}
+					<span class="badge-pill">Launched: {{ launch }}</span>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<div class="container">
+	<!-- Gallery -->
+	{% if !gallery.is_empty() %}
+	<div class="gallery-grid">
+		{% for img in gallery %}
+		<div class="gallery-item">
+			<a href="{{ img.url }}" target="_blank" rel="noopener">
+				<img src="{{ img.thumbnail_url }}" alt="{{ project.name }} photo" loading="lazy">
+			</a>
+		</div>
+		{% endfor %}
+	</div>
+	{% endif %}
+
+	<div class="details-layout">
+		<!-- Left Main Content -->
+		<div>
+			<!-- Overview -->
+			<div class="content-card">
+				<h2>Project Overview</h2>
+				{% if description_html.is_empty() %}
+				<p style="color: var(--text-muted);">No description provided for this development.</p>
+				{% else %}
+				<div class="prose">
+					{{ description_html|safe }}
+				</div>
+				{% endif %}
+			</div>
+
+			<!-- Amenities -->
+			{% if !amenities.is_empty() %}
+			<div class="content-card">
+				<h2>Project Amenities & Features</h2>
+				<div class="amenity-tags">
+					{% for a in amenities %}
+					<span class="amenity-tag">✓ {{ a }}</span>
+					{% endfor %}
+				</div>
+			</div>
+			{% endif %}
+
+			<!-- Properties Available in this project -->
+			<div class="content-card">
+				<h2>Available Properties in this Project ({{ properties.len() }})</h2>
+				{% if properties.is_empty() %}
+				<p style="color: var(--text-muted);">No active unit listings currently published in this project.</p>
+				{% else %}
+				<div style="display: flex; flex-direction: column; gap: 1rem;">
+					{% for prop in properties %}
+					<div style="border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+						<div>
+							<h3 style="font-size: 1.05rem; font-weight: 700;">
+								<a href="/properties/{{ prop.slug }}" style="color: var(--primary);">{{ prop.title }}</a>
+							</h3>
+							<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+								<span>{{ prop.property_type_name }}</span> &bull;
+								<span style="text-transform: capitalize;">{{ prop.listing_type }}</span>
+								{% if let Some(bhk) = prop.bedroom_count %} &bull; <strong>{{ bhk }} BHK</strong>{% endif %}
+								{% if let Some(area) = prop.built_up_area %} &bull; <strong>{{ area }} sq.ft</strong>{% endif %}
+							</div>
+						</div>
+						<div style="display: flex; align-items: center; gap: 1rem;">
+							<div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">{{ prop.price_formatted }}</div>
+							<a href="/properties/{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+			</div>
+
+			<!-- Documents -->
+			{% if !documents.is_empty() %}
+			<div class="content-card">
+				<h2>Official Documents & Approvals</h2>
+				<div class="doc-list">
+					{% for doc in documents %}
+					<div class="doc-item">
+						<div>
+							<strong>{{ doc.display_name }}</strong>
+							<span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-left: 0.5rem;">({{ doc.doc_type }})</span>
+							<span style="font-size: 0.8rem; color: var(--text-light); margin-left: 0.5rem;">{{ doc.file_size_formatted }}</span>
+						</div>
+						<a href="{{ doc.url }}" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600; font-size: 0.88rem;">Download PDF &rarr;</a>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+			{% endif %}
+		</div>
+
+		<!-- Right Sidebar -->
+		<div>
+			<div class="sticky-sidebar">
+				<!-- Developer profile card -->
+				<div class="developer-widget">
+					{% if let Some(img) = owner.image_url %}
+					<img src="{{ img }}" alt="{{ owner.name }}" class="dev-avatar">
+					{% else %}
+					<div class="dev-avatar" style="display:flex; align-items:center; justify-content:center; font-size:2rem;">🏛️</div>
+					{% endif %}
+					<h3 style="font-size: 1.15rem; font-weight: 700;">{{ owner.name }}</h3>
+					<p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Project Developer</p>
+					<div style="margin-top: 1rem;">
+						<a href="/owners/{{ owner.slug }}" style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">View Developer Portfolio &rarr;</a>
+					</div>
+				</div>
+
+				<!-- Lead Enquiry Form -->
+				<div class="enquiry-card">
+					<h3>Request Callback & Brochure</h3>
+					<p>Directly contact the verified project sales desk.</p>
+
+					{% if enquiry_success %}
+					<div class="alert-success">
+						✓ Thank you! Your enquiry has been forwarded. A sales representative will get in touch shortly.
+					</div>
+					{% endif %}
+
+					{% if let Some(err) = enquiry_error %}
+					<div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;">
+						{{ err }}
+					</div>
+					{% endif %}
+
+					<form action="/projects/{{ project.id }}/enquire" method="post">
+						<div class="form-group">
+							<label for="name">Your Full Name *</label>
+							<input type="text" id="name" name="name" required placeholder="John Doe">
+						</div>
+						<div class="form-group">
+							<label for="phone">Phone Number *</label>
+							<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210">
+						</div>
+						<div class="form-group">
+							<label for="email">Email Address</label>
+							<input type="email" id="email" name="email" placeholder="john@example.com">
+						</div>
+						<div class="form-group">
+							<label for="message">Message / Queries</label>
+							<textarea id="message" name="message" rows="3" placeholder="I am interested in 3 BHK floor plans and pricing..."></textarea>
+						</div>
+						<button type="submit" class="btn-submit">Submit Enquiry</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

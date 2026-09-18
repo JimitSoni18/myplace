@@ -1,0 +1,536 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Project Owner{% endblock %}
+
+{% block content %}
+
+<header>
+    <h2>{% if edit_values.is_some() %}Edit Owner{% else %}New Owner{% endif %}</h2>
+</header>
+
+{% if let Some(edit_form) = edit_values %}
+
+<!-- ---------- tabs control ---------- -->
+<input type="radio" name="tab" id="tab-details" checked hidden>
+<input type="radio" name="tab" id="tab-image" hidden>
+
+<div class="tabs">
+
+    <!-- tab headers -->
+    <div class="tab-labels">
+        <label for="tab-details">Details</label>
+        <label for="tab-image">Profile Image</label>
+    </div>
+
+    <!-- ---------- DETAILS TAB ---------- -->
+    <div class="tab-content tab-details">
+
+        <form method="POST" action="/admin/owners/{{ edit_form.default_values.id }}/edit">
+
+            <section>
+                <label for="name">Company / Developer Name *</label>
+                <input
+                    pattern=".{3,}"
+                    required
+                    title="Name should be at least 3 characters"
+                    type="text"
+                    id="name"
+                    name="name"
+                    value="{{ edit_form.default_values.name }}"
+                >
+            </section>
+
+            <section>
+                <label>Portal Username</label>
+                <input
+                    type="text"
+                    disabled
+                    value="{{ edit_form.default_values.username }}"
+                    style="background:#f4ece4; color:#776;"
+                >
+                <small class="muted">Username cannot be changed once created.</small>
+            </section>
+
+            <section>
+                <label for="bio">Bio / About</label>
+                <textarea
+                    id="bio"
+                    name="bio"
+                    rows="3"
+                    maxlength="4095"
+                >{% if let Some(b) = edit_form.default_values.bio %}{{ b }}{% endif %}</textarea>
+            </section>
+
+            <section>
+                <label for="email">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value="{% if let Some(em) = edit_form.default_values.email %}{{ em }}{% endif %}"
+                >
+            </section>
+
+            <section>
+                <label for="phone">Phone</label>
+                <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    value="{% if let Some(ph) = edit_form.default_values.phone %}{{ ph }}{% endif %}"
+                >
+            </section>
+
+            <section>
+                <label for="website">Website</label>
+                <input
+                    type="url"
+                    id="website"
+                    name="website"
+                    placeholder="https://example.com"
+                    value="{% if let Some(ws) = edit_form.default_values.website %}{{ ws }}{% endif %}"
+                >
+            </section>
+
+            <section class="checkbox-row">
+                <label class="checkbox-label">
+                    <input
+                        type="checkbox"
+                        name="active"
+                        value="on"
+                        {% if edit_form.default_values.active %}checked{% endif %}
+                    >
+                    <span>Account Active (Allowed to sign in and display projects)</span>
+                </label>
+            </section>
+
+            {% if let Some(error) = edit_form.error %}
+            <p class="form-error">{{ error }}</p>
+            {% endif %}
+
+            <section class="form-actions">
+                <button type="submit">Save Changes</button>
+                <a href="/admin/owners/{{ edit_form.default_values.id }}" class="secondary">Cancel</a>
+            </section>
+
+        </form>
+
+    </div>
+
+    <!-- ---------- IMAGE TAB ---------- -->
+    <div class="tab-content tab-image">
+		{% if let Some(url) = edit_form.default_values.profile_image_url %}
+		<section class="image-preview-section">
+			<img
+				src="{{ url }}"
+				alt="Owner image"
+				id="current-image"
+				class="image-preview"
+			>
+			<form
+				method="POST"
+				action="/admin/owners/{{ edit_form.default_values.id }}/remove-image"
+			>
+				<button
+					type="submit"
+					class="danger-btn"
+				>
+					Remove Image
+				</button>
+			</form>
+		</section>
+		{% endif %}
+
+        <form
+            method="POST"
+            action="/admin/owners/{{ edit_form.default_values.id }}/upload-image"
+			enctype="multipart/form-data"
+        >
+            <section>
+				<label class="file-drop">
+					<img
+						id="upload-preview"
+						class="image-preview"
+						hidden
+						alt=""
+					>
+					<input
+						id="image-input"
+						type="file"
+						name="image"
+						accept="image/*"
+					>
+					<span class="file-text">
+						Drop profile image here or click to upload
+					</span>
+				</label>
+			</section>
+
+            <section class="form-actions">
+                <button type="submit">Upload Image</button>
+                <a href="/admin/owners/{{ edit_form.default_values.id }}" class="secondary">Back to Owner</a>
+            </section>
+        </form>
+
+    </div>
+
+</div>
+
+{% else %}
+
+<!-- ---------- CREATE (no tabs) ---------- -->
+
+<form method="POST" action="/admin/owners/new" class="create-form">
+
+    <section>
+        <label for="name">Company / Developer Name *</label>
+        <input
+            pattern=".{3,}"
+            required
+            title="Name should be at least 3 characters"
+            type="text"
+            id="name"
+            name="name"
+            placeholder="e.g. Prestige Group"
+        >
+    </section>
+
+    <div class="form-row-2">
+        <section>
+            <label for="username">Login Username *</label>
+            <input
+                pattern="[a-zA-Z0-9_\-\.]{3,}"
+                required
+                type="text"
+                id="username"
+                name="username"
+                placeholder="e.g. prestige_admin"
+            >
+        </section>
+
+        <section>
+            <label for="password">Initial Password *</label>
+            <input
+                required
+                minlength="6"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Min. 6 characters"
+            >
+        </section>
+    </div>
+
+    <section>
+        <label for="bio">Bio / About</label>
+        <textarea
+            id="bio"
+            name="bio"
+            rows="3"
+            maxlength="4095"
+            placeholder="Brief background about developer..."
+        ></textarea>
+    </section>
+
+    <div class="form-row-2">
+        <section>
+            <label for="email">Contact Email</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="developer@example.com"
+            >
+        </section>
+
+        <section>
+            <label for="phone">Contact Phone</label>
+            <input
+                type="text"
+                id="phone"
+                name="phone"
+                placeholder="+91 98765 43210"
+            >
+        </section>
+    </div>
+
+    <section>
+        <label for="website">Website URL</label>
+        <input
+            type="url"
+            id="website"
+            name="website"
+            placeholder="https://example.com"
+        >
+    </section>
+
+    <section class="checkbox-row">
+        <label class="checkbox-label">
+            <input
+                type="checkbox"
+                name="active"
+                value="on"
+                checked
+            >
+            <span>Account Active (Allowed to sign in and publish projects)</span>
+        </label>
+    </section>
+
+    <section class="form-actions">
+        <button type="submit">Create Project Owner</button>
+        <a href="/admin/owners" class="secondary">Cancel</a>
+    </section>
+
+</form>
+
+{% endif %}
+
+{% endblock %}
+
+{% block head_tags %}
+<style>
+
+form{
+    max-width:540px;
+}
+
+section{
+    margin-bottom:0.85rem;
+}
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 580px) {
+    .form-row-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+label{
+    display:block;
+    font-size:.85rem;
+    font-weight:600;
+    color:#4a3b32;
+    margin-bottom:0.25rem;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+textarea{
+    width:100%;
+    box-sizing:border-box;
+    padding:.45rem .6rem;
+    border:1px solid var(--border);
+    border-radius:4px;
+    font-size:.9rem;
+    font-family:inherit;
+    background:#fff;
+}
+
+textarea{
+    resize:vertical;
+}
+
+input:focus,
+textarea:focus{
+    outline:none;
+    border-color:var(--accent);
+}
+
+.checkbox-row {
+    margin-top: 1rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+}
+
+/* actions */
+
+.form-actions{
+    margin-top:1.5rem;
+    display:flex;
+    gap:.5rem;
+}
+
+button{
+    background:var(--accent);
+    color:white;
+    border:none;
+    padding:.45rem .9rem;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:.9rem;
+    font-weight:500;
+}
+
+button:hover{
+    background:var(--accent-dark);
+}
+
+a.secondary{
+    text-decoration:none;
+    padding:.45rem .9rem;
+    border:1px solid var(--border);
+    border-radius:4px;
+    font-size:.9rem;
+    color:var(--text);
+    display:inline-flex;
+    align-items:center;
+}
+
+a.secondary:hover{
+    background:#f0e3d6;
+}
+
+/* error */
+
+.form-error{
+    color:#a33;
+    font-size:.85rem;
+    margin-top:.4rem;
+}
+
+.file-drop{
+    position:relative;
+    display:block;
+    border:1.5px dashed var(--border);
+    border-radius:6px;
+    padding:.75rem;
+    text-align:center;
+    background:var(--bg-panel);
+    cursor:pointer;
+}
+
+.file-drop:hover{
+    background:#f0e3d6;
+    border-color:var(--accent);
+}
+
+.file-drop input{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    cursor:pointer;
+}
+
+.file-text{
+    font-size:.85rem;
+    color:#6f5546;
+    pointer-events:none;
+}
+
+/* ---------- tabs ---------- */
+
+.tabs{
+    max-width:540px;
+}
+
+.tab-labels{
+    display:flex;
+    border-bottom:1px solid var(--border);
+    margin-bottom:.75rem;
+}
+
+.tab-labels label{
+    padding:.4rem .8rem;
+    cursor:pointer;
+    font-size:.9rem;
+    border-radius:4px 4px 0 0;
+    margin-bottom:0;
+}
+
+.tab-labels label:hover{
+    background:#f0e3d6;
+}
+
+#tab-details:checked ~ .tabs .tab-labels label[for="tab-details"],
+#tab-image:checked ~ .tabs .tab-labels label[for="tab-image"]{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-bottom:1px solid var(--bg-panel);
+    font-weight:600;
+}
+
+.tab-content{
+    display:none;
+}
+
+#tab-details:checked ~ .tabs .tab-details{
+    display:block;
+}
+
+#tab-image:checked ~ .tabs .tab-image{
+    display:block;
+}
+
+.image-preview{
+    display:block;
+    max-width:100%;
+    max-height:250px;
+    margin-bottom:.75rem;
+    border-radius:6px;
+    border:1px solid var(--border);
+}
+
+.image-preview-section{
+    margin-bottom:1rem;
+}
+
+.danger-btn{
+    background:#a33;
+}
+
+.danger-btn:hover{
+    background:#822;
+}
+
+.muted {
+    font-size: 0.8rem;
+    color: #887264;
+}
+
+</style>
+
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		const input = document.getElementById("image-input");
+		const preview = document.getElementById("upload-preview");
+
+		if (!input || !preview) {
+			return;
+		}
+
+		input.addEventListener("change", () => {
+			const file = input.files?.[0];
+
+			if (!file) {
+				preview.hidden = true;
+				return;
+			}
+
+			preview.src = URL.createObjectURL(file);
+			preview.hidden = false;
+		});
+	});
+</script>
+{% endblock %}

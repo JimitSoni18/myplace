@@ -1,0 +1,67 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Application
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      target: runtime
+    # Share network namespace with s3 so that localhost:3900 inside the app
+    # container reaches Garage directly (no extra hop).
+    network_mode: "service:s3"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - S3_ENDPOINT=http://localhost:3900
+      - S3_BUCKET=${S3_BUCKET:-myplace}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-garage}
+      - ASSET_BASE_URL=${ASSET_BASE_URL}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - PGDATA=/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # Garage (S3-compatible object storage)
+  # ---------------------------------------------------------------------------
+  s3:
+    image: alpine:3.23
+    environment:
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+    ports:
+      - "3900:3900"   # S3 API (backend)
+      - "3903:3903"   # S3 Web (browser assets)
+      - "3902:3902"   # Admin API
+      - "8080:8080"   # App HTTP
+    volumes:
+      - ./garage.toml:/etc/garage.toml
+      - garage_data:/var/lib/garage
+    entrypoint: >
+      sh -c "apk add --no-cache garage &&
+             garage server"
+
+volumes:
+  pg_data:
+  garage_data:

@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      target: development
+    environment:
+      # - CARGO_TARGET_DIR=/tmp/target
+    volumes:
+      - .:/app
+      - cargo_cache:/usr/local/cargo/registry
+      - cargo_target:/app/target
+  db:
+    ports:
+      - 5432:5432
+
+volumes:
+  cargo_cache:
+  cargo_target:

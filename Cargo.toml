@@ -1,0 +1,38 @@
+[package]
+name = "myplace"
+version = "0.1.0"
+edition = "2024"
+default-run = "myplace"
+
+[[bin]]
+name = "myplace"
+path = "src/main.rs"
+
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
+
+[dependencies]
+ammonia = "4"
+argon2 = "0.5.3"
+askama = "0.15.4"
+aws-config = "1.8.13"
+aws-sdk-s3 = "1.122.0"
+axum = { version = "0.8.8", features = ["macros", "multipart"] }
+base64 = "0.22.1"
+blake3 = { version = "1.8.3", features = ["traits-preview"] }
+dotenvy = "0.15.7"
+hmac = "0.12.1"
+image = "0.25.10"
+jsonwebtoken = { version = "10.3.0", features = ["ed25519-dalek"] }
+moka = { version = "0.12", features = ["future"] }
+pulldown-cmark = "0.12"
+serde = { version = "1.0.228", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["uuid", "postgres", "runtime-tokio", "time"] }
+time = { version = "0.3.47", features = ["macros", "formatting", "local-offset", "serde"] }
+tokio = { version = "1.49.0", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["fs"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+uuid = { version = "1.21.0", features = ["v4", "serde", "v7"] }
+webp = "0.3.1"

@@ -1,0 +1,310 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Media Gallery - {{ project_name }}{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/admin/projects/{{ project_id }}" class="back-link">&larr; Back to {{ project_name }}</a>
+		<h2>Media Gallery</h2>
+		<p class="subtitle">Upload high-resolution photography and floor plans (WebP auto-optimized)</p>
+	</div>
+</header>
+
+<div class="media-management-container">
+	<!-- Upload Card -->
+	<div class="card upload-card">
+		<h3>Upload New Image</h3>
+		<form
+			method="POST"
+			action="/admin/projects/{{ project_id }}/media"
+			enctype="multipart/form-data"
+			class="upload-form"
+		>
+			<label class="file-drop">
+				<img id="upload-preview" class="preview-img" hidden alt="">
+				<input
+					id="media-input"
+					type="file"
+					name="image"
+					accept="image/*"
+					required
+				>
+				<span class="file-text">
+					📸 Drag and drop image here, or click to browse
+				</span>
+			</label>
+
+			<div class="upload-action">
+				<button type="submit" class="primary-btn">Upload Image</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Gallery Grid Card -->
+	<div class="card">
+		<div class="card-header-flex">
+			<h3>Project Images ({{ media.len() }})</h3>
+			<span class="hint-text">Images are displayed in public listings according to sequence</span>
+		</div>
+
+		{% if media.is_empty() %}
+			<div class="empty-state">
+				<p>No gallery images uploaded for this project yet.</p>
+			</div>
+		{% else %}
+			<div class="gallery-grid">
+				{% for m in media %}
+					<div class="gallery-card" id="media-{{ m.id }}">
+						<div class="img-wrapper">
+							<img src="{{ m.thumbnail_url }}" alt="Project image" loading="lazy">
+							<span class="seq-badge">#{{ m.sequence }}</span>
+						</div>
+						<div class="card-footer">
+							<a href="{{ m.url }}" target="_blank" rel="noopener" class="view-link">View Full</a>
+							<button onclick="deleteMedia('{{ m.id }}')" class="delete-btn">Delete</button>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+	</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	const input = document.getElementById("media-input");
+	const preview = document.getElementById("upload-preview");
+	if (!input || !preview) return;
+
+	input.addEventListener("change", () => {
+		const file = input.files?.[0];
+		if (!file) {
+			preview.hidden = true;
+			return;
+		}
+		preview.src = URL.createObjectURL(file);
+		preview.hidden = false;
+	});
+});
+
+async function deleteMedia(mediaId) {
+	if (!confirm("Delete this image from gallery?")) return;
+
+	try {
+		const res = await fetch(`/admin/projects/{{ project_id }}/media/${mediaId}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+
+		if (!res.ok) {
+			alert("Failed to delete image");
+			return;
+		}
+
+		document.getElementById(`media-${mediaId}`)?.remove();
+	} catch (e) {
+		alert("Network error");
+	}
+}
+</script>
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.subtitle {
+	color: #7b6252;
+	font-size: 0.88rem;
+	margin: 0.25rem 0 0;
+}
+
+.media-management-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.card-header-flex {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hint-text {
+	font-size: 0.82rem;
+	color: #7b6252;
+}
+
+.file-drop {
+	position: relative;
+	display: block;
+	border: 2px dashed var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.5rem;
+	text-align: center;
+	background: var(--bg-panel, #fffaf5);
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s;
+}
+
+.file-drop:hover {
+	background: #f7eee6;
+	border-color: var(--accent, #9e5b32);
+}
+
+.file-drop input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.file-text {
+	font-size: 0.9rem;
+	color: #6f5546;
+	pointer-events: none;
+}
+
+.preview-img {
+	max-height: 180px;
+	max-width: 100%;
+	border-radius: 6px;
+	display: block;
+	margin: 0 auto 0.75rem;
+}
+
+.upload-action {
+	margin-top: 1rem;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	border: none;
+	padding: 0.45rem 1rem;
+	border-radius: 5px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.gallery-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.gallery-card {
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
+	display: flex;
+	flex-direction: column;
+}
+
+.img-wrapper {
+	position: relative;
+	width: 100%;
+	height: 140px;
+	background: #fdfaf7;
+}
+
+.img-wrapper img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.seq-badge {
+	position: absolute;
+	top: 6px;
+	left: 6px;
+	background: rgba(0, 0, 0, 0.65);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 0.15rem 0.45rem;
+	border-radius: 4px;
+}
+
+.card-footer {
+	padding: 0.5rem 0.65rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-top: 1px solid #faf3ed;
+	background: #fff;
+}
+
+.view-link {
+	font-size: 0.8rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+}
+
+.view-link:hover {
+	text-decoration: underline;
+}
+
+.delete-btn {
+	background: none;
+	border: none;
+	color: #a33;
+	font-size: 0.8rem;
+	cursor: pointer;
+	padding: 0;
+	font-family: inherit;
+}
+
+.delete-btn:hover {
+	text-decoration: underline;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2.5rem 1rem;
+	color: #7b6252;
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Developer Partner Login</title>
+
+		<style>
+		:root {
+			--bg-main: #f7efe6;
+			--bg-card: #fffaf5;
+			--accent: #6b3e26;
+			--accent-dark: #4b2a1a;
+			--border: #e6d5c3;
+			--text: #3e2b21;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+			font-family: "Segoe UI", Roboto, sans-serif;
+		}
+
+		body {
+			height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: linear-gradient(135deg, #f7efe6, #eeded0);
+		}
+
+		.container {
+			width: 100%;
+			max-width: 440px;
+			padding: 40px;
+			background: var(--bg-card);
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+			border: 1px solid var(--border);
+		}
+
+		.logo {
+			text-align: center;
+			margin-bottom: 28px;
+		}
+
+		.logo h1 {
+			font-size: 24px;
+			color: var(--accent-dark);
+			letter-spacing: 0.5px;
+		}
+
+		.logo p {
+			font-size: 14px;
+			color: #7a5a49;
+			margin-top: 4px;
+		}
+
+		.form-group {
+			margin-bottom: 18px;
+		}
+
+		.form-error {
+			color: #a33;
+			font-size: 0.85rem;
+			margin-top: 5px;
+		}
+
+		label {
+			display: block;
+			font-size: 14px;
+			font-weight: 600;
+			margin-bottom: 6px;
+			color: var(--text);
+		}
+
+		input {
+			width: 100%;
+			padding: 12px 14px;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			font-size: 14px;
+			background: #fff;
+			transition: all 0.2s;
+		}
+
+		input:focus {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(107, 62, 38, 0.08);
+		}
+
+		button {
+			width: 100%;
+			padding: 13px;
+			border: none;
+			border-radius: 6px;
+			background: var(--accent);
+			color: white;
+			font-size: 15px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: background 0.2s;
+			margin-top: 0.5rem;
+		}
+
+		button:hover {
+			background: var(--accent-dark);
+		}
+
+		.footer {
+			text-align: center;
+			margin-top: 24px;
+			font-size: 12px;
+			color: #8c6d5a;
+		}
+
+		.footer a {
+			color: var(--accent);
+			text-decoration: none;
+		}
+
+		.footer a:hover {
+			text-decoration: underline;
+		}
+		</style>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="logo">
+				<h1>Project Owner Portal</h1>
+				<p>Developer Management & Leads Dashboard</p>
+			</div>
+
+			<form method="POST" action="/auth/owner-login">
+				<div class="form-group">
+					<label for="username">Username</label>
+					<input
+						type="text"
+						id="username"
+						name="username"
+						required
+						autocomplete="username"
+					>
+				</div>
+
+				<div class="form-group">
+					<label for="password">Password</label>
+					<input
+						type="password"
+						id="password"
+						name="password"
+						required
+						autocomplete="current-password"
+					>
+					{% if incorrect_password_error %}
+						<p class="form-error">Invalid username or password.</p>
+					{% endif %}
+					{% if inactive_account_error %}
+						<p class="form-error">Your developer account is currently inactive. Please contact the platform administrator.</p>
+					{% endif %}
+				</div>
+
+				<button type="submit">Sign In to Dashboard</button>
+			</form>
+
+			<div class="footer">
+				Developer Partner Portal &bull; <a href="/auth/admin-login">Admin Access</a>
+			</div>
+		</div>
+	</body>
+</html>

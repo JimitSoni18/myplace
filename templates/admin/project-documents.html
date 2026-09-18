@@ -1,0 +1,292 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Documents - {{ project_name }}{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/admin/projects/{{ project_id }}" class="back-link">&larr; Back to {{ project_name }}</a>
+		<h2>Project Documents</h2>
+		<p class="subtitle">Upload official compliance paperwork (RERA, BU approval) and sales brochures</p>
+	</div>
+</header>
+
+<div class="docs-management-container">
+	<!-- Upload Document Card -->
+	<div class="card upload-card">
+		<h3>Upload Document</h3>
+		<form
+			method="POST"
+			action="/admin/projects/{{ project_id }}/documents"
+			enctype="multipart/form-data"
+			class="upload-form"
+		>
+			<div class="form-grid-3">
+				<section>
+					<label for="display_name">Document Title *</label>
+					<input
+						type="text"
+						id="display_name"
+						name="display_name"
+						required
+						placeholder="e.g. RERA Certificate Phase 1"
+					>
+				</section>
+
+				<section>
+					<label for="doc_type">Document Type *</label>
+					<select id="doc_type" name="doc_type" required>
+						<option value="rera">RERA Compliance</option>
+						<option value="bu_approval">BU Permission / Approval</option>
+						<option value="brochure">Project Brochure</option>
+						<option value="other">Other Document</option>
+					</select>
+				</section>
+
+				<section>
+					<label for="file">Select File (PDF, DOC) *</label>
+					<input
+						type="file"
+						id="file"
+						name="file"
+						required
+						accept=".pdf,.doc,.docx,application/pdf"
+					>
+				</section>
+			</div>
+
+			<div class="upload-action">
+				<button type="submit" class="primary-btn">Upload Document</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Documents List Card -->
+	<div class="card">
+		<h3>Existing Documents ({{ documents.len() }})</h3>
+
+		{% if documents.is_empty() %}
+			<div class="empty-state">
+				<p>No documents uploaded for this project yet.</p>
+			</div>
+		{% else %}
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th align="left">Document Title</th>
+						<th align="left">Type</th>
+						<th align="right">File Size</th>
+						<th align="left">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for d in documents %}
+						<tr id="doc-{{ d.id }}">
+							<td>
+								<a href="{{ d.url }}" target="_blank" rel="noopener" class="doc-title-link">
+									📄 <strong>{{ d.display_name }}</strong>
+								</a>
+							</td>
+							<td><span class="type-badge">{{ d.doc_type | upper }}</span></td>
+							<td align="right">{{ d.file_size_formatted }}</td>
+							<td class="actions">
+								<a href="{{ d.url }}" target="_blank" rel="noopener" class="action-link">Download</a>
+								<button onclick="deleteDoc('{{ d.id }}')" class="action-link danger">Delete</button>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+	</div>
+</div>
+
+<script>
+async function deleteDoc(docId) {
+	if (!confirm("Delete this document?")) return;
+
+	try {
+		const res = await fetch(`/admin/projects/{{ project_id }}/documents/${docId}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+
+		if (!res.ok) {
+			alert("Failed to delete document");
+			return;
+		}
+
+		document.getElementById(`doc-${docId}`)?.remove();
+	} catch (e) {
+		alert("Network error");
+	}
+}
+</script>
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.subtitle {
+	color: #7b6252;
+	font-size: 0.88rem;
+	margin: 0.25rem 0 0;
+}
+
+.docs-management-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.form-grid-3 {
+	display: grid;
+	grid-template-columns: 1fr 180px 1fr;
+	gap: 1rem;
+	align-items: end;
+}
+
+@media (max-width: 760px) {
+	.form-grid-3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+label {
+	display: block;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #4a3b32;
+	margin-bottom: 0.25rem;
+}
+
+input[type="text"], select, input[type="file"] {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 4px;
+	font-size: 0.88rem;
+	background: #fff;
+}
+
+.upload-action {
+	margin-top: 1rem;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	border: none;
+	padding: 0.45rem 1rem;
+	border-radius: 5px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 1px solid var(--border, #f0e6dd);
+	font-size: 0.88rem;
+}
+
+.data-table th {
+	font-weight: 600;
+	color: #6f5546;
+	background: #fdfaf7;
+}
+
+.doc-title-link {
+	color: var(--accent-dark, #332014);
+	text-decoration: none;
+}
+
+.doc-title-link:hover {
+	text-decoration: underline;
+}
+
+.type-badge {
+	display: inline-block;
+	background: #f5ebe1;
+	color: #593e2d;
+	padding: 0.2rem 0.45rem;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.actions {
+	white-space: nowrap;
+}
+
+.action-link {
+	margin-right: 8px;
+	color: var(--accent, #9e5b32);
+	background: none;
+	border: none;
+	cursor: pointer;
+	text-decoration: none;
+	font-size: 0.88rem;
+	padding: 0;
+	font-family: inherit;
+}
+
+.action-link:hover {
+	text-decoration: underline;
+}
+
+.action-link.danger {
+	color: #a33;
+}
+
+.action-link.danger:hover {
+	color: #822;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2.5rem 1rem;
+	color: #7b6252;
+}
+</style>
+
+{% endblock %}

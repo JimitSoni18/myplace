@@ -1,0 +1,510 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if edit_property.is_some() %}Edit Property{% else %}Add {{ category }} Unit{% endif %} - {{ project_name }}{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+	<div>
+		<a href="/admin/projects/{{ project_id }}/properties/{{ category | lower }}" class="back-link">
+			&larr; Back to {{ category }} Properties
+		</a>
+		<h2>{% if edit_property.is_some() %}Edit Property{% else %}Add New {{ category }} Unit{% endif %}</h2>
+		<p class="subtitle">Project: <strong>{{ project_name }}</strong></p>
+	</div>
+</header>
+
+<div class="form-container">
+	<form
+		method="POST"
+		action="{% if let Some(edit) = edit_property %}/admin/projects/{{ project_id }}/properties/{{ edit.id }}/edit{% else %}/admin/projects/{{ project_id }}/properties/{{ category | lower }}/new{% endif %}"
+		class="property-form"
+	>
+		<!-- Classification & Location Card -->
+		<div class="card">
+			<h3>Basic Unit Information</h3>
+
+			<div class="form-grid-2">
+				<section>
+					<label for="property_type_id">Specific Property Type *</label>
+					<select id="property_type_id" name="property_type_id" required>
+						{% for pt in property_types %}
+							<option
+								value="{{ pt.id }}"
+								{% if let Some(edit) = edit_property %}{% if edit.property_type_id == pt.id %}selected{% endif %}{% endif %}
+							>
+								{{ pt.name }}
+							</option>
+						{% endfor %}
+					</select>
+				</section>
+
+				<section>
+					<label for="unit_number">Unit / Door / Plot Number</label>
+					<input
+						type="text"
+						id="unit_number"
+						name="unit_number"
+						placeholder="e.g. 402, Villa-7, Plot 14"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(u) = edit.unit_number %}{{ u }}{% endif %}{% endif %}"
+					>
+				</section>
+			</div>
+
+			<div class="form-grid-3">
+				<section>
+					<label for="building">Building / Wing / Phase</label>
+					<input
+						type="text"
+						id="building"
+						name="building"
+						placeholder="e.g. Tower B, Phase 1"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(b) = edit.building %}{{ b }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="floor_number">Floor Number</label>
+					<input
+						type="number"
+						id="floor_number"
+						name="floor_number"
+						placeholder="e.g. 4"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(f) = edit.floor_number %}{{ f }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="total_floors">Total Building Floors</label>
+					<input
+						type="number"
+						id="total_floors"
+						name="total_floors"
+						placeholder="e.g. 14"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(tf) = edit.total_floors %}{{ tf }}{% endif %}{% endif %}"
+					>
+				</section>
+			</div>
+		</div>
+
+		<!-- Area & Dimensions Card -->
+		<div class="card">
+			<h3>Area & Dimensions</h3>
+			<div class="form-grid-2">
+				<section>
+					<label for="built_up_area">Built-Up Area (Sq Ft) *</label>
+					<input
+						type="number"
+						step="0.01"
+						id="built_up_area"
+						name="built_up_area"
+						placeholder="e.g. 1450.00"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(a) = edit.built_up_area %}{{ a }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="usable_area">Usable / Carpet Area (Sq Ft)</label>
+					<input
+						type="number"
+						step="0.01"
+						id="usable_area"
+						name="usable_area"
+						placeholder="e.g. 1180.50"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(ua) = edit.usable_area %}{{ ua }}{% endif %}{% endif %}"
+					>
+				</section>
+			</div>
+		</div>
+
+		<!-- Subtype Details -->
+		{% if category == "Residential" %}
+			<div class="card">
+				<h3>Residential Configuration</h3>
+				<div class="form-grid-3">
+					<section>
+						<label for="bedroom_count">Bedrooms (BHK)</label>
+						<input
+							type="number"
+							step="0.5"
+							id="bedroom_count"
+							name="bedroom_count"
+							placeholder="e.g. 2, 2.5, 3"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(b) = edit.bedroom_count %}{{ b }}{% endif %}{% endif %}"
+						>
+					</section>
+
+					<section>
+						<label for="bathroom_count">Bathrooms</label>
+						<input
+							type="number"
+							id="bathroom_count"
+							name="bathroom_count"
+							placeholder="e.g. 2"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(b) = edit.bathroom_count %}{{ b }}{% endif %}{% endif %}"
+						>
+					</section>
+
+					<section>
+						<label for="balcony_count">Balconies</label>
+						<input
+							type="number"
+							id="balcony_count"
+							name="balcony_count"
+							placeholder="e.g. 1"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(b) = edit.balcony_count %}{{ b }}{% endif %}{% endif %}"
+						>
+					</section>
+				</div>
+
+				<div class="form-grid-2" style="margin-top: 0.75rem;">
+					<section>
+						<label for="parking">Parking Specification</label>
+						<input
+							type="text"
+							id="parking"
+							name="parking"
+							placeholder="e.g. 2 Covered Stilt bays"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(p) = edit.parking %}{{ p }}{% endif %}{% endif %}"
+						>
+					</section>
+
+					<section class="checkbox-container">
+						<label class="checkbox-label">
+							<input
+								type="checkbox"
+								name="is_duplex"
+								value="on"
+								{% if let Some(edit) = edit_property %}{% if edit.is_duplex %}checked{% endif %}{% endif %}
+							>
+							<span>Is Duplex / Multi-level layout</span>
+						</label>
+					</section>
+				</div>
+			</div>
+		{% endif %}
+
+		{% if category == "Commercial" %}
+			<div class="card">
+				<h3>Commercial Specifications</h3>
+				<section>
+					<label for="parking">Dedicated Parking</label>
+					<input
+						type="text"
+						id="parking"
+						name="parking"
+						placeholder="e.g. 4 Basement Reserved bays, Visitor valet"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(p) = edit.parking %}{{ p }}{% endif %}{% endif %}"
+					>
+				</section>
+			</div>
+		{% endif %}
+
+		{% if category == "Land" %}
+			<div class="card">
+				<h3>Land & Zoning Specifications</h3>
+				<div class="form-grid-2">
+					<section>
+						<label for="parcel_number">Survey / Parcel / Plot Number</label>
+						<input
+							type="text"
+							id="parcel_number"
+							name="parcel_number"
+							placeholder="e.g. Survey No. 142/A"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(pn) = edit.parcel_number %}{{ pn }}{% endif %}{% endif %}"
+						>
+					</section>
+
+					<section>
+						<label for="zoning">Zoning Category</label>
+						<input
+							type="text"
+							id="zoning"
+							name="zoning"
+							placeholder="e.g. R1 Residential, Commercial, Industrial"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(z) = edit.zoning %}{{ z }}{% endif %}{% endif %}"
+						>
+					</section>
+				</div>
+
+				<div class="form-grid-2" style="margin-top: 0.75rem;">
+					<section>
+						<label for="approval_status">Approval / Sanction Authority</label>
+						<input
+							type="text"
+							id="approval_status"
+							name="approval_status"
+							placeholder="e.g. NA Cleared, DTCP Approved, RERA"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(a) = edit.approval_status %}{{ a }}{% endif %}{% endif %}"
+						>
+					</section>
+
+					<section>
+						<label for="development_status">Development Status</label>
+						<input
+							type="text"
+							id="development_status"
+							name="development_status"
+							placeholder="e.g. Gated Layout with Water & Electricity"
+							value="{% if let Some(edit) = edit_property %}{% if let Some(d) = edit.development_status %}{{ d }}{% endif %}{% endif %}"
+						>
+					</section>
+				</div>
+			</div>
+		{% endif %}
+
+		<!-- Pricing & Listing Card -->
+		<div class="card">
+			<h3>Listing & Financial Terms</h3>
+			<div class="form-grid-3">
+				<section>
+					<label for="listing_type">Listing Type *</label>
+					<select id="listing_type" name="listing_type" required>
+						<option value="sale" {% if let Some(edit) = edit_property %}{% if edit.listing_type == "sale" %}selected{% endif %}{% endif %}>For Sale</option>
+						<option value="rent" {% if let Some(edit) = edit_property %}{% if edit.listing_type == "rent" %}selected{% endif %}{% endif %}>For Rent</option>
+						<option value="lease" {% if let Some(edit) = edit_property %}{% if edit.listing_type == "lease" %}selected{% endif %}{% endif %}>Long-term Lease</option>
+					</select>
+				</section>
+
+				<section>
+					<label for="price">Price (INR) *</label>
+					<input
+						type="number"
+						step="0.01"
+						id="price"
+						name="price"
+						required
+						placeholder="e.g. 7500000"
+						value="{% if let Some(edit) = edit_property %}{% if let Some(pr) = edit.price %}{{ pr }}{% endif %}{% endif %}"
+					>
+				</section>
+
+				<section>
+					<label for="status">Listing Status *</label>
+					<select id="status" name="status" required>
+						<option value="active" {% if let Some(edit) = edit_property %}{% if edit.status == "active" %}selected{% endif %}{% endif %}>Active</option>
+						<option value="sold" {% if let Some(edit) = edit_property %}{% if edit.status == "sold" %}selected{% endif %}{% endif %}>Sold</option>
+						<option value="closed" {% if let Some(edit) = edit_property %}{% if edit.status == "closed" %}selected{% endif %}{% endif %}>Closed</option>
+						<option value="withdrawn" {% if let Some(edit) = edit_property %}{% if edit.status == "withdrawn" %}selected{% endif %}{% endif %}>Withdrawn</option>
+					</select>
+				</section>
+			</div>
+		</div>
+
+		<!-- Description Card -->
+		<div class="card">
+			<h3>Unit Description</h3>
+			<section>
+				<textarea
+					id="description"
+					name="description"
+					rows="4"
+					placeholder="Highlights, finishes, facing (e.g. East facing, lake view), furnishing..."
+				>{% if let Some(edit) = edit_property %}{% if let Some(desc) = edit.description %}{{ desc }}{% endif %}{% endif %}</textarea>
+			</section>
+		</div>
+
+		<!-- Amenities Card -->
+		<div class="card">
+			<h3>Unit-Specific Amenities</h3>
+			<div class="amenities-grid">
+				{% for a in amenities %}
+					<label class="amenity-checkbox">
+						<input
+							type="checkbox"
+							name="amenities"
+							value="{{ a.id }}"
+							{% if a.selected %}checked{% endif %}
+						>
+						<span>{{ a.name }}</span>
+					</label>
+				{% endfor %}
+			</div>
+		</div>
+
+		<!-- Submit -->
+		<div class="form-actions">
+			<button type="submit" class="primary-btn">
+				{% if edit_property.is_some() %}Save Unit Changes{% else %}Add Property Unit{% endif %}
+			</button>
+			<a href="/admin/projects/{{ project_id }}/properties/{{ category | lower }}" class="secondary-btn">Cancel</a>
+		</div>
+	</form>
+</div>
+
+<style>
+.page-header {
+	margin-bottom: 1.25rem;
+}
+
+.back-link {
+	font-size: 0.85rem;
+	color: var(--accent, #9e5b32);
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+	text-decoration: underline;
+}
+
+.subtitle {
+	color: #7b6252;
+	font-size: 0.88rem;
+	margin: 0.25rem 0 0;
+}
+
+.form-container {
+	max-width: 820px;
+}
+
+.card {
+	background: #fff;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 8px;
+	padding: 1.25rem;
+	margin-bottom: 1.25rem;
+}
+
+.card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.form-grid-2 {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.form-grid-3 {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 1rem;
+}
+
+@media (max-width: 680px) {
+	.form-grid-2, .form-grid-3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+section {
+	margin-bottom: 0.5rem;
+}
+
+label {
+	display: block;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #4a3b32;
+	margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 4px;
+	font-size: 0.9rem;
+	font-family: inherit;
+	background: #fff;
+}
+
+textarea {
+	resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+	outline: none;
+	border-color: var(--accent, #9e5b32);
+}
+
+.checkbox-container {
+	display: flex;
+	align-items: flex-end;
+	padding-bottom: 0.6rem;
+}
+
+.checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 500;
+	font-size: 0.88rem;
+	cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+	width: 17px;
+	height: 17px;
+	cursor: pointer;
+}
+
+.amenities-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 0.75rem;
+}
+
+.amenity-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.88rem;
+	font-weight: normal;
+	cursor: pointer;
+}
+
+.amenity-checkbox input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.form-actions {
+	display: flex;
+	gap: 0.75rem;
+	margin-top: 1rem;
+	margin-bottom: 2rem;
+}
+
+.primary-btn {
+	background: var(--accent, #9e5b32);
+	color: white;
+	border: none;
+	padding: 0.5rem 1.25rem;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 0.92rem;
+	font-weight: 600;
+}
+
+.primary-btn:hover {
+	background: var(--accent-dark, #7e4420);
+}
+
+.secondary-btn {
+	text-decoration: none;
+	padding: 0.5rem 1.25rem;
+	border: 1px solid var(--border, #e6dacf);
+	border-radius: 5px;
+	font-size: 0.92rem;
+	color: var(--text);
+	display: inline-flex;
+	align-items: center;
+	background: #fff;
+}
+
+.secondary-btn:hover {
+	background: #f0e3d6;
+}
+</style>
+
+{% endblock %}

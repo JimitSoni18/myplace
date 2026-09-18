@@ -1,0 +1,32 @@
+# --- System Folders (Mapped to your named volumes) ---
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+
+# --- Performance & Persistence ---
+# For a single-node dev setup, replication 1 is enough.
+replication_factor = 1
+
+# --- Network Configuration ---
+# 3901 is used for internal communication between Garage nodes
+rpc_bind_addr = "[::]:3901"
+
+# The secret key for RPC (only matters if you have multiple nodes)
+# rpc_secret = "7b7949319e71025531765a045873993a"
+
+# --- S3 API Configuration ---
+[s3_api]
+api_bind_addr = "[::]:3900"
+s3_region = "garage"
+# This allows your app to use http://garage:3900
+root_domain = ".s3.docker.localhost"
+
+# --- Admin API Configuration ---
+[admin]
+api_bind_addr = "0.0.0.0:3902"
+# This must match the AWS_SECRET_ACCESS_KEY in your .env for administrative tasks
+# admin_token = "garage_secret_key"
+
+# --- Optional: S3 Web (for static site hosting) ---
+[s3_web]
+bind_addr = "[::]:3903"
+root_domain = ".web.docker.localhost"

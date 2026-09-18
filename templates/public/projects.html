@@ -1,0 +1,173 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	.page-header {
+		background: #0f172a;
+		color: white;
+		padding: 3.5rem 1.5rem 4rem;
+	}
+
+	.page-header-content {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.page-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		margin-bottom: 0.5rem;
+		letter-spacing: -0.02em;
+	}
+
+	.page-desc {
+		color: #94a3b8;
+		font-size: 1.1rem;
+		max-width: 600px;
+	}
+
+	/* Filter bar */
+	.filter-bar {
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1rem 1.25rem;
+		margin-top: -2rem;
+		margin-bottom: 2.5rem;
+		box-shadow: var(--shadow-md);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.filter-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.filter-pill {
+		padding: 0.45rem 1rem;
+		border-radius: var(--radius-full);
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		background: #f1f5f9;
+		transition: all 0.15s ease;
+	}
+
+	.filter-pill:hover, .filter-pill.active {
+		background: var(--primary);
+		color: white;
+	}
+
+	.filter-search-form {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.filter-search-form input {
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.5rem 0.85rem;
+		font-family: inherit;
+		font-size: 0.9rem;
+		min-width: 220px;
+	}
+
+	.filter-search-form button {
+		background: var(--primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius);
+		padding: 0.5rem 1rem;
+		font-weight: 600;
+		font-size: 0.9rem;
+		cursor: pointer;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+	<div class="page-header-content">
+		<h1 class="page-title">Real-Estate Projects</h1>
+		<p class="page-desc">Browse master-planned residential developments, gated villa communities, and corporate business centers.</p>
+	</div>
+</section>
+
+<div class="container" style="padding-top: 0;">
+	<div class="filter-bar">
+		<div class="filter-pills">
+			<a href="/projects" class="filter-pill {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
+			<a href="/projects?category=Residential" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Residential" %}active{% endif %}{% endif %}">Residential</a>
+			<a href="/projects?category=Commercial" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Commercial" %}active{% endif %}{% endif %}">Commercial</a>
+			<a href="/projects?category=Mixed" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Mixed" %}active{% endif %}{% endif %}">Mixed Use</a>
+		</div>
+
+		<form action="/projects" method="get" class="filter-search-form">
+			{% if let Some(cat) = category_filter %}
+			<input type="hidden" name="category" value="{{ cat }}">
+			{% endif %}
+			<input type="text" name="q" placeholder="Search by name or location..." value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+			<button type="submit">Search</button>
+		</form>
+	</div>
+
+	{% if projects.is_empty() %}
+	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 3rem; text-align: center;">
+		<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No projects found</h3>
+		<p style="color: var(--text-muted); margin-bottom: 1.25rem;">Try adjusting your search query or category filter.</p>
+		<a href="/projects" style="color: var(--primary); font-weight: 600;">Reset Filters &rarr;</a>
+	</div>
+	{% else %}
+	<div class="cards-grid">
+		{% for p in projects %}
+		<article class="prop-card">
+			<div class="card-thumb-wrap">
+				{% if let Some(url) = p.hero_thumb_url %}
+				<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
+				{% else %}
+				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏢</div>
+				{% endif %}
+				<span class="card-badge">{{ p.category }}</span>
+			</div>
+			<div class="card-body">
+				<h2 class="card-title" style="font-size: 1.15rem;">
+					<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+				</h2>
+				<div class="card-subtitle">
+					<span>📍 {{ p.location_name }}</span>
+				</div>
+				<div class="card-specs">
+					<div class="spec-item">
+						<span>Developer:</span>
+						<strong>
+							<a href="/owners/{{ p.owner_slug }}">{{ p.owner_name }}</a>
+						</strong>
+					</div>
+					<div class="spec-item">
+						<span>Available Units:</span>
+						<strong>{{ p.property_count }}</strong>
+					</div>
+				</div>
+				<div class="card-footer">
+					<span style="font-size: 0.85rem; color: var(--text-muted);">
+						{% if let Some(pos) = p.possession_date %}
+						Possession: {{ pos }}
+						{% else %}
+						Ready / Under Construction
+						{% endif %}
+					</span>
+					<a href="/projects/{{ p.slug }}" class="btn-card">Explore Project &rarr;</a>
+				</div>
+			</div>
+		</article>
+		{% endfor %}
+	</div>
+	{% endif %}
+</div>
+{% endblock %}

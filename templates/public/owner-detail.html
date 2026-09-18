@@ -1,0 +1,169 @@
+{% extends "public/base.html" %}
+
+{% block head_extra %}
+<style>
+	.owner-hero {
+		background: #0f172a;
+		color: white;
+		padding: 3.5rem 1.5rem 3rem;
+	}
+
+	.owner-hero-container {
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.owner-profile-flex {
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+	}
+
+	.profile-logo {
+		width: 100px;
+		height: 100px;
+		border-radius: var(--radius-full);
+		object-fit: cover;
+		background: #1e293b;
+		border: 3px solid rgba(255, 255, 255, 0.2);
+		flex-shrink: 0;
+	}
+
+	.owner-meta h1 {
+		font-size: 2.25rem;
+		font-weight: 800;
+		margin-bottom: 0.25rem;
+	}
+
+	.owner-contact-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		color: #cbd5e1;
+		font-size: 0.95rem;
+		margin-top: 0.75rem;
+	}
+
+	.contact-pill {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.contact-pill a {
+		color: #60a5fa;
+		text-decoration: underline;
+	}
+
+	@media (max-width: 640px) {
+		.owner-profile-flex {
+			flex-direction: column;
+			text-align: center;
+		}
+		.owner-contact-row {
+			justify-content: center;
+		}
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="owner-hero">
+	<div class="owner-hero-container">
+		<div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
+			<a href="/" style="color:#94a3b8;">Home</a> &rarr;
+			<span>Developers</span> &rarr;
+			<span>{{ owner.name }}</span>
+		</div>
+		<div class="owner-profile-flex">
+			{% if let Some(img) = owner.image_url %}
+			<img src="{{ img }}" alt="{{ owner.name }}" class="profile-logo">
+			{% else %}
+			<div class="profile-logo" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem;">🏛️</div>
+			{% endif %}
+			<div class="owner-meta">
+				<h1>{{ owner.name }}</h1>
+				<div class="owner-contact-row">
+					{% if let Some(phone) = owner.phone %}
+					<div class="contact-pill">
+						<span>📞</span> <span>{{ phone }}</span>
+					</div>
+					{% endif %}
+					{% if let Some(email) = owner.email %}
+					<div class="contact-pill">
+						<span>✉️</span> <span>{{ email }}</span>
+					</div>
+					{% endif %}
+					{% if let Some(website) = owner.website %}
+					<div class="contact-pill">
+						<span>🌐</span> <a href="{{ website }}" target="_blank" rel="noopener">Visit Website</a>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<div class="container">
+	{% if !bio_html.is_empty() %}
+	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 3rem;">
+		<h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">About Developer</h2>
+		<div style="line-height: 1.7; color: #334155;">
+			{{ bio_html|safe }}
+		</div>
+	</div>
+	{% endif %}
+
+	<section>
+		<div class="section-header">
+			<div class="section-title">
+				<h2>Projects by {{ owner.name }} ({{ projects.len() }})</h2>
+				<p>Browse real estate developments delivered and currently under development by this developer.</p>
+			</div>
+		</div>
+
+		{% if projects.is_empty() %}
+		<p style="color: var(--text-muted);">No active projects currently published for this developer.</p>
+		{% else %}
+		<div class="cards-grid">
+			{% for p in projects %}
+			<article class="prop-card">
+				<div class="card-thumb-wrap">
+					{% if let Some(url) = p.hero_thumb_url %}
+					<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
+					{% else %}
+					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏢</div>
+					{% endif %}
+					<span class="card-badge">{{ p.category }}</span>
+				</div>
+				<div class="card-body">
+					<h3 class="card-title">
+						<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+					</h3>
+					<div class="card-subtitle">
+						<span>📍 {{ p.location_name }}</span>
+					</div>
+					<div class="card-specs">
+						<div class="spec-item">
+							<span>Units:</span>
+							<strong>{{ p.property_count }}</strong>
+						</div>
+						{% if let Some(pos) = p.possession_date %}
+						<div class="spec-item">
+							<span>Possession:</span>
+							<strong>{{ pos }}</strong>
+						</div>
+						{% endif %}
+					</div>
+					<div class="card-footer">
+						<a href="/projects/{{ p.slug }}" class="btn-card" style="width:100%; text-align:center;">View Project Details &rarr;</a>
+					</div>
+				</div>
+			</article>
+			{% endfor %}
+		</div>
+		{% endif %}
+	</section>
+</div>
+{% endblock %}

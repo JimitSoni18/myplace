@@ -1,0 +1,146 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Location{% endblock %}
+
+{% block content %}
+
+<header>
+	<h2>{% if edit_values.is_some() %}Edit{% else %}New{% endif %} Location</h2>
+</header>
+
+<form
+	method="POST"
+	action="/admin/locations/{% if let Some(edit_form) = edit_values %}{{ edit_form.default_values.id }}{% else %}new{% endif %}"
+	{% if edit_values.is_some() %}
+	onsubmit="submitForm(event, this)"
+	{% endif %}
+>
+
+	<section class="form-grid">
+
+		<div class="field full-width">
+			<label for="formatted_address">Full Address / Display Name <span class="required">*</span></label>
+			<input
+				type="text"
+				id="formatted_address"
+				name="formatted_address"
+				placeholder="e.g. Baner, Pune, Maharashtra 411045"
+				{% if let Some(edit_form) = edit_values %}
+				value="{{ edit_form.default_values.formatted_address }}"
+				{% endif %}
+				required
+			>
+		</div>
+
+		<div class="field">
+			<label for="city">City</label>
+			<input
+				type="text"
+				id="city"
+				name="city"
+				placeholder="e.g. Pune"
+				{% if let Some(edit_form) = edit_values %}
+				{% if let Some(city) = edit_form.default_values.city %}
+				value="{{ city }}"
+				{% endif %}
+				{% endif %}
+			>
+		</div>
+
+		<div class="field">
+			<label for="state_or_province">State / Province</label>
+			<input
+				type="text"
+				id="state_or_province"
+				name="state_or_province"
+				placeholder="e.g. Maharashtra"
+				{% if let Some(edit_form) = edit_values %}
+				{% if let Some(state) = edit_form.default_values.state_or_province %}
+				value="{{ state }}"
+				{% endif %}
+				{% endif %}
+			>
+		</div>
+
+		<div class="field">
+			<label for="area">Area / Neighbourhood</label>
+			<input
+				type="text"
+				id="area"
+				name="area"
+				placeholder="e.g. Baner"
+				{% if let Some(edit_form) = edit_values %}
+				{% if let Some(area) = edit_form.default_values.area %}
+				value="{{ area }}"
+				{% endif %}
+				{% endif %}
+			>
+		</div>
+
+	</section>
+
+	{% if let Some(edit_form) = edit_values && let Some(error) = edit_form.error %}
+	<p class="form-error">{{ error }}</p>
+	{% endif %}
+
+	<section class="form-actions">
+		<button type="submit">Save</button>
+		<a href="/admin/locations" class="secondary">Cancel</a>
+	</section>
+
+</form>
+
+<style>
+form { max-width: 680px; }
+label { font-size: .85rem; display: block; margin-bottom: .25rem; }
+.required { color: var(--danger, #a33); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem 1rem; }
+.field.full-width { grid-column: 1 / -1; }
+input {
+	width: 100%;
+	padding: .3rem .4rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	font-size: .9rem;
+	box-sizing: border-box;
+}
+input:focus { outline: none; border-color: var(--accent); }
+.form-actions { margin-top: .75rem; display: flex; gap: .5rem; }
+button {
+	background: var(--accent);
+	color: white;
+	border: none;
+	padding: .35rem .7rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: .9rem;
+}
+button:hover { background: var(--accent-dark); }
+a.secondary {
+	text-decoration: none;
+	padding: .35rem .7rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	font-size: .9rem;
+	color: var(--text);
+}
+a.secondary:hover { background: #f0e3d6; }
+.form-error { color: #a33; font-size: .85rem; margin-top: .4rem; }
+</style>
+
+{% if let Some(edit_form) = edit_values %}
+<script>
+	async function submitForm(e, form) {
+		e.preventDefault();
+		const res = await fetch("/admin/locations/{{ edit_form.default_values.id }}", {
+			method: "PUT",
+			body: new URLSearchParams(new FormData(form)),
+		});
+		if (res.ok) {
+			window.location.href = "/admin/locations";
+		}
+	}
+</script>
+{% endif %}
+
+{% endblock %}

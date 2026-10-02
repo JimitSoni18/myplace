@@ -19,7 +19,11 @@
 			<button type="submit">Apply</button>
 		</form>
 
+		{% block new_action %}
+		{% if page != AdminPage::Properties %}
 		<a href="/admin/{{ page | lower }}/new" class="btn">+ New {{ page | lower }}</a>
+		{% endif %}
+		{% endblock %}
 	</div>
 </header>
 

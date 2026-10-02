@@ -23,50 +23,37 @@ async fn get_dashboard(
 	let db = &state.model.db;
 
 	// --- Aggregate stats --- (single query each, indexed columns)
-	let total_owners: i64 = sqlx::query_scalar!(
-		"SELECT COUNT(*) FROM project_owners WHERE deleted_at IS NULL"
-	)
-	.fetch_one(db)
-	.await
-	.unwrap_or(Some(0))
-	.unwrap_or(0);
+	let total_owners: i64 = sqlx::query_file_scalar!("queries/dashboard/count_owners.sql")
+		.fetch_one(db)
+		.await
+		.unwrap_or(Some(0))
+		.unwrap_or(0);
 
-	let total_projects: i64 =
-		sqlx::query_scalar!("SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL")
-			.fetch_one(db)
-			.await
-			.unwrap_or(Some(0))
-			.unwrap_or(0);
+	let total_projects: i64 = sqlx::query_file_scalar!("queries/dashboard/count_projects.sql")
+		.fetch_one(db)
+		.await
+		.unwrap_or(Some(0))
+		.unwrap_or(0);
 
-	let total_properties: i64 =
-		sqlx::query_scalar!("SELECT COUNT(*) FROM properties WHERE deleted_at IS NULL")
-			.fetch_one(db)
-			.await
-			.unwrap_or(Some(0))
-			.unwrap_or(0);
+	let total_properties: i64 = sqlx::query_file_scalar!("queries/dashboard/count_properties.sql")
+		.fetch_one(db)
+		.await
+		.unwrap_or(Some(0))
+		.unwrap_or(0);
 
 	// Category breakdown joins property_types to get the category string.
-	let total_residential: i64 = sqlx::query_scalar!(
-		r#"SELECT COUNT(pr.id)
-		   FROM properties pr
-		   JOIN property_types pt ON pt.id = pr.property_type_id
-		   WHERE pr.deleted_at IS NULL AND pt.category = 'RESIDENTIAL'"#
-	)
-	.fetch_one(db)
-	.await
-	.unwrap_or(Some(0))
-	.unwrap_or(0);
+	let total_residential: i64 =
+		sqlx::query_file_scalar!("queries/dashboard/count_residential.sql")
+			.fetch_one(db)
+			.await
+			.unwrap_or(Some(0))
+			.unwrap_or(0);
 
-	let total_commercial: i64 = sqlx::query_scalar!(
-		r#"SELECT COUNT(pr.id)
-		   FROM properties pr
-		   JOIN property_types pt ON pt.id = pr.property_type_id
-		   WHERE pr.deleted_at IS NULL AND pt.category = 'COMMERCIAL'"#
-	)
-	.fetch_one(db)
-	.await
-	.unwrap_or(Some(0))
-	.unwrap_or(0);
+	let total_commercial: i64 = sqlx::query_file_scalar!("queries/dashboard/count_commercial.sql")
+		.fetch_one(db)
+		.await
+		.unwrap_or(Some(0))
+		.unwrap_or(0);
 
 	// --- Recent projects (created in last 30 days) ---
 	struct RecentProjectRow {
@@ -79,32 +66,11 @@ async fn get_dashboard(
 		available_properties: Option<i64>,
 	}
 
-	let recent_raw = sqlx::query_as!(
-		RecentProjectRow,
-		r#"
-		SELECT
-			proj.id,
-			proj.name,
-			po.name   AS owner_name,
-			loc.formatted_address AS location,
-			proj.category,
-			COUNT(DISTINCT pr.id)                                                   AS "total_properties: i64",
-			COUNT(DISTINCT pl.id) FILTER (WHERE pl.status = 'active')               AS "available_properties: i64"
-		FROM projects proj
-		JOIN project_owners po ON po.id = proj.project_owner_id
-		JOIN locations     loc ON loc.id = proj.location_id
-		LEFT JOIN properties pr ON pr.project_id = proj.id AND pr.deleted_at IS NULL
-		LEFT JOIN property_listings pl ON pl.property_id = pr.id
-		WHERE proj.deleted_at IS NULL
-		  AND proj.created_at >= NOW() - INTERVAL '30 days'
-		GROUP BY proj.id, po.name, loc.formatted_address
-		ORDER BY proj.created_at DESC
-		LIMIT 20
-		"#
-	)
-	.fetch_all(db)
-	.await
-	.unwrap_or_default();
+	let recent_raw =
+		sqlx::query_file_as!(RecentProjectRow, "queries/dashboard/recent_projects.sql")
+			.fetch_all(db)
+			.await
+			.unwrap_or_default();
 
 	let recent_projects: Vec<DashboardRecentProject> = recent_raw
 		.into_iter()

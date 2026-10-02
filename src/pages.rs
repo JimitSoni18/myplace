@@ -29,4 +29,3 @@ pub static LOCATION_CREATE_FORM_HTML: LazyLock<&'static str> = LazyLock::new(|| 
 	.unwrap()
 	.leak()
 });
-

@@ -16,7 +16,6 @@ use crate::{
 		ProjectsListTemplate, PropertiesListTemplate, PropertyDetailTemplate, PublicDocumentItem,
 		PublicMediaItem, PublicOwnerCard, PublicOwnerDetail, PublicOwnerSummary, PublicProjectCard,
 		PublicProjectDetail, PublicProjectSummary, PublicPropertyCard, PublicPropertyDetail,
-		SitemapTemplate, SitemapUrl,
 	},
 	utils::markdown::render_markdown,
 };
@@ -31,7 +30,8 @@ pub fn router() -> Router<AppState> {
 		.route("/properties", get(properties_list))
 		.route("/properties/{slug}", get(property_detail))
 		.route("/properties/{id}/enquire", post(property_enquire))
-		.route("/sitemap.xml", get(sitemap_xml))
+		.route("/sitemap.xml", get(sitemap_index_xml))
+		.route("/sitemaps/{shard}", get(sitemap_shard_xml))
 		.route("/robots.txt", get(robots_txt))
 }
 
@@ -83,6 +83,14 @@ fn format_price(
 	}
 }
 
+fn redirect_301(location: &str) -> Response {
+	(
+		StatusCode::MOVED_PERMANENTLY,
+		[(header::LOCATION, location.to_string())],
+	)
+		.into_response()
+}
+
 // ---------------------------------------------------------------------------
 // 1. HOME PAGE: GET /
 // ---------------------------------------------------------------------------
@@ -102,45 +110,19 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 		location: Option<String>,
 		properties_count: i64,
 		possession_date: Option<time::Date>,
+		owner_id: i32,
 		owner_name: String,
 		owner_slug: String,
 		hero_thumb_key: Option<String>,
 	}
 
-	let project_rows = sqlx::query_as!(
-		DbProjectRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(DISTINCT prop.id) as "properties_count!: i64",
-			p.possession_date,
-			po.name as owner_name,
-			po.slug as owner_slug,
-			(
-				SELECT m.thumbnail_key
-				FROM project_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.project_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM projects p
-			JOIN project_owners po ON po.id = p.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address, po.name, po.slug
-		ORDER BY p.id DESC
-		LIMIT 6
-		"#
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "db error fetching featured projects");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	let project_rows = sqlx::query_file_as!(DbProjectRow, "queries/projects/featured_projects.sql")
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "db error fetching featured projects");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	let featured_projects = project_rows
 		.into_iter()
@@ -155,6 +137,7 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 				hero_thumb_url,
 				property_count: r.properties_count,
 				possession_date: format_opt_date(r.possession_date),
+				owner_id: r.owner_id,
 				owner_name: r.owner_name,
 				owner_slug: r.owner_slug,
 			}
@@ -165,64 +148,31 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 	struct DbPropRow {
 		id: i32,
 		slug: String,
+		#[allow(dead_code)]
 		unit_number: Option<String>,
 		category: String,
 		property_type_name: String,
 		built_up_area: Option<f64>,
 		bedroom_count: Option<f64>,
-		bathroom_count: Option<i16>,
+		bathroom_count: Option<f64>,
 		price: Option<f64>,
 		currency_code: Option<String>,
 		listing_type: Option<String>,
 		billing_period: Option<String>,
+		project_id: i32,
 		project_name: String,
 		project_slug: String,
 		location: Option<String>,
 		hero_thumb_key: Option<String>,
 	}
 
-	let prop_rows = sqlx::query_as!(
-		DbPropRow,
-		r#"
-		SELECT
-			p.id, p.slug, p.unit_number,
-			pt.category, pt.name as property_type_name,
-			p.built_up_area::float8 as "built_up_area?",
-			rpd.bedroom_count::float8 as "bedroom_count?",
-			rpd.bathroom_count as "bathroom_count?",
-			pl.price::float8 as "price?",
-			pl.currency_code as "currency_code?",
-			pl.listing_type as "listing_type?",
-			pl.billing_period as "billing_period?",
-			proj.name as project_name,
-			proj.slug as project_slug,
-			loc.formatted_address as "location?",
-			(
-				SELECT m.thumbnail_key
-				FROM property_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.property_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM properties p
-			JOIN property_types pt ON pt.id = p.property_type_id
-			JOIN projects proj ON proj.id = p.project_id AND proj.deleted_at IS NULL
-			JOIN project_owners po ON po.id = proj.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL
-			LEFT JOIN locations loc ON loc.id = proj.location_id
-			LEFT JOIN residential_property_details rpd ON rpd.property_id = p.id
-			LEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'
-		WHERE p.deleted_at IS NULL
-		ORDER BY p.id DESC
-		LIMIT 6
-		"#
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "db error fetching featured properties");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	let prop_rows = sqlx::query_file_as!(DbPropRow, "queries/properties/featured_properties.sql")
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "db error fetching featured properties");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	let featured_properties = prop_rows
 		.into_iter()
@@ -230,7 +180,8 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 			let hero_thumb_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
 			let currency = r.currency_code.unwrap_or_else(|| "INR".to_string());
 			let l_type = r.listing_type.unwrap_or_else(|| "sale".to_string());
-			let price_formatted = format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
+			let price_formatted =
+				format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
 
 			let title = if let Some(bhk) = r.bedroom_count {
 				format!("{bhk} BHK {} in {}", r.property_type_name, r.project_name)
@@ -250,6 +201,7 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 				bedroom_count: r.bedroom_count,
 				bathroom_count: r.bathroom_count,
 				hero_thumb_url,
+				project_id: r.project_id,
 				project_name: r.project_name,
 				project_slug: r.project_slug,
 				location_name: r.location.unwrap_or_else(|| "Prime Location".to_string()),
@@ -266,31 +218,21 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 		project_count: i64,
 	}
 
-	let owner_rows = sqlx::query_as!(
-		DbOwnerRow,
-		r#"
-		SELECT
-			po.id, po.name, po.slug, po.profile_img_thumb_key,
-			COUNT(p.id) as "project_count!: i64"
-		FROM project_owners po
-			LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
-		WHERE po.active = TRUE AND po.deleted_at IS NULL
-		GROUP BY po.id
-		ORDER BY COUNT(p.id) DESC, po.id DESC
-		LIMIT 4
-		"#
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "db error fetching featured owners");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	let owner_rows = sqlx::query_file_as!(DbOwnerRow, "queries/project_owners/featured_owners.sql")
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "db error fetching featured owners");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	let featured_owners = owner_rows
 		.into_iter()
 		.map(|r| {
-			let image_url = r.profile_img_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
+			let image_url = r
+				.profile_img_thumb_key
+				.as_ref()
+				.map(|k| CONFIG.asset_url(k));
 			PublicOwnerCard {
 				id: r.id,
 				name: r.name,
@@ -302,12 +244,21 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 		.collect();
 
 	// Category counts
-	let res_count = sqlx::query!("SELECT COUNT(p.id) as \"c!: i64\" FROM properties p JOIN property_types pt ON pt.id = p.property_type_id WHERE pt.category = 'RESIDENTIAL' AND p.deleted_at IS NULL")
-		.fetch_one(&state.model.db).await.map(|r| r.c).unwrap_or(0);
-	let com_count = sqlx::query!("SELECT COUNT(p.id) as \"c!: i64\" FROM properties p JOIN property_types pt ON pt.id = p.property_type_id WHERE pt.category = 'COMMERCIAL' AND p.deleted_at IS NULL")
-		.fetch_one(&state.model.db).await.map(|r| r.c).unwrap_or(0);
-	let land_count = sqlx::query!("SELECT COUNT(p.id) as \"c!: i64\" FROM properties p JOIN property_types pt ON pt.id = p.property_type_id WHERE pt.category = 'LAND' AND p.deleted_at IS NULL")
-		.fetch_one(&state.model.db).await.map(|r| r.c).unwrap_or(0);
+	let res_count = sqlx::query_file!("queries/properties/count_residential_properties.sql")
+		.fetch_one(&state.model.db)
+		.await
+		.map(|r| r.c)
+		.unwrap_or(0);
+	let com_count = sqlx::query_file!("queries/properties/count_commercial_properties.sql")
+		.fetch_one(&state.model.db)
+		.await
+		.map(|r| r.c)
+		.unwrap_or(0);
+	let land_count = sqlx::query_file!("queries/properties/count_land_properties.sql")
+		.fetch_one(&state.model.db)
+		.await
+		.map(|r| r.c)
+		.unwrap_or(0);
 
 	let categories_stats = vec![
 		CategoryStat {
@@ -330,7 +281,7 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 		},
 	];
 
-	let canonical_url = format!("{}/", CONFIG.site_base_url.trim_end_matches('/'));
+	let canonical_url = format!("{}/", CONFIG.public_site_origin.as_str());
 	let template = HomeTemplate {
 		meta_title: "MyPlace — Premium Residential & Commercial Real Estate Platform",
 		meta_description: "Explore verified real-estate projects, luxurious flats, villas, corporate offices, and investment plots from trusted developers.",
@@ -347,7 +298,10 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
-	state.page_cache.insert(cache_key.to_string(), html.clone()).await;
+	state
+		.page_cache
+		.insert(cache_key.to_string(), html.clone())
+		.await;
 	Ok(Html(html))
 }
 
@@ -381,6 +335,7 @@ async fn projects_list(
 		location: Option<String>,
 		properties_count: i64,
 		possession_date: Option<time::Date>,
+		owner_id: i32,
 		owner_name: String,
 		owner_slug: String,
 		hero_thumb_key: Option<String>,
@@ -388,34 +343,9 @@ async fn projects_list(
 
 	let search_pattern = filter.q.as_ref().map(|q| format!("%{q}%"));
 
-	let rows = sqlx::query_as!(
+	let rows = sqlx::query_file_as!(
 		DbRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(DISTINCT prop.id) as "properties_count!: i64",
-			p.possession_date,
-			po.name as owner_name,
-			po.slug as owner_slug,
-			(
-				SELECT m.thumbnail_key
-				FROM project_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.project_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM projects p
-			JOIN project_owners po ON po.id = p.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.deleted_at IS NULL
-		  AND ($1::text IS NULL OR p.category = $1)
-		  AND ($2::text IS NULL OR p.name ILIKE $2 OR loc.formatted_address ILIKE $2)
-		GROUP BY p.id, loc.formatted_address, po.name, po.slug
-		ORDER BY p.id DESC
-		"#,
+		"queries/projects/search_public_projects.sql",
 		filter.category.as_deref(),
 		search_pattern.as_deref()
 	)
@@ -439,13 +369,14 @@ async fn projects_list(
 				hero_thumb_url,
 				property_count: r.properties_count,
 				possession_date: format_opt_date(r.possession_date),
+				owner_id: r.owner_id,
 				owner_name: r.owner_name,
 				owner_slug: r.owner_slug,
 			}
 		})
 		.collect();
 
-	let canonical_url = format!("{}/projects", CONFIG.site_base_url.trim_end_matches('/'));
+	let canonical_url = format!("{}/projects", CONFIG.public_site_origin.as_str());
 	let template = ProjectsListTemplate {
 		meta_title: "Real Estate Projects & Developments - MyPlace",
 		meta_description: "Explore premier residential and commercial developments from verified real-estate builders.",
@@ -462,7 +393,10 @@ async fn projects_list(
 	})?;
 
 	if is_unfiltered {
-		state.page_cache.insert(cache_key.to_string(), html.clone()).await;
+		state
+			.page_cache
+			.insert(cache_key.to_string(), html.clone())
+			.await;
 	}
 
 	Ok(Html(html))
@@ -478,17 +412,10 @@ struct EnquiryFeedback {
 }
 
 async fn project_detail(
-	Path(slug): Path<String>,
+	Path(param): Path<String>,
 	Query(feedback): Query<EnquiryFeedback>,
 	State(state): State<AppState>,
 ) -> Result<Response, StatusCode> {
-	let cache_key = format!("/projects/{}", slug);
-	if feedback.enquiry.is_none() {
-		if let Some(cached_html) = state.page_cache.get(&cache_key).await {
-			return Ok(Html(cached_html).into_response());
-		}
-	}
-
 	struct DbProj {
 		id: i32,
 		project_owner_id: i32,
@@ -502,47 +429,68 @@ async fn project_detail(
 		possession_date: Option<time::Date>,
 	}
 
-	// 1. Try finding project by slug (case-insensitive)
-	let proj_opt = sqlx::query_as!(
-		DbProj,
-		r#"
-		SELECT
-			p.id, p.project_owner_id, p.name, p.slug, p.description, p.category,
-			loc.formatted_address as "location_name?",
-			p.start_date, p.launch_date, p.possession_date
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-		WHERE LOWER(p.slug) = LOWER($1) AND p.deleted_at IS NULL
-		"#,
-		slug
-	)
-	.fetch_optional(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let parsed_id = if let Some((id_str, _)) = param.split_once('-') {
+		id_str.parse::<i32>().ok()
+	} else {
+		param.parse::<i32>().ok()
+	};
 
-	let proj = match proj_opt {
-		Some(p) => {
-			// Slug canonicalization check: if requested slug doesn't match canonical p.slug exactly:
-			if p.slug != slug {
-				return Ok(Redirect::permanent(&format!("/projects/{}", p.slug)).into_response());
-			}
-			p
-		}
-		None => {
-			// Fallback: If slug is numeric ID or ends with numeric ID, check if project exists
-			if let Ok(id) = slug.parse::<i32>() {
-				let canonical = sqlx::query!("SELECT slug FROM projects WHERE id = $1 AND deleted_at IS NULL", id)
+	let proj = match parsed_id {
+		Some(id) => {
+			let proj_opt =
+				sqlx::query_file_as!(DbProj, "queries/projects/get_public_project_by_id.sql", id)
 					.fetch_optional(&state.model.db)
 					.await
 					.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-				if let Some(can) = canonical {
-					return Ok(Redirect::permanent(&format!("/projects/{}", can.slug)).into_response());
+			match proj_opt {
+				Some(p) => {
+					let canonical_param = format!("{}-{}", p.id, p.slug);
+					if param != canonical_param {
+						return Ok(redirect_301(&format!("/projects/{canonical_param}")));
+					}
+					p
 				}
+				None => {
+					let legacy = sqlx::query_file_as!(
+						DbProj,
+						"queries/projects/get_public_project_by_slug.sql",
+						param
+					)
+					.fetch_optional(&state.model.db)
+					.await
+					.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+					if let Some(p) = legacy {
+						return Ok(redirect_301(&format!("/projects/{}-{}", p.id, p.slug)));
+					}
+					return Err(StatusCode::NOT_FOUND);
+				}
+			}
+		}
+		None => {
+			let legacy = sqlx::query_file_as!(
+				DbProj,
+				"queries/projects/get_public_project_by_slug.sql",
+				param
+			)
+			.fetch_optional(&state.model.db)
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+			if let Some(p) = legacy {
+				return Ok(redirect_301(&format!("/projects/{}-{}", p.id, p.slug)));
 			}
 			return Err(StatusCode::NOT_FOUND);
 		}
 	};
+
+	let canonical_key = format!("/projects/{}-{}", proj.id, proj.slug);
+	if feedback.enquiry.is_none() {
+		if let Some(cached_html) = state.page_cache.get(&canonical_key).await {
+			return Ok(Html(cached_html).into_response());
+		}
+	}
 
 	// 2. Fetch Developer Summary
 	struct DbOwner {
@@ -551,9 +499,9 @@ async fn project_detail(
 		slug: String,
 		profile_img_thumb_key: Option<String>,
 	}
-	let owner_row = sqlx::query_as!(
+	let owner_row = sqlx::query_file_as!(
 		DbOwner,
-		"SELECT id, name, slug, profile_img_thumb_key FROM project_owners WHERE id = $1",
+		"queries/project_owners/get_public_owner_summary.sql",
 		proj.project_owner_id
 	)
 	.fetch_one(&state.model.db)
@@ -564,24 +512,22 @@ async fn project_detail(
 		id: owner_row.id,
 		name: owner_row.name,
 		slug: owner_row.slug,
-		image_url: owner_row.profile_img_thumb_key.as_ref().map(|k| CONFIG.asset_url(k)),
+		image_url: owner_row
+			.profile_img_thumb_key
+			.as_ref()
+			.map(|k| CONFIG.asset_url(k)),
 	};
 
 	// 3. Fetch Media Gallery
 	struct DbMedia {
+		media_type: String,
 		s3_key: String,
 		thumbnail_key: Option<String>,
 		sequence: i16,
 	}
-	let media_rows = sqlx::query_as!(
+	let media_rows = sqlx::query_file_as!(
 		DbMedia,
-		r#"
-		SELECT m.s3_key, m.thumbnail_key, pm.sequence
-		FROM project_media pm
-		JOIN media m ON m.id = pm.media_id
-		WHERE pm.project_id = $1
-		ORDER BY pm.sequence ASC
-		"#,
+		"queries/media/get_public_project_media.sql",
 		proj.id
 	)
 	.fetch_all(&state.model.db)
@@ -602,6 +548,7 @@ async fn project_detail(
 				og_image = Some(url.clone());
 			}
 			PublicMediaItem {
+				media_type: r.media_type,
 				url,
 				thumbnail_url,
 				sequence: r.sequence,
@@ -616,15 +563,9 @@ async fn project_detail(
 		s3_key: String,
 		file_size: Option<i64>,
 	}
-	let doc_rows = sqlx::query_as!(
+	let doc_rows = sqlx::query_file_as!(
 		DbDoc,
-		r#"
-		SELECT pd.display_name, pd.doc_type, m.s3_key, m.file_size
-		FROM project_documents pd
-		JOIN media m ON m.id = pd.media_id
-		WHERE pd.project_id = $1
-		ORDER BY pd.id DESC
-		"#,
+		"queries/media/get_public_project_documents.sql",
 		proj.id
 	)
 	.fetch_all(&state.model.db)
@@ -646,14 +587,8 @@ async fn project_detail(
 		.collect();
 
 	// 5. Fetch Project Amenities
-	let amenity_rows = sqlx::query!(
-		r#"
-		SELECT a.name
-		FROM project_amenities pa
-		JOIN amenities a ON a.id = pa.amenity_id
-		WHERE pa.project_id = $1 AND a.is_active = TRUE
-		ORDER BY a.name ASC
-		"#,
+	let amenity_rows = sqlx::query_file!(
+		"queries/amenities/get_public_project_amenities.sql",
 		proj.id
 	)
 	.fetch_all(&state.model.db)
@@ -670,7 +605,7 @@ async fn project_detail(
 		property_type_name: String,
 		built_up_area: Option<f64>,
 		bedroom_count: Option<f64>,
-		bathroom_count: Option<i16>,
+		bathroom_count: Option<f64>,
 		price: Option<f64>,
 		currency_code: Option<String>,
 		listing_type: Option<String>,
@@ -678,34 +613,9 @@ async fn project_detail(
 		hero_thumb_key: Option<String>,
 	}
 
-	let prop_rows = sqlx::query_as!(
+	let prop_rows = sqlx::query_file_as!(
 		DbPropRow,
-		r#"
-		SELECT
-			p.id, p.slug,
-			pt.category, pt.name as property_type_name,
-			p.built_up_area::float8 as "built_up_area?",
-			rpd.bedroom_count::float8 as "bedroom_count?",
-			rpd.bathroom_count as "bathroom_count?",
-			pl.price::float8 as "price?",
-			pl.currency_code as "currency_code?",
-			pl.listing_type as "listing_type?",
-			pl.billing_period as "billing_period?",
-			(
-				SELECT m.thumbnail_key
-				FROM property_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.property_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM properties p
-			JOIN property_types pt ON pt.id = p.property_type_id
-			LEFT JOIN residential_property_details rpd ON rpd.property_id = p.id
-			LEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'
-		WHERE p.project_id = $1 AND p.deleted_at IS NULL
-		ORDER BY p.id DESC
-		"#,
+		"queries/properties/get_public_project_properties.sql",
 		proj.id
 	)
 	.fetch_all(&state.model.db)
@@ -718,7 +628,8 @@ async fn project_detail(
 			let hero_thumb_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
 			let currency = r.currency_code.unwrap_or_else(|| "INR".to_string());
 			let l_type = r.listing_type.unwrap_or_else(|| "sale".to_string());
-			let price_formatted = format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
+			let price_formatted =
+				format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
 
 			let title = if let Some(bhk) = r.bedroom_count {
 				format!("{bhk} BHK {}", r.property_type_name)
@@ -738,6 +649,7 @@ async fn project_detail(
 				bedroom_count: r.bedroom_count,
 				bathroom_count: r.bathroom_count,
 				hero_thumb_url,
+				project_id: proj.id,
 				project_name: proj.name.clone(),
 				project_slug: proj.slug.clone(),
 				location_name: proj.location_name.clone().unwrap_or_default(),
@@ -756,13 +668,20 @@ async fn project_detail(
 		name: proj.name.clone(),
 		slug: proj.slug.clone(),
 		category: proj.category,
-		location_name: proj.location_name.unwrap_or_else(|| "Prime Location".to_string()),
+		location_name: proj
+			.location_name
+			.unwrap_or_else(|| "Prime Location".to_string()),
 		start_date: format_opt_date(proj.start_date),
 		launch_date: format_opt_date(proj.launch_date),
 		possession_date: format_opt_date(proj.possession_date),
 	};
 
-	let canonical_url = format!("{}/projects/{}", CONFIG.site_base_url.trim_end_matches('/'), proj.slug);
+	let canonical_url = format!(
+		"{}/projects/{}-{}",
+		CONFIG.public_site_origin.as_str(),
+		proj.id,
+		proj.slug
+	);
 	let meta_title = format!("{} — Verified Real Estate Project | MyPlace", proj.name);
 	let meta_description = format!(
 		"Explore {} by {}. View verified floor plans, amenities, available properties, and project approvals.",
@@ -798,7 +717,7 @@ async fn project_detail(
 	})?;
 
 	if feedback.enquiry.is_none() {
-		state.page_cache.insert(cache_key, html.clone()).await;
+		state.page_cache.insert(canonical_key, html.clone()).await;
 	}
 
 	Ok(Html(html).into_response())
@@ -821,7 +740,7 @@ async fn project_enquire(
 	State(state): State<AppState>,
 	Form(form): Form<EnquiryForm>,
 ) -> Result<Redirect, StatusCode> {
-	let p = sqlx::query!("SELECT slug FROM projects WHERE id = $1 AND deleted_at IS NULL", id)
+	let p = sqlx::query_file!("queries/projects/get_project_slug_by_id.sql", id)
 		.fetch_optional(&state.model.db)
 		.await
 		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -830,17 +749,25 @@ async fn project_enquire(
 	let name = form.name.trim();
 	let phone = form.phone.trim();
 	if name.is_empty() || phone.is_empty() {
-		return Ok(Redirect::to(&format!("/projects/{}?enquiry=error", p.slug)));
+		return Ok(Redirect::to(&format!(
+			"/projects/{}-{}?enquiry=error",
+			id, p.slug
+		)));
 	}
 
-	let email = form.email.as_deref().map(str::trim).filter(|e| !e.is_empty());
-	let message = form.message.as_deref().map(str::trim).filter(|m| !m.is_empty());
+	let email = form
+		.email
+		.as_deref()
+		.map(str::trim)
+		.filter(|e| !e.is_empty());
+	let message = form
+		.message
+		.as_deref()
+		.map(str::trim)
+		.filter(|m| !m.is_empty());
 
-	sqlx::query!(
-		r#"
-		INSERT INTO project_enquiries (project_id, name, phone, email, message)
-		VALUES ($1, $2, $3, $4, $5)
-		"#,
+	sqlx::query_file!(
+		"queries/projects/insert_project_enquiry.sql",
 		id,
 		name,
 		phone,
@@ -854,7 +781,10 @@ async fn project_enquire(
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
-	Ok(Redirect::to(&format!("/projects/{}?enquiry=success", p.slug)))
+	Ok(Redirect::to(&format!(
+		"/projects/{}-{}?enquiry=success",
+		id, p.slug
+	)))
 }
 
 // ---------------------------------------------------------------------------
@@ -862,14 +792,9 @@ async fn project_enquire(
 // ---------------------------------------------------------------------------
 
 async fn owner_detail(
-	Path(slug): Path<String>,
+	Path(param): Path<String>,
 	State(state): State<AppState>,
 ) -> Result<Response, StatusCode> {
-	let cache_key = format!("/owners/{}", slug);
-	if let Some(cached_html) = state.page_cache.get(&cache_key).await {
-		return Ok(Html(cached_html).into_response());
-	}
-
 	struct DbOwner {
 		id: i32,
 		name: String,
@@ -881,43 +806,69 @@ async fn owner_detail(
 		bio: Option<String>,
 	}
 
-	let owner_opt = sqlx::query_as!(
-		DbOwner,
-		r#"
-		SELECT id, name, slug, phone, email, website, profile_img_key, bio
-		FROM project_owners
-		WHERE LOWER(slug) = LOWER($1) AND active = TRUE AND deleted_at IS NULL
-		"#,
-		slug
-	)
-	.fetch_optional(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let parsed_id = if let Some((id_str, _)) = param.split_once('-') {
+		id_str.parse::<i32>().ok()
+	} else {
+		param.parse::<i32>().ok()
+	};
 
-	let owner = match owner_opt {
-		Some(o) => {
-			if o.slug != slug {
-				return Ok(Redirect::permanent(&format!("/owners/{}", o.slug)).into_response());
+	let owner = match parsed_id {
+		Some(id) => {
+			let owner_opt = sqlx::query_file_as!(
+				DbOwner,
+				"queries/project_owners/get_public_owner_by_id.sql",
+				id
+			)
+			.fetch_optional(&state.model.db)
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+			match owner_opt {
+				Some(o) => {
+					let canonical_param = format!("{}-{}", o.id, o.slug);
+					if param != canonical_param {
+						return Ok(redirect_301(&format!("/owners/{canonical_param}")));
+					}
+					o
+				}
+				None => {
+					let legacy = sqlx::query_file_as!(
+						DbOwner,
+						"queries/project_owners/get_public_owner_by_slug.sql",
+						param
+					)
+					.fetch_optional(&state.model.db)
+					.await
+					.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+					if let Some(o) = legacy {
+						return Ok(redirect_301(&format!("/owners/{}-{}", o.id, o.slug)));
+					}
+					return Err(StatusCode::NOT_FOUND);
+				}
 			}
-			o
 		}
 		None => {
-			if let Ok(id) = slug.parse::<i32>() {
-				let canonical = sqlx::query!(
-					"SELECT slug FROM project_owners WHERE id = $1 AND active = TRUE AND deleted_at IS NULL",
-					id
-				)
-				.fetch_optional(&state.model.db)
-				.await
-				.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+			let legacy = sqlx::query_file_as!(
+				DbOwner,
+				"queries/project_owners/get_public_owner_by_slug.sql",
+				param
+			)
+			.fetch_optional(&state.model.db)
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-				if let Some(can) = canonical {
-					return Ok(Redirect::permanent(&format!("/owners/{}", can.slug)).into_response());
-				}
+			if let Some(o) = legacy {
+				return Ok(redirect_301(&format!("/owners/{}-{}", o.id, o.slug)));
 			}
 			return Err(StatusCode::NOT_FOUND);
 		}
 	};
+
+	let canonical_key = format!("/owners/{}-{}", owner.id, owner.slug);
+	if let Some(cached_html) = state.page_cache.get(&canonical_key).await {
+		return Ok(Html(cached_html).into_response());
+	}
 
 	// Fetch projects by this developer
 	struct DbProjRow {
@@ -931,29 +882,9 @@ async fn owner_detail(
 		hero_thumb_key: Option<String>,
 	}
 
-	let proj_rows = sqlx::query_as!(
+	let proj_rows = sqlx::query_file_as!(
 		DbProjRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(DISTINCT prop.id) as "properties_count!: i64",
-			p.possession_date,
-			(
-				SELECT m.thumbnail_key
-				FROM project_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.project_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address
-		ORDER BY p.id DESC
-		"#,
+		"queries/projects/get_public_owner_projects.sql",
 		owner.id
 	)
 	.fetch_all(&state.model.db)
@@ -973,6 +904,7 @@ async fn owner_detail(
 				hero_thumb_url,
 				property_count: r.properties_count,
 				possession_date: format_opt_date(r.possession_date),
+				owner_id: owner.id,
 				owner_name: owner.name.clone(),
 				owner_slug: owner.slug.clone(),
 			}
@@ -996,7 +928,12 @@ async fn owner_detail(
 		image_url: image_url.clone(),
 	};
 
-	let canonical_url = format!("{}/owners/{}", CONFIG.site_base_url.trim_end_matches('/'), owner.slug);
+	let canonical_url = format!(
+		"{}/owners/{}-{}",
+		CONFIG.public_site_origin.as_str(),
+		owner.id,
+		owner.slug
+	);
 	let meta_title = format!("{} — Real Estate Developer Portfolio | MyPlace", owner.name);
 	let meta_description = format!(
 		"View portfolio, residential developments, and commercial projects delivered by {} on MyPlace.",
@@ -1018,7 +955,7 @@ async fn owner_detail(
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
-	state.page_cache.insert(cache_key, html.clone()).await;
+	state.page_cache.insert(canonical_key, html.clone()).await;
 	Ok(Html(html).into_response())
 }
 
@@ -1037,7 +974,8 @@ async fn properties_list(
 	Query(filter): Query<PropertiesFilter>,
 	State(state): State<AppState>,
 ) -> Result<Html<String>, StatusCode> {
-	let is_unfiltered = filter.category.is_none() && filter.listing_type.is_none() && filter.q.is_none();
+	let is_unfiltered =
+		filter.category.is_none() && filter.listing_type.is_none() && filter.q.is_none();
 	let cache_key = "/properties";
 	if is_unfiltered {
 		if let Some(cached_html) = state.page_cache.get(cache_key).await {
@@ -1052,11 +990,12 @@ async fn properties_list(
 		property_type_name: String,
 		built_up_area: Option<f64>,
 		bedroom_count: Option<f64>,
-		bathroom_count: Option<i16>,
+		bathroom_count: Option<f64>,
 		price: Option<f64>,
 		currency_code: Option<String>,
 		listing_type: Option<String>,
 		billing_period: Option<String>,
+		project_id: i32,
 		project_name: String,
 		project_slug: String,
 		location: Option<String>,
@@ -1065,43 +1004,9 @@ async fn properties_list(
 
 	let search_pattern = filter.q.as_ref().map(|q| format!("%{q}%"));
 
-	let rows = sqlx::query_as!(
+	let rows = sqlx::query_file_as!(
 		DbPropRow,
-		r#"
-		SELECT
-			p.id, p.slug,
-			pt.category, pt.name as property_type_name,
-			p.built_up_area::float8 as "built_up_area?",
-			rpd.bedroom_count::float8 as "bedroom_count?",
-			rpd.bathroom_count as "bathroom_count?",
-			pl.price::float8 as "price?",
-			pl.currency_code as "currency_code?",
-			pl.listing_type as "listing_type?",
-			pl.billing_period as "billing_period?",
-			proj.name as project_name,
-			proj.slug as project_slug,
-			loc.formatted_address as "location?",
-			(
-				SELECT m.thumbnail_key
-				FROM property_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.property_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM properties p
-			JOIN property_types pt ON pt.id = p.property_type_id
-			JOIN projects proj ON proj.id = p.project_id AND proj.deleted_at IS NULL
-			JOIN project_owners po ON po.id = proj.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL
-			LEFT JOIN locations loc ON loc.id = proj.location_id
-			LEFT JOIN residential_property_details rpd ON rpd.property_id = p.id
-			LEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'
-		WHERE p.deleted_at IS NULL
-		  AND ($1::text IS NULL OR pt.category = $1)
-		  AND ($2::text IS NULL OR pl.listing_type = $2)
-		  AND ($3::text IS NULL OR proj.name ILIKE $3 OR loc.formatted_address ILIKE $3 OR p.unit_number ILIKE $3)
-		ORDER BY p.id DESC
-		"#,
+		"queries/properties/search_public_properties.sql",
 		filter.category.as_deref(),
 		filter.listing_type.as_deref(),
 		search_pattern.as_deref()
@@ -1119,7 +1024,8 @@ async fn properties_list(
 			let hero_thumb_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
 			let currency = r.currency_code.unwrap_or_else(|| "INR".to_string());
 			let l_type = r.listing_type.unwrap_or_else(|| "sale".to_string());
-			let price_formatted = format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
+			let price_formatted =
+				format_price(r.price, &currency, &l_type, r.billing_period.as_deref());
 
 			let title = if let Some(bhk) = r.bedroom_count {
 				format!("{bhk} BHK {} in {}", r.property_type_name, r.project_name)
@@ -1139,6 +1045,7 @@ async fn properties_list(
 				bedroom_count: r.bedroom_count,
 				bathroom_count: r.bathroom_count,
 				hero_thumb_url,
+				project_id: r.project_id,
 				project_name: r.project_name,
 				project_slug: r.project_slug,
 				location_name: r.location.unwrap_or_else(|| "Prime Location".to_string()),
@@ -1146,7 +1053,7 @@ async fn properties_list(
 		})
 		.collect();
 
-	let canonical_url = format!("{}/properties", CONFIG.site_base_url.trim_end_matches('/'));
+	let canonical_url = format!("{}/properties", CONFIG.public_site_origin.as_str());
 	let template = PropertiesListTemplate {
 		meta_title: "Properties for Sale & Rent - MyPlace",
 		meta_description: "Search verified apartments, penthouses, villas, commercial office spaces, and land plots.",
@@ -1164,7 +1071,10 @@ async fn properties_list(
 	})?;
 
 	if is_unfiltered {
-		state.page_cache.insert(cache_key.to_string(), html.clone()).await;
+		state
+			.page_cache
+			.insert(cache_key.to_string(), html.clone())
+			.await;
 	}
 
 	Ok(Html(html))
@@ -1175,17 +1085,10 @@ async fn properties_list(
 // ---------------------------------------------------------------------------
 
 async fn property_detail(
-	Path(slug): Path<String>,
+	Path(param): Path<String>,
 	Query(feedback): Query<EnquiryFeedback>,
 	State(state): State<AppState>,
 ) -> Result<Response, StatusCode> {
-	let cache_key = format!("/properties/{}", slug);
-	if feedback.enquiry.is_none() {
-		if let Some(cached_html) = state.page_cache.get(&cache_key).await {
-			return Ok(Html(cached_html).into_response());
-		}
-	}
-
 	struct DbProp {
 		id: i32,
 		project_id: i32,
@@ -1204,7 +1107,7 @@ async fn property_detail(
 		listing_type: Option<String>,
 		billing_period: Option<String>,
 		bedroom_count: Option<f64>,
-		bathroom_count: Option<i16>,
+		bathroom_count: Option<f64>,
 		balcony_count: Option<i16>,
 		is_duplex: Option<bool>,
 		res_parking: Option<String>,
@@ -1215,67 +1118,71 @@ async fn property_detail(
 		development_status: Option<String>,
 	}
 
-	let prop_opt = sqlx::query_as!(
-		DbProp,
-		r#"
-		SELECT
-			p.id, p.project_id, p.slug, p.unit_number, p.building,
-			p.floor_number, p.total_floors,
-			p.built_up_area::float8 as "built_up_area?",
-			p.usable_area::float8 as "usable_area?",
-			p.description,
-			pt.category, pt.name as property_type_name,
-			pl.price::float8 as "price?",
-			pl.currency_code as "currency_code?",
-			pl.listing_type as "listing_type?",
-			pl.billing_period as "billing_period?",
-			rpd.bedroom_count::float8 as "bedroom_count?",
-			rpd.bathroom_count as "bathroom_count?",
-			rpd.balcony_count as "balcony_count?",
-			rpd.is_duplex as "is_duplex?",
-			rpd.parking as "res_parking?",
-			cpd.parking as "com_parking?",
-			lpd.parcel_number as "parcel_number?",
-			lpd.zoning as "zoning?",
-			lpd.approval_status as "approval_status?",
-			lpd.development_status as "development_status?"
-		FROM properties p
-			JOIN property_types pt ON pt.id = p.property_type_id
-			JOIN projects proj ON proj.id = p.project_id AND proj.deleted_at IS NULL
-			JOIN project_owners po ON po.id = proj.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL
-			LEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'
-			LEFT JOIN residential_property_details rpd ON rpd.property_id = p.id
-			LEFT JOIN commercial_property_details cpd ON cpd.property_id = p.id
-			LEFT JOIN land_property_details lpd ON lpd.property_id = p.id
-		WHERE LOWER(p.slug) = LOWER($1) AND p.deleted_at IS NULL
-		"#,
-		slug
-	)
-	.fetch_optional(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let parsed_id = if let Some((id_str, _)) = param.split_once('-') {
+		id_str.parse::<i32>().ok()
+	} else {
+		param.parse::<i32>().ok()
+	};
 
-	let prop = match prop_opt {
-		Some(p) => {
-			if p.slug != slug {
-				return Ok(Redirect::permanent(&format!("/properties/{}", p.slug)).into_response());
-			}
-			p
-		}
-		None => {
-			if let Ok(id) = slug.parse::<i32>() {
-				let canonical = sqlx::query!("SELECT slug FROM properties WHERE id = $1 AND deleted_at IS NULL", id)
+	let prop = match parsed_id {
+		Some(id) => {
+			let prop_opt = sqlx::query_file_as!(
+				DbProp,
+				"queries/properties/get_public_property_by_id.sql",
+				id
+			)
+			.fetch_optional(&state.model.db)
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+			match prop_opt {
+				Some(p) => {
+					let canonical_param = format!("{}-{}", p.id, p.slug);
+					if param != canonical_param {
+						return Ok(redirect_301(&format!("/properties/{canonical_param}")));
+					}
+					p
+				}
+				None => {
+					let legacy = sqlx::query_file_as!(
+						DbProp,
+						"queries/properties/get_public_property_by_slug.sql",
+						param
+					)
 					.fetch_optional(&state.model.db)
 					.await
 					.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-				if let Some(can) = canonical {
-					return Ok(Redirect::permanent(&format!("/properties/{}", can.slug)).into_response());
+					if let Some(p) = legacy {
+						return Ok(redirect_301(&format!("/properties/{}-{}", p.id, p.slug)));
+					}
+					return Err(StatusCode::NOT_FOUND);
 				}
+			}
+		}
+		None => {
+			let legacy = sqlx::query_file_as!(
+				DbProp,
+				"queries/properties/get_public_property_by_slug.sql",
+				param
+			)
+			.fetch_optional(&state.model.db)
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+			if let Some(p) = legacy {
+				return Ok(redirect_301(&format!("/properties/{}-{}", p.id, p.slug)));
 			}
 			return Err(StatusCode::NOT_FOUND);
 		}
 	};
+
+	let canonical_key = format!("/properties/{}-{}", prop.id, prop.slug);
+	if feedback.enquiry.is_none() {
+		if let Some(cached_html) = state.page_cache.get(&canonical_key).await {
+			return Ok(Html(cached_html).into_response());
+		}
+	}
 
 	// Fetch parent project & developer
 	struct DbProjOwner {
@@ -1290,18 +1197,9 @@ async fn property_detail(
 		owner_image_key: Option<String>,
 	}
 
-	let po_row = sqlx::query_as!(
+	let po_row = sqlx::query_file_as!(
 		DbProjOwner,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			po.id as owner_id, po.name as owner_name, po.slug as owner_slug, po.profile_img_thumb_key as owner_image_key
-		FROM projects p
-			JOIN project_owners po ON po.id = p.project_owner_id
-			LEFT JOIN locations loc ON loc.id = p.location_id
-		WHERE p.id = $1
-		"#,
+		"queries/project_owners/get_owner_summary_for_property.sql",
 		prop.project_id
 	)
 	.fetch_one(&state.model.db)
@@ -1313,7 +1211,9 @@ async fn property_detail(
 		name: po_row.name,
 		slug: po_row.slug,
 		category: po_row.category,
-		location_name: po_row.location.unwrap_or_else(|| "Prime Location".to_string()),
+		location_name: po_row
+			.location
+			.unwrap_or_else(|| "Prime Location".to_string()),
 	};
 
 	let owner_summary = PublicOwnerSummary {
@@ -1325,20 +1225,15 @@ async fn property_detail(
 
 	// Fetch Property Gallery
 	struct DbMedia {
+		media_type: String,
 		s3_key: String,
 		thumbnail_key: Option<String>,
 		sequence: i16,
 	}
 
-	let media_rows = sqlx::query_as!(
+	let media_rows = sqlx::query_file_as!(
 		DbMedia,
-		r#"
-		SELECT m.s3_key, m.thumbnail_key, pm.sequence
-		FROM property_media pm
-		JOIN media m ON m.id = pm.media_id
-		WHERE pm.property_id = $1
-		ORDER BY pm.sequence ASC
-		"#,
+		"queries/media/get_public_property_media.sql",
 		prop.id
 	)
 	.fetch_all(&state.model.db)
@@ -1359,6 +1254,7 @@ async fn property_detail(
 				og_image = Some(url.clone());
 			}
 			PublicMediaItem {
+				media_type: r.media_type,
 				url,
 				thumbnail_url,
 				sequence: r.sequence,
@@ -1367,14 +1263,8 @@ async fn property_detail(
 		.collect();
 
 	// Fetch Amenities
-	let amenity_rows = sqlx::query!(
-		r#"
-		SELECT a.name
-		FROM property_amenities pa
-		JOIN amenities a ON a.id = pa.amenity_id
-		WHERE pa.property_id = $1 AND a.is_active = TRUE
-		ORDER BY a.name ASC
-		"#,
+	let amenity_rows = sqlx::query_file!(
+		"queries/amenities/get_public_property_amenities.sql",
 		prop.id
 	)
 	.fetch_all(&state.model.db)
@@ -1385,7 +1275,12 @@ async fn property_detail(
 
 	let currency = prop.currency_code.unwrap_or_else(|| "INR".to_string());
 	let l_type = prop.listing_type.unwrap_or_else(|| "sale".to_string());
-	let price_formatted = format_price(prop.price, &currency, &l_type, prop.billing_period.as_deref());
+	let price_formatted = format_price(
+		prop.price,
+		&currency,
+		&l_type,
+		prop.billing_period.as_deref(),
+	);
 
 	let parking = prop.res_parking.or(prop.com_parking);
 	let property_detail_data = PublicPropertyDetail {
@@ -1419,14 +1314,21 @@ async fn property_detail(
 		.map(|desc| render_markdown(desc))
 		.unwrap_or_default();
 
-	let canonical_url = format!("{}/properties/{}", CONFIG.site_base_url.trim_end_matches('/'), prop.slug);
+	let canonical_url = format!(
+		"{}/properties/{}-{}",
+		CONFIG.public_site_origin.as_str(),
+		prop.id,
+		prop.slug
+	);
 	let meta_title = format!(
 		"{} in {} | MyPlace",
 		property_detail_data.property_type_name, project_summary.name
 	);
 	let meta_description = format!(
 		"Verified property listing for {} in {}. Price: {}. View amenities, floor plan specifications, and enquire directly.",
-		property_detail_data.property_type_name, project_summary.name, property_detail_data.price_formatted
+		property_detail_data.property_type_name,
+		project_summary.name,
+		property_detail_data.price_formatted
 	);
 
 	let enquiry_success = feedback.enquiry.as_deref() == Some("success");
@@ -1457,7 +1359,7 @@ async fn property_detail(
 	})?;
 
 	if feedback.enquiry.is_none() {
-		state.page_cache.insert(cache_key, html.clone()).await;
+		state.page_cache.insert(canonical_key, html.clone()).await;
 	}
 
 	Ok(Html(html).into_response())
@@ -1472,7 +1374,7 @@ async fn property_enquire(
 	State(state): State<AppState>,
 	Form(form): Form<EnquiryForm>,
 ) -> Result<Redirect, StatusCode> {
-	let prop = sqlx::query!("SELECT slug FROM properties WHERE id = $1 AND deleted_at IS NULL", id)
+	let prop = sqlx::query_file!("queries/properties/get_property_slug_by_id.sql", id)
 		.fetch_optional(&state.model.db)
 		.await
 		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -1481,17 +1383,25 @@ async fn property_enquire(
 	let name = form.name.trim();
 	let phone = form.phone.trim();
 	if name.is_empty() || phone.is_empty() {
-		return Ok(Redirect::to(&format!("/properties/{}?enquiry=error", prop.slug)));
+		return Ok(Redirect::to(&format!(
+			"/properties/{}-{}?enquiry=error",
+			id, prop.slug
+		)));
 	}
 
-	let email = form.email.as_deref().map(str::trim).filter(|e| !e.is_empty());
-	let message = form.message.as_deref().map(str::trim).filter(|m| !m.is_empty());
+	let email = form
+		.email
+		.as_deref()
+		.map(str::trim)
+		.filter(|e| !e.is_empty());
+	let message = form
+		.message
+		.as_deref()
+		.map(str::trim)
+		.filter(|m| !m.is_empty());
 
-	sqlx::query!(
-		r#"
-		INSERT INTO property_enquiries (property_id, name, phone, email, message)
-		VALUES ($1, $2, $3, $4, $5)
-		"#,
+	sqlx::query_file!(
+		"queries/properties/insert_property_enquiry.sql",
 		id,
 		name,
 		phone,
@@ -1505,117 +1415,91 @@ async fn property_enquire(
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
-	Ok(Redirect::to(&format!("/properties/{}?enquiry=success", prop.slug)))
+	Ok(Redirect::to(&format!(
+		"/properties/{}-{}?enquiry=success",
+		id, prop.slug
+	)))
 }
 
 // ---------------------------------------------------------------------------
-// 9. SITEMAP XML: GET /sitemap.xml
+// 9. SITEMAP XML: GET /sitemap.xml & GET /sitemaps/{shard}
 // ---------------------------------------------------------------------------
 
-async fn sitemap_xml(State(state): State<AppState>) -> Result<Response, StatusCode> {
+async fn sitemap_index_xml(State(state): State<AppState>) -> Result<Response, StatusCode> {
 	let cache_key = "/sitemap.xml";
 	if let Some(cached_xml) = state.page_cache.get(cache_key).await {
-		return Ok(([(header::CONTENT_TYPE, "application/xml; charset=utf-8")], cached_xml).into_response());
+		return Ok((
+			[(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+			cached_xml,
+		)
+			.into_response());
 	}
 
-	let base = CONFIG.site_base_url.trim_end_matches('/');
-	let mut urls = Vec::new();
+	let base = CONFIG.public_site_origin.as_str();
+	let xml = crate::sitemap::generate_sitemap_index(&state.model.db, base, &CONFIG).await?;
 
-	// Static routes
-	urls.push(SitemapUrl {
-		loc: format!("{base}/"),
-		lastmod: None,
-		changefreq: "daily",
-		priority: "1.0",
-	});
-	urls.push(SitemapUrl {
-		loc: format!("{base}/projects"),
-		lastmod: None,
-		changefreq: "daily",
-		priority: "0.9",
-	});
-	urls.push(SitemapUrl {
-		loc: format!("{base}/properties"),
-		lastmod: None,
-		changefreq: "hourly",
-		priority: "0.9",
-	});
-
-	// Active Projects
-	struct ProjSitemap {
-		slug: String,
-		updated_at: time::OffsetDateTime,
-	}
-	let projs = sqlx::query_as!(
-		ProjSitemap,
-		"SELECT slug, updated_at FROM projects WHERE deleted_at IS NULL ORDER BY id DESC"
+	state
+		.page_cache
+		.insert(cache_key.to_string(), xml.clone())
+		.await;
+	Ok((
+		[(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+		xml,
 	)
-	.fetch_all(&state.model.db)
-	.await
-	.unwrap_or_default();
+		.into_response())
+}
 
-	let date_fmt = time::macros::format_description!("[year]-[month]-[day]");
-	for p in projs {
-		urls.push(SitemapUrl {
-			loc: format!("{base}/projects/{}", p.slug),
-			lastmod: p.updated_at.format(&date_fmt).ok(),
-			changefreq: "weekly",
-			priority: "0.8",
-		});
+async fn sitemap_shard_xml(
+	State(state): State<AppState>,
+	Path(shard): Path<String>,
+) -> Result<Response, StatusCode> {
+	let cache_key = format!("/sitemaps/{shard}");
+	if let Some(cached_xml) = state.page_cache.get(&cache_key).await {
+		return Ok((
+			[(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+			cached_xml,
+		)
+			.into_response());
 	}
 
-	// Active Owners
-	struct OwnerSitemap {
-		slug: String,
-		updated_at: time::OffsetDateTime,
-	}
-	let owners = sqlx::query_as!(
-		OwnerSitemap,
-		"SELECT slug, updated_at FROM project_owners WHERE active = TRUE AND deleted_at IS NULL ORDER BY id DESC"
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.unwrap_or_default();
-
-	for o in owners {
-		urls.push(SitemapUrl {
-			loc: format!("{base}/owners/{}", o.slug),
-			lastmod: o.updated_at.format(&date_fmt).ok(),
-			changefreq: "weekly",
-			priority: "0.7",
-		});
+	let base = CONFIG.public_site_origin.as_str();
+	if shard == "pages.xml" {
+		let xml = crate::sitemap::generate_pages_sitemap(base)?;
+		state.page_cache.insert(cache_key, xml.clone()).await;
+		return Ok((
+			[(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+			xml,
+		)
+			.into_response());
 	}
 
-	// Active Properties
-	struct PropSitemap {
-		slug: String,
-		updated_at: time::OffsetDateTime,
+	let (entity, start_id, end_id) =
+		crate::sitemap::parse_shard_param(&shard).ok_or(StatusCode::NOT_FOUND)?;
+
+	let maybe_xml = match entity {
+		crate::sitemap::SitemapEntity::Projects => {
+			crate::sitemap::generate_projects_shard(&state.model.db, base, start_id, end_id).await?
+		}
+		crate::sitemap::SitemapEntity::Owners => {
+			crate::sitemap::generate_owners_shard(&state.model.db, base, start_id, end_id).await?
+		}
+		crate::sitemap::SitemapEntity::Properties => {
+			crate::sitemap::generate_properties_shard(&state.model.db, base, start_id, end_id)
+				.await?
+		}
+	};
+
+	match maybe_xml {
+		Some(xml) => {
+			state.page_cache.insert(cache_key, xml.clone()).await;
+			Ok((
+				[(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+				xml,
+			)
+				.into_response())
+		}
+		None => Err(StatusCode::NOT_FOUND),
 	}
-	let props = sqlx::query_as!(
-		PropSitemap,
-		"SELECT slug, updated_at FROM properties WHERE deleted_at IS NULL ORDER BY id DESC"
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.unwrap_or_default();
-
-	for pr in props {
-		urls.push(SitemapUrl {
-			loc: format!("{base}/properties/{}", pr.slug),
-			lastmod: pr.updated_at.format(&date_fmt).ok(),
-			changefreq: "daily",
-			priority: "0.8",
-		});
-	}
-
-	let template = SitemapTemplate { urls };
-	let xml = template.render().map_err(|e| {
-		tracing::error!(error = ?e, "failed to render sitemap template");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
-
-	state.page_cache.insert(cache_key.to_string(), xml.clone()).await;
-	Ok(([(header::CONTENT_TYPE, "application/xml; charset=utf-8")], xml).into_response())
 }
 
 // ---------------------------------------------------------------------------
@@ -1625,7 +1509,7 @@ async fn sitemap_xml(State(state): State<AppState>) -> Result<Response, StatusCo
 async fn robots_txt() -> Response {
 	let body = format!(
 		"User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /owner/\nDisallow: /auth/\n\nSitemap: {}/sitemap.xml\n",
-		CONFIG.site_base_url.trim_end_matches('/')
+		CONFIG.public_site_origin.as_str()
 	);
 	([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body).into_response()
 }

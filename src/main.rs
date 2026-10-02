@@ -1,64 +1,10 @@
 use std::{
 	net::{Ipv4Addr, SocketAddrV4},
-	sync::Arc,
 	time::Duration,
 };
 
-use aws_config::{BehaviorVersion, Region};
-use aws_sdk_s3::{Client, config::Credentials};
-use axum::{Router, middleware};
-use tower_http::services::ServeDir;
+use myplace::{build_app_state, config::CONFIG, servers, session_store::SessionStoreTrait as _};
 use tracing::info;
-
-use crate::{
-	config::CONFIG,
-	model::Model,
-	session_store::{SessionStore, SessionStoreTrait as _},
-};
-
-pub mod config;
-pub mod crypto;
-pub mod session_store;
-pub mod middlewares;
-pub mod response_types;
-pub mod model;
-pub mod constants;
-pub mod templates;
-pub mod api;
-pub mod pages;
-pub mod utils;
-pub mod media;
-pub mod cache;
-
-pub struct AppStateStruct {
-	pub model: Model,
-	pub session_store: SessionStore,
-	pub s3_client: aws_sdk_s3::Client,
-	pub page_cache: crate::cache::PageCache,
-}
-
-pub type AppState = Arc<AppStateStruct>;
-
-/// Build an S3 client pointing at the Garage instance configured via environment.
-async fn build_s3_client() -> Client {
-	let credentials = Credentials::new(
-		&CONFIG.s3_access_key_id,
-		&CONFIG.s3_secret_access_key,
-		None,
-		None,
-		"myplace-config",
-	);
-	let aws_cfg = aws_config::defaults(BehaviorVersion::latest())
-		.credentials_provider(credentials)
-		.region(Region::new(CONFIG.s3_region.clone()))
-		.endpoint_url(&CONFIG.s3_endpoint)
-		.load()
-		.await;
-	let s3_cfg = aws_sdk_s3::config::Builder::from(&aws_cfg)
-		.force_path_style(true)
-		.build();
-	Client::from_conf(s3_cfg)
-}
 
 #[tokio::main]
 async fn main() {
@@ -70,20 +16,10 @@ async fn main() {
 		)
 		.init();
 
-	info!("starting myplace server");
+	info!("starting myplace servers");
 
-	// --- State ---
-	let model = Model::new().await;
-	let session_store = SessionStore::default();
-	let s3_client = build_s3_client().await;
-	let page_cache = crate::cache::PageCache::new(CONFIG.page_cache_capacity);
-
-	let state = Arc::new(AppStateStruct {
-		model,
-		session_store,
-		s3_client,
-		page_cache,
-	});
+	// --- Shared State ---
+	let state = build_app_state().await;
 
 	// --- Background: session cleanup every 10 minutes ---
 	{
@@ -100,30 +36,36 @@ async fn main() {
 		});
 	}
 
-	// --- Router ---
-	let api_routes = Router::new()
-		.nest("/admin", api::admin::router())
-		.layer(middleware::from_extractor_with_state::<
-			crate::session_store::AuthUser,
-			AppState,
-		>(state.clone()))
-		.nest("/owner", api::owners::router())
-		.nest("/auth", api::auth::router())
-		.merge(api::public::router());
+	// --- Build 3 separate servers ---
+	let admin_app = servers::admin_router(state.clone());
+	let owner_app = servers::owner_router(state.clone());
+	let public_app = servers::public_router(state.clone());
 
-	let static_asset_server = ServeDir::new("static");
+	let admin_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.admin_port);
+	let owner_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.owner_port);
+	let public_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.public_port);
 
-	let router = Router::new()
-		.merge(api_routes)
-		.with_state(state)
-		.fallback_service(static_asset_server);
+	let admin_listener = tokio::net::TcpListener::bind(admin_addr).await.unwrap();
+	let owner_listener = tokio::net::TcpListener::bind(owner_addr).await.unwrap();
+	let public_listener = tokio::net::TcpListener::bind(public_addr).await.unwrap();
 
-	let listener =
-		tokio::net::TcpListener::bind(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.port))
-			.await
-			.unwrap();
+	info!(port = CONFIG.admin_port, "Admin server listening");
+	info!(port = CONFIG.owner_port, "Owner server listening");
+	info!(port = CONFIG.public_port, "Public server listening");
 
-	info!(port = CONFIG.port, "listening");
+	let admin_handle = tokio::spawn(async move {
+		axum::serve(admin_listener, admin_app).await.unwrap();
+	});
+	let owner_handle = tokio::spawn(async move {
+		axum::serve(owner_listener, owner_app).await.unwrap();
+	});
+	let public_handle = tokio::spawn(async move {
+		axum::serve(public_listener, public_app).await.unwrap();
+	});
 
-	axum::serve(listener, router).await.unwrap();
+	let (res_admin, res_owner, res_public) =
+		tokio::join!(admin_handle, owner_handle, public_handle);
+	res_admin.unwrap();
+	res_owner.unwrap();
+	res_public.unwrap();
 }

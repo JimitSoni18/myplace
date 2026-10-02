@@ -146,12 +146,12 @@
 			</div>
 			<div class="card-body">
 				<h2 class="card-title" style="font-size: 1.15rem;">
-					<a href="/properties/{{ prop.slug }}">{{ prop.title }}</a>
+					<a href="/properties/{{ prop.id }}-{{ prop.slug }}">{{ prop.title }}</a>
 				</h2>
 				<div class="card-subtitle">
 					<span>📍 {{ prop.location_name }}</span>
 					<span>&bull;</span>
-					<a href="/projects/{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
+					<a href="/projects/{{ prop.project_id }}-{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
 				</div>
 				<div class="card-specs">
 					{% if let Some(bhk) = prop.bedroom_count %}
@@ -172,7 +172,7 @@
 				</div>
 				<div class="card-footer">
 					<div class="price-tag">{{ prop.price_formatted }}</div>
-					<a href="/properties/{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
+					<a href="/properties/{{ prop.id }}-{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
 				</div>
 			</div>
 		</article>

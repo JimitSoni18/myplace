@@ -12,4 +12,3 @@ pub struct OwnerLoginTemplate {
 	pub incorrect_password_error: bool,
 	pub inactive_account_error: bool,
 }
-

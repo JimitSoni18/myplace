@@ -1,4 +1,7 @@
-use axum::{http::StatusCode, response::{IntoResponse, Redirect}};
+use axum::{
+	http::StatusCode,
+	response::{IntoResponse, Redirect},
+};
 
 pub enum LocationListError {
 	InternalError,
@@ -27,7 +30,7 @@ impl IntoResponse for LocationEditFormGetError {
 }
 
 pub enum LocationDeleteError {
-    NotFound,
+	NotFound,
 }
 
 impl IntoResponse for LocationDeleteError {
@@ -37,4 +40,3 @@ impl IntoResponse for LocationDeleteError {
 		}
 	}
 }
-

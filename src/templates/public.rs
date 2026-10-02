@@ -10,6 +10,7 @@ pub struct PublicProjectCard {
 	pub hero_thumb_url: Option<String>,
 	pub property_count: i64,
 	pub possession_date: Option<String>,
+	pub owner_id: i32,
 	pub owner_name: String,
 	pub owner_slug: String,
 }
@@ -25,8 +26,9 @@ pub struct PublicPropertyCard {
 	pub listing_type: String,
 	pub built_up_area: Option<f64>,
 	pub bedroom_count: Option<f64>,
-	pub bathroom_count: Option<i16>,
+	pub bathroom_count: Option<f64>,
 	pub hero_thumb_url: Option<String>,
+	pub project_id: i32,
 	pub project_name: String,
 	pub project_slug: String,
 	pub location_name: String,
@@ -51,6 +53,7 @@ pub struct CategoryStat {
 
 #[derive(Clone, Debug)]
 pub struct PublicMediaItem {
+	pub media_type: String,
 	pub url: String,
 	pub thumbnail_url: String,
 	pub sequence: i16,
@@ -121,7 +124,7 @@ pub struct PublicPropertyDetail {
 	pub billing_period: Option<String>,
 	// Subtype specific:
 	pub bedroom_count: Option<f64>,
-	pub bathroom_count: Option<i16>,
+	pub bathroom_count: Option<f64>,
 	pub balcony_count: Option<i16>,
 	pub is_duplex: bool,
 	pub parking: Option<String>,
@@ -222,6 +225,18 @@ pub struct PropertyDetailTemplate<'a> {
 	pub amenities: Vec<String>,
 	pub enquiry_success: bool,
 	pub enquiry_error: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SitemapIndexItem {
+	pub loc: String,
+	pub lastmod: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "public/sitemap_index.xml")]
+pub struct SitemapIndexTemplate {
+	pub sitemaps: Vec<SitemapIndexItem>,
 }
 
 #[derive(Template)]

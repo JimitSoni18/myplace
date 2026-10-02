@@ -1,5 +1,7 @@
 {% extends "admin/listing-base.html" %}
 
+{% block new_action %}{% endblock %}
+
 {% block filters %}
 <select name="project_id" onchange="this.form.submit()">
 	<option value="">All Projects</option>

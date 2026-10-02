@@ -20,6 +20,29 @@ use crate::{
 	templates::auth::OwnerLoginTemplate,
 };
 
+pub fn admin_auth_router() -> Router<AppState> {
+	let admin_login_router = MethodRouter::new()
+		.get(async || Html(&LOGIN_HTML as &str))
+		.post(login);
+
+	Router::new()
+		.route("/admin-login", admin_login_router.clone())
+		.route("/login", admin_login_router)
+}
+
+pub fn owner_auth_router() -> Router<AppState> {
+	let owner_login_router = MethodRouter::new()
+		.get(async || {
+			let html = OwnerLoginTemplate::default().render().unwrap_or_default();
+			Html(html)
+		})
+		.post(owner_login);
+
+	Router::new()
+		.route("/owner-login", owner_login_router.clone())
+		.route("/login", owner_login_router)
+}
+
 pub fn router() -> Router<AppState> {
 	let admin_login_router = MethodRouter::new()
 		.get(async || Html(&LOGIN_HTML as &str))
@@ -49,6 +72,7 @@ struct AdminUserRow {
 	id: i32,
 	username: String,
 	password: String,
+	#[allow(dead_code)]
 	profile_id: i32,
 }
 
@@ -111,14 +135,9 @@ async fn owner_login(
 		active: bool,
 	}
 
-	let user = sqlx::query_as!(
+	let user = sqlx::query_file_as!(
 		OwnerUserRow,
-		r#"
-		SELECT pr.id, pr.username, pr.password, po.active
-		FROM profiles pr
-		JOIN project_owners po ON po.profile_id = pr.id
-		WHERE pr.username = $1 AND po.deleted_at IS NULL
-		"#,
+		"queries/auth/get_owner_login_user.sql",
 		payload.username.trim()
 	)
 	.fetch_one(db)

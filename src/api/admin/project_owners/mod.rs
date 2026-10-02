@@ -13,10 +13,9 @@ use webp::Encoder;
 use crate::{
 	AppState,
 	api::admin::project_owners::error::{
-		OwnerCreateFormGetError, OwnerDetailError, OwnerProjectsError,
-		OwnerToggleActiveError, OwnerUpdateFormGetError, ProjectOwnerCreateError,
-		ProjectOwnerDeleteError, ProjectOwnerImageUploadError, ProjectOwnerListError,
-		ProjectOwnerUpdateError,
+		OwnerCreateFormGetError, OwnerDetailError, OwnerProjectsError, OwnerToggleActiveError,
+		OwnerUpdateFormGetError, ProjectOwnerCreateError, ProjectOwnerDeleteError,
+		ProjectOwnerImageUploadError, ProjectOwnerListError, ProjectOwnerUpdateError,
 	},
 	config::CONFIG,
 	crypto::password_hash,
@@ -58,9 +57,18 @@ pub struct ProjectList {
 pub fn router() -> Router<AppState> {
 	Router::new()
 		.route("/", get(project_owner_list))
-		.route("/new", get(project_owner_create_form).post(create_project_owner))
-		.route("/{id}", get(project_owner_detail).delete(delete_project_owner))
-		.route("/{id}/edit", get(project_owner_update_form).post(update_project_owner))
+		.route(
+			"/new",
+			get(project_owner_create_form).post(create_project_owner),
+		)
+		.route(
+			"/{id}",
+			get(project_owner_detail).delete(delete_project_owner),
+		)
+		.route(
+			"/{id}/edit",
+			get(project_owner_update_form).post(update_project_owner),
+		)
 		.route("/{id}/toggle-active", post(toggle_active_project_owner))
 		.route("/{id}/upload-image", post(add_project_owner_image))
 		.route("/{id}/remove-image", post(remove_project_owner_image))
@@ -115,45 +123,19 @@ async fn project_owner_list(
 		Some(ref query_str) if !query_str.is_empty() => {
 			let escaped = utils::sql::escape(query_str.trim());
 			let rgx = format!("%{escaped}%");
-			let db_rows = sqlx::query_as!(
-				DbRow,
-				r#"
-                SELECT
-                    po.id, po.name, po.active, po.profile_img_thumb_key,
-                    po.email,
-                    COUNT(p.id) as "projects_count!: i64"
-                FROM project_owners po
-                    LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
-                WHERE po.name ILIKE $1 AND po.deleted_at IS NULL
-                GROUP BY po.id
-                ORDER BY po.id DESC
-                "#,
-				rgx
-			)
-			.fetch_all(&state.model.db)
-			.await
-			.map_err(ProjectOwnerListError::SqlError)?;
+			let db_rows =
+				sqlx::query_file_as!(DbRow, "queries/project_owners/search_owners.sql", rgx)
+					.fetch_all(&state.model.db)
+					.await
+					.map_err(ProjectOwnerListError::SqlError)?;
 
 			(query.q, db_rows)
 		}
 		_ => {
-			let db_rows = sqlx::query_as!(
-				DbRow,
-				r#"
-                SELECT
-                    po.id, po.name, po.active, po.profile_img_thumb_key,
-                    po.email,
-                    COUNT(p.id) as "projects_count!: i64"
-                FROM project_owners po
-                    LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
-                WHERE po.deleted_at IS NULL
-                GROUP BY po.id
-                ORDER BY po.id DESC
-                "#
-			)
-			.fetch_all(&state.model.db)
-			.await
-			.map_err(ProjectOwnerListError::SqlError)?;
+			let db_rows = sqlx::query_file_as!(DbRow, "queries/project_owners/list_owners.sql")
+				.fetch_all(&state.model.db)
+				.await
+				.map_err(ProjectOwnerListError::SqlError)?;
 
 			(None, db_rows)
 		}
@@ -162,7 +144,10 @@ async fn project_owner_list(
 	let owners = rows
 		.into_iter()
 		.map(|r| {
-			let profile_thumb_url = r.profile_img_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
+			let profile_thumb_url = r
+				.profile_img_thumb_key
+				.as_ref()
+				.map(|k| CONFIG.asset_url(k));
 			ProjectList {
 				id: r.id,
 				name: r.name,
@@ -220,8 +205,8 @@ async fn create_project_owner(
 		.await
 		.map_err(ProjectOwnerCreateError::SqlError)?;
 
-	let profile_row = sqlx::query!(
-		"INSERT INTO profiles (username, password) VALUES ($1, $2) RETURNING id",
+	let profile_row = sqlx::query_file!(
+		"queries/project_owners/insert_profile.sql",
 		form.username.trim(),
 		password_hash,
 	)
@@ -229,10 +214,8 @@ async fn create_project_owner(
 	.await
 	.map_err(ProjectOwnerCreateError::SqlError)?;
 
-	let owner_row = sqlx::query!(
-		"INSERT INTO project_owners (profile_id, name, slug, bio, email, phone, website, active)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		 RETURNING id",
+	let owner_row = sqlx::query_file!(
+		"queries/project_owners/insert_owner.sql",
 		profile_row.id,
 		form.name.trim(),
 		slug,
@@ -246,7 +229,9 @@ async fn create_project_owner(
 	.await
 	.map_err(ProjectOwnerCreateError::SqlError)?;
 
-	tx.commit().await.map_err(ProjectOwnerCreateError::SqlError)?;
+	tx.commit()
+		.await
+		.map_err(ProjectOwnerCreateError::SqlError)?;
 
 	tracing::info!(
 		owner_id = owner_row.id,
@@ -255,7 +240,10 @@ async fn create_project_owner(
 		"created project owner account"
 	);
 
-	state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(owner_row.id)).await;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(owner_row.id))
+		.await;
 
 	Ok(Redirect::to(&format!("/admin/owners/{}", owner_row.id)))
 }
@@ -281,19 +269,9 @@ async fn project_owner_detail(
 		projects_count: i64,
 	}
 
-	let owner_row = sqlx::query_as!(
+	let owner_row = sqlx::query_file_as!(
 		OwnerDbRow,
-		r#"
-		SELECT
-			po.id, po.name, po.slug, pr.username, po.bio, po.email, po.phone, po.website,
-			po.active, po.profile_img_key, po.profile_img_thumb_key, po.created_at,
-			COUNT(p.id) as "projects_count!: i64"
-		FROM project_owners po
-			LEFT JOIN profiles pr ON pr.id = po.profile_id
-			LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
-		WHERE po.id = $1 AND po.deleted_at IS NULL
-		GROUP BY po.id, pr.username
-		"#,
+		"queries/project_owners/get_owner_detail.sql",
 		id
 	)
 	.fetch_one(&state.model.db)
@@ -312,29 +290,23 @@ async fn project_owner_detail(
 		properties_count: i64,
 	}
 
-	let project_rows = sqlx::query_as!(
+	let project_rows = sqlx::query_file_as!(
 		ProjectDbRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(prop.id) as "properties_count!: i64"
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address
-		ORDER BY p.id DESC
-		LIMIT 10
-		"#,
+		"queries/project_owners/get_owner_projects_summary.sql",
 		id
 	)
 	.fetch_all(&state.model.db)
 	.await
 	.map_err(OwnerDetailError::SqlError)?;
 
-	let profile_image_url = owner_row.profile_img_key.as_ref().map(|k| CONFIG.asset_url(k));
-	let profile_thumb_url = owner_row.profile_img_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
+	let profile_image_url = owner_row
+		.profile_img_key
+		.as_ref()
+		.map(|k| CONFIG.asset_url(k));
+	let profile_thumb_url = owner_row
+		.profile_img_thumb_key
+		.as_ref()
+		.map(|k| CONFIG.asset_url(k));
 
 	let date_fmt = time::macros::format_description!("[month repr:short] [day], [year]");
 	let created_at_str = owner_row
@@ -346,7 +318,9 @@ async fn project_owner_detail(
 		id: owner_row.id,
 		name: owner_row.name,
 		slug: owner_row.slug,
-		username: owner_row.username.unwrap_or_else(|| "unassigned".to_string()),
+		username: owner_row
+			.username
+			.unwrap_or_else(|| "unassigned".to_string()),
 		bio: owner_row.bio,
 		email: owner_row.email,
 		phone: owner_row.phone,
@@ -400,27 +374,19 @@ async fn project_owner_update_form(
 		profile_img_thumb_key: Option<String>,
 	}
 
-	let owner = sqlx::query_as!(
-		DbRow,
-		r#"
-		SELECT
-			po.id, po.name, po.bio, pr.username, po.email, po.phone, po.website, po.active,
-			po.profile_img_key, po.profile_img_thumb_key
-		FROM project_owners po
-			LEFT JOIN profiles pr ON pr.id = po.profile_id
-		WHERE po.id = $1 AND po.deleted_at IS NULL
-		"#,
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await
-	.map_err(|e| match e {
-		sqlx::Error::RowNotFound => OwnerUpdateFormGetError::OwnerNotFound,
-		_ => OwnerUpdateFormGetError::SqlError(e),
-	})?;
+	let owner = sqlx::query_file_as!(DbRow, "queries/project_owners/get_owner_for_edit.sql", id)
+		.fetch_one(&state.model.db)
+		.await
+		.map_err(|e| match e {
+			sqlx::Error::RowNotFound => OwnerUpdateFormGetError::OwnerNotFound,
+			_ => OwnerUpdateFormGetError::SqlError(e),
+		})?;
 
 	let profile_image_url = owner.profile_img_key.as_ref().map(|k| CONFIG.asset_url(k));
-	let profile_thumb_url = owner.profile_img_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
+	let profile_thumb_url = owner
+		.profile_img_thumb_key
+		.as_ref()
+		.map(|k| CONFIG.asset_url(k));
 
 	Ok(Html(
 		ProjectOwnerFormTemplate {
@@ -431,7 +397,9 @@ async fn project_owner_update_form(
 					id: owner.id,
 					name: owner.name,
 					bio: owner.bio,
-					username: owner.username.unwrap_or_else(|| format!("owner_{}", owner.id)),
+					username: owner
+						.username
+						.unwrap_or_else(|| format!("owner_{}", owner.id)),
 					email: owner.email,
 					phone: owner.phone,
 					website: owner.website,
@@ -455,10 +423,8 @@ async fn update_project_owner(
 	let slug = slugify(&form.name);
 	let is_active = form.active.as_deref() == Some("on");
 
-	sqlx::query!(
-		"UPDATE project_owners
-		 SET name = $1, bio = $2, email = $3, phone = $4, website = $5, active = $6, slug = $7, updated_at = NOW()
-		 WHERE id = $8 AND deleted_at IS NULL",
+	sqlx::query_file!(
+		"queries/project_owners/update_owner.sql",
 		form.name.trim(),
 		form.bio.as_deref(),
 		form.email.as_deref(),
@@ -473,7 +439,10 @@ async fn update_project_owner(
 	.map_err(ProjectOwnerUpdateError::SqlError)?;
 
 	tracing::info!(owner_id = id, "updated project owner profile");
-	state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id)).await;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
+		.await;
 	Ok(Redirect::to(&format!("/admin/owners/{id}")))
 }
 
@@ -481,18 +450,16 @@ async fn toggle_active_project_owner(
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<Redirect, OwnerToggleActiveError> {
-	sqlx::query!(
-		"UPDATE project_owners
-		 SET active = NOT active, updated_at = NOW()
-		 WHERE id = $1 AND deleted_at IS NULL",
-		id
-	)
-	.execute(&state.model.db)
-	.await
-	.map_err(OwnerToggleActiveError::SqlError)?;
+	sqlx::query_file!("queries/project_owners/toggle_active.sql", id)
+		.execute(&state.model.db)
+		.await
+		.map_err(OwnerToggleActiveError::SqlError)?;
 
 	tracing::info!(owner_id = id, "toggled owner active status");
-	state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id)).await;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
+		.await;
 	Ok(Redirect::to(&format!("/admin/owners/{id}")))
 }
 
@@ -501,16 +468,13 @@ async fn project_owner_projects(
 	Extension(auth_user): Extension<AuthUser>,
 	Path(id): Path<i32>,
 ) -> Result<Html<String>, OwnerProjectsError> {
-	let owner = sqlx::query!(
-		"SELECT id, name FROM project_owners WHERE id = $1 AND deleted_at IS NULL",
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await
-	.map_err(|e| match e {
-		sqlx::Error::RowNotFound => OwnerProjectsError::NotFound,
-		_ => OwnerProjectsError::SqlError(e),
-	})?;
+	let owner = sqlx::query_file!("queries/project_owners/get_owner_name_by_id.sql", id)
+		.fetch_one(&state.model.db)
+		.await
+		.map_err(|e| match e {
+			sqlx::Error::RowNotFound => OwnerProjectsError::NotFound,
+			_ => OwnerProjectsError::SqlError(e),
+		})?;
 
 	struct ProjectDbRow {
 		id: i32,
@@ -521,20 +485,9 @@ async fn project_owner_projects(
 		properties_count: i64,
 	}
 
-	let project_rows = sqlx::query_as!(
+	let project_rows = sqlx::query_file_as!(
 		ProjectDbRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(prop.id) as "properties_count!: i64"
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address
-		ORDER BY p.id DESC
-		"#,
+		"queries/project_owners/get_owner_projects_all.sql",
 		id
 	)
 	.fetch_all(&state.model.db)
@@ -628,10 +581,8 @@ pub async fn add_project_owner_image(
 			.await
 			.map_err(|_| ProjectOwnerImageUploadError::Internal)?;
 
-		sqlx::query!(
-			"UPDATE project_owners
-			 SET profile_img_key = $1, profile_img_thumb_key = $2, updated_at = NOW()
-			 WHERE id = $3",
+		sqlx::query_file!(
+			"queries/project_owners/update_owner_image.sql",
 			original_img_key,
 			thumb_key,
 			id,
@@ -641,7 +592,10 @@ pub async fn add_project_owner_image(
 		.map_err(|_| ProjectOwnerImageUploadError::ImageUpdateError)?;
 
 		tracing::info!(owner_id = id, key = %original_img_key, "uploaded owner profile image");
-		state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id)).await;
+		state
+			.page_cache
+			.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
+			.await;
 		return Ok(Redirect::to(&format!("/admin/owners/{id}")));
 	}
 
@@ -652,13 +606,10 @@ async fn remove_project_owner_image(
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<Redirect, OwnerUpdateFormGetError> {
-	let owner = sqlx::query!(
-		"SELECT profile_img_key, profile_img_thumb_key FROM project_owners WHERE id = $1",
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await
-	.map_err(OwnerUpdateFormGetError::SqlError)?;
+	let owner = sqlx::query_file!("queries/project_owners/get_owner_image_keys.sql", id)
+		.fetch_one(&state.model.db)
+		.await
+		.map_err(OwnerUpdateFormGetError::SqlError)?;
 
 	// Best-effort S3 object removal
 	if let Some(key) = owner.profile_img_key {
@@ -680,18 +631,16 @@ async fn remove_project_owner_image(
 			.await;
 	}
 
-	sqlx::query!(
-		"UPDATE project_owners
-		 SET profile_img_key = NULL, profile_img_thumb_key = NULL, updated_at = NOW()
-		 WHERE id = $1",
-		id
-	)
-	.execute(&state.model.db)
-	.await
-	.map_err(OwnerUpdateFormGetError::SqlError)?;
+	sqlx::query_file!("queries/project_owners/delete_owner_image.sql", id)
+		.execute(&state.model.db)
+		.await
+		.map_err(OwnerUpdateFormGetError::SqlError)?;
 
 	tracing::info!(owner_id = id, "removed owner profile image");
-	state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id)).await;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
+		.await;
 	Ok(Redirect::to(&format!("/admin/owners/{id}/edit")))
 }
 
@@ -700,15 +649,15 @@ async fn delete_project_owner(
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<Redirect, ProjectOwnerDeleteError> {
-	sqlx::query!(
-		"UPDATE project_owners SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
-		id
-	)
-	.execute(&state.model.db)
-	.await
-	.map_err(ProjectOwnerDeleteError::SqlError)?;
+	sqlx::query_file!("queries/project_owners/delete_owner.sql", id)
+		.execute(&state.model.db)
+		.await
+		.map_err(ProjectOwnerDeleteError::SqlError)?;
 
 	tracing::info!(owner_id = id, "soft-deleted project owner");
-	state.page_cache.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id)).await;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
+		.await;
 	Ok(Redirect::to("/admin/owners"))
 }

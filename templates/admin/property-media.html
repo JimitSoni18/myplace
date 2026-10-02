@@ -8,59 +8,85 @@
 	<div>
 		<a href="/admin/projects/{{ project_id }}" class="back-link">&larr; Back to {{ project_name }}</a>
 		<h2>Media Gallery for {{ unit_title }}</h2>
-		<p class="subtitle">Unit specific interior photography, floor plans, and views</p>
+		<p class="subtitle">Unit specific interior photography, floor plans, and videos</p>
 	</div>
 </header>
 
 <div class="media-container">
 	<!-- Upload Card -->
 	<div class="card upload-card">
-		<h3>Upload Photo</h3>
+		<h3>Upload Photos & Videos</h3>
 		<form
+			id="upload-form"
 			method="POST"
 			action="/admin/projects/{{ project_id }}/properties/{{ property_id }}/media"
 			enctype="multipart/form-data"
 			class="upload-form"
 		>
-			<label class="file-drop">
-				<img id="upload-preview" class="preview-img" hidden alt="">
+			<div id="drop-zone" class="file-drop">
 				<input
 					id="media-input"
 					type="file"
-					name="image"
-					accept="image/*"
-					required
+					name="files[]"
+					accept="image/*,video/*"
+					multiple
 				>
-				<span class="file-text">
-					📸 Drag and drop photo here, or click to browse
-				</span>
-			</label>
+				<div class="file-text">
+					<div class="upload-icon">📁</div>
+					<strong>Drag and drop photos or videos here, or click to browse</strong>
+					<span class="file-hint">Supports JPEG, PNG, WebP, MP4, MOV, WebM (Multiple files supported)</span>
+				</div>
+			</div>
+
+			<!-- Selected files preview queue -->
+			<div id="queue-container" class="queue-container" style="display: none;">
+				<div class="queue-header">
+					<h4>Files to upload (<span id="queue-count">0</span>)</h4>
+					<button type="button" id="clear-queue-btn" class="clear-btn">Clear all</button>
+				</div>
+				<div id="queue-grid" class="queue-grid"></div>
+			</div>
+
+			<div id="upload-status" class="upload-status" style="display: none;">
+				<div class="spinner"></div>
+				<span id="upload-status-text">Uploading and processing media, please wait...</span>
+			</div>
 
 			<div class="upload-action">
-				<button type="submit" class="primary-btn">Upload Photo</button>
+				<button type="submit" id="submit-btn" class="primary-btn" disabled>Upload Selected Files</button>
 			</div>
 		</form>
 	</div>
 
 	<!-- Gallery Grid Card -->
 	<div class="card">
-		<h3>Unit Photos ({{ media.len() }})</h3>
+		<div class="card-header-flex">
+			<h3>Unit Media ({{ media.len() }})</h3>
+			<span class="hint-text">Media is displayed in public listings according to sequence. Use arrows to reorder.</span>
+		</div>
 
 		{% if media.is_empty() %}
 			<div class="empty-state">
-				<p>No photos uploaded for this unit yet.</p>
+				<p>No photos or videos uploaded for this unit yet.</p>
 			</div>
 		{% else %}
-			<div class="gallery-grid">
+			<div class="gallery-grid" id="gallery-grid">
 				{% for m in media %}
-					<div class="gallery-card" id="media-{{ m.id }}">
+					<div class="gallery-card" id="media-{{ m.id }}" data-id="{{ m.id }}">
 						<div class="img-wrapper">
 							<img src="{{ m.thumbnail_url }}" alt="Property photo" loading="lazy">
 							<span class="seq-badge">#{{ m.sequence }}</span>
+							{% if m.media_type == "video" %}
+								<span class="video-badge">▶ Video</span>
+							{% endif %}
 						</div>
 						<div class="card-footer">
+							<div class="reorder-btns">
+								<button type="button" class="reorder-btn" title="Move earlier" onclick="moveMedia('{{ m.id }}', -1)">&larr;</button>
+								<button type="button" class="reorder-btn" title="Move later" onclick="moveMedia('{{ m.id }}', 1)">&rarr;</button>
+							</div>
 							<a href="{{ m.url }}" target="_blank" rel="noopener" class="view-link">View Full</a>
-							<button onclick="deleteMedia('{{ m.id }}')" class="delete-btn">Delete</button>
+							<button type="button" onclick="deleteMedia('{{ m.id }}')" class="delete-btn">Delete</button>
 						</div>
 					</div>
 				{% endfor %}
@@ -70,21 +96,202 @@
 </div>
 
 <script>
+let selectedFiles = [];
+
 document.addEventListener("DOMContentLoaded", () => {
 	const input = document.getElementById("media-input");
-	const preview = document.getElementById("upload-preview");
-	if (!input || !preview) return;
+	const dropZone = document.getElementById("drop-zone");
+	const queueContainer = document.getElementById("queue-container");
+	const queueGrid = document.getElementById("queue-grid");
+	const queueCount = document.getElementById("queue-count");
+	const clearQueueBtn = document.getElementById("clear-queue-btn");
+	const submitBtn = document.getElementById("submit-btn");
+	const uploadForm = document.getElementById("upload-form");
+	const uploadStatus = document.getElementById("upload-status");
+
+	if (!input) return;
+
+	['dragenter', 'dragover'].forEach(eventName => {
+		dropZone.addEventListener(eventName, (e) => {
+			e.preventDefault();
+			dropZone.classList.add('drag-active');
+		});
+	});
+
+	['dragleave', 'drop'].forEach(eventName => {
+		dropZone.addEventListener(eventName, (e) => {
+			e.preventDefault();
+			dropZone.classList.remove('drag-active');
+		});
+	});
+
+	dropZone.addEventListener('drop', (e) => {
+		const dt = e.dataTransfer;
+		if (dt && dt.files && dt.files.length > 0) {
+			addFiles(Array.from(dt.files));
+		}
+	});
 
 	input.addEventListener("change", () => {
-		const file = input.files?.[0];
-		if (!file) {
-			preview.hidden = true;
+		if (input.files && input.files.length > 0) {
+			addFiles(Array.from(input.files));
+			input.value = "";
+		}
+	});
+
+	function addFiles(files) {
+		for (const file of files) {
+			if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+				selectedFiles.push(file);
+			}
+		}
+		renderQueue();
+	}
+
+	window.removeQueueFile = function(index) {
+		selectedFiles.splice(index, 1);
+		renderQueue();
+	};
+
+	if (clearQueueBtn) {
+		clearQueueBtn.addEventListener("click", () => {
+			selectedFiles = [];
+			renderQueue();
+		});
+	}
+
+	function formatBytes(bytes) {
+		if (bytes === 0) return '0 B';
+		const k = 1024;
+		const sizes = ['B', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+	}
+
+	function renderQueue() {
+		if (selectedFiles.length === 0) {
+			queueContainer.style.display = "none";
+			submitBtn.disabled = true;
+			submitBtn.textContent = "Upload Selected Files";
 			return;
 		}
-		preview.src = URL.createObjectURL(file);
-		preview.hidden = false;
+
+		queueContainer.style.display = "block";
+		submitBtn.disabled = false;
+		submitBtn.textContent = `Upload ${selectedFiles.length} File${selectedFiles.length > 1 ? 's' : ''}`;
+		queueCount.textContent = selectedFiles.length;
+		queueGrid.innerHTML = "";
+
+		selectedFiles.forEach((file, index) => {
+			const item = document.createElement("div");
+			item.className = "queue-item";
+
+			const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm|mkv|avi)$/i.test(file.name);
+			const thumb = document.createElement(isVideo ? "video" : "img");
+			thumb.className = "queue-thumb";
+			thumb.src = URL.createObjectURL(file);
+			if (isVideo) {
+				thumb.muted = true;
+				thumb.preload = "metadata";
+			}
+
+			const info = document.createElement("div");
+			info.className = "queue-info";
+			info.innerHTML = `
+				<div class="queue-name" title="${file.name}">${file.name}</div>
+				<div class="queue-meta">${isVideo ? '🎥 Video' : '🖼️ Photo'} &bull; ${formatBytes(file.size)}</div>
+			`;
+
+			const removeBtn = document.createElement("button");
+			removeBtn.type = "button";
+			removeBtn.className = "queue-remove-btn";
+			removeBtn.innerHTML = "&times;";
+			removeBtn.title = "Remove file";
+			removeBtn.onclick = () => removeQueueFile(index);
+
+			item.appendChild(thumb);
+			item.appendChild(info);
+			item.appendChild(removeBtn);
+			queueGrid.appendChild(item);
+		});
+	}
+
+	uploadForm.addEventListener("submit", async (e) => {
+		if (selectedFiles.length === 0) {
+			e.preventDefault();
+			return;
+		}
+
+		e.preventDefault();
+		submitBtn.disabled = true;
+		uploadStatus.style.display = "flex";
+
+		const formData = new FormData();
+		for (const file of selectedFiles) {
+			formData.append("files[]", file, file.name);
+		}
+
+		try {
+			const res = await fetch(uploadForm.action, {
+				method: "POST",
+				body: formData
+			});
+
+			if (res.ok || res.redirected) {
+				window.location.reload();
+			} else {
+				const errText = await res.text();
+				alert("Upload failed: " + (errText || "Server error"));
+				submitBtn.disabled = false;
+				uploadStatus.style.display = "none";
+			}
+		} catch (err) {
+			alert("Upload failed due to network error: " + err);
+			submitBtn.disabled = false;
+			uploadStatus.style.display = "none";
+		}
 	});
 });
+
+async function moveMedia(mediaId, direction) {
+	const grid = document.getElementById("gallery-grid");
+	if (!grid) return;
+
+	const cards = Array.from(grid.querySelectorAll(".gallery-card"));
+	const currentIndex = cards.findIndex(c => c.dataset.id === mediaId);
+	if (currentIndex === -1) return;
+
+	const targetIndex = currentIndex + direction;
+	if (targetIndex < 0 || targetIndex >= cards.length) return;
+
+	if (direction < 0) {
+		grid.insertBefore(cards[currentIndex], cards[targetIndex]);
+	} else {
+		grid.insertBefore(cards[targetIndex], cards[currentIndex]);
+	}
+
+	const newCards = Array.from(grid.querySelectorAll(".gallery-card"));
+	const order = newCards.map(c => c.dataset.id);
+
+	newCards.forEach((c, idx) => {
+		const badge = c.querySelector(".seq-badge");
+		if (badge) badge.textContent = `#${idx + 1}`;
+	});
+
+	try {
+		const res = await fetch(`/admin/projects/{{ project_id }}/properties/{{ property_id }}/media/reorder`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ order }),
+			credentials: "same-origin"
+		});
+		if (!res.ok) {
+			alert("Failed to save reordered sequence");
+		}
+	} catch (e) {
+		console.error("Failed to reorder media", e);
+	}
+}
 
 async function deleteMedia(mediaId) {
 	if (!confirm("Delete this photo from property gallery?")) return;
@@ -149,19 +356,32 @@ async function deleteMedia(mediaId) {
 	color: var(--accent-dark, #402c20);
 }
 
+.card-header-flex {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hint-text {
+	font-size: 0.82rem;
+	color: #7b6252;
+}
+
 .file-drop {
 	position: relative;
-	display: block;
 	border: 2px dashed var(--border, #e6dacf);
 	border-radius: 8px;
-	padding: 1.5rem;
+	padding: 2rem 1.5rem;
 	text-align: center;
 	background: var(--bg-panel, #fffaf5);
 	cursor: pointer;
 	transition: background 0.15s, border-color 0.15s;
 }
 
-.file-drop:hover {
+.file-drop.drag-active, .file-drop:hover {
 	background: #f7eee6;
 	border-color: var(--accent, #9e5b32);
 }
@@ -175,18 +395,138 @@ async function deleteMedia(mediaId) {
 	cursor: pointer;
 }
 
-.file-text {
-	font-size: 0.9rem;
-	color: #6f5546;
-	pointer-events: none;
+.upload-icon {
+	font-size: 2rem;
+	margin-bottom: 0.5rem;
 }
 
-.preview-img {
-	max-height: 180px;
-	max-width: 100%;
+.file-text {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	color: #6f5546;
+	pointer-events: none;
+	gap: 0.25rem;
+}
+
+.file-hint {
+	font-size: 0.8rem;
+	color: #8c7365;
+}
+
+/* Queue styles */
+.queue-container {
+	margin-top: 1.25rem;
+	border: 1px solid #ebdcd0;
 	border-radius: 6px;
-	display: block;
-	margin: 0 auto 0.75rem;
+	padding: 1rem;
+	background: #faf6f2;
+}
+
+.queue-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.75rem;
+}
+
+.queue-header h4 {
+	margin: 0;
+	font-size: 0.95rem;
+	color: var(--accent-dark, #402c20);
+}
+
+.clear-btn {
+	background: none;
+	border: none;
+	color: #a33;
+	font-size: 0.8rem;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.queue-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 0.75rem;
+	max-height: 250px;
+	overflow-y: auto;
+}
+
+.queue-item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	background: #fff;
+	border: 1px solid #e3d5c9;
+	border-radius: 6px;
+	padding: 0.5rem 0.75rem;
+	position: relative;
+}
+
+.queue-thumb {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 4px;
+	background: #f0e6dd;
+	flex-shrink: 0;
+}
+
+.queue-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.queue-name {
+	font-size: 0.82rem;
+	font-weight: 500;
+	color: #333;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.queue-meta {
+	font-size: 0.75rem;
+	color: #7b6252;
+}
+
+.queue-remove-btn {
+	background: none;
+	border: none;
+	font-size: 1.2rem;
+	color: #999;
+	cursor: pointer;
+	padding: 0 0.25rem;
+	line-height: 1;
+}
+
+.queue-remove-btn:hover {
+	color: #c00;
+}
+
+.upload-status {
+	margin-top: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	color: var(--accent, #9e5b32);
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+
+.spinner {
+	width: 18px;
+	height: 18px;
+	border: 3px solid rgba(158, 91, 50, 0.2);
+	border-top-color: var(--accent, #9e5b32);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
 }
 
 .upload-action {
@@ -199,14 +539,20 @@ async function deleteMedia(mediaId) {
 	background: var(--accent, #9e5b32);
 	color: white;
 	border: none;
-	padding: 0.45rem 1rem;
+	padding: 0.55rem 1.25rem;
 	border-radius: 5px;
 	font-size: 0.9rem;
 	font-weight: 500;
 	cursor: pointer;
+	transition: background 0.15s;
 }
 
-.primary-btn:hover {
+.primary-btn:disabled {
+	background: #c5b6ac;
+	cursor: not-allowed;
+}
+
+.primary-btn:hover:not(:disabled) {
 	background: var(--accent-dark, #7e4420);
 }
 
@@ -250,6 +596,19 @@ async function deleteMedia(mediaId) {
 	border-radius: 4px;
 }
 
+.video-badge {
+	position: absolute;
+	bottom: 6px;
+	left: 6px;
+	background: #9e5b32;
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 0.15rem 0.5rem;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
 .card-footer {
 	padding: 0.5rem 0.65rem;
 	display: flex;
@@ -257,6 +616,26 @@ async function deleteMedia(mediaId) {
 	align-items: center;
 	border-top: 1px solid #faf3ed;
 	background: #fff;
+	gap: 0.4rem;
+}
+
+.reorder-btns {
+	display: flex;
+	gap: 0.2rem;
+}
+
+.reorder-btn {
+	background: #f5ece5;
+	border: 1px solid #e1cfc2;
+	border-radius: 3px;
+	padding: 0.15rem 0.4rem;
+	font-size: 0.75rem;
+	cursor: pointer;
+	color: #553e32;
+}
+
+.reorder-btn:hover {
+	background: #e9dbcf;
 }
 
 .view-link {

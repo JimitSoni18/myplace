@@ -70,8 +70,8 @@ async fn update_location(
 	Path(id): Path<i32>,
 	payload: Form<CreateOrUpdateLocationPayload>,
 ) -> impl IntoResponse {
-	let result = sqlx::query!(
-		"UPDATE locations SET formatted_address = $1, city = $2, state_or_province = $3, area = $4, updated_at = NOW() WHERE id = $5",
+	let result = sqlx::query_file!(
+		"queries/locations/update_location.sql",
 		payload.formatted_address,
 		payload.city,
 		payload.state_or_province,
@@ -91,7 +91,7 @@ async fn delete_location(
 	state: State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<Redirect, LocationDeleteError> {
-	sqlx::query!("DELETE FROM locations WHERE id = $1", id)
+	sqlx::query_file!("queries/locations/delete_location.sql", id)
 		.execute(&state.model.db)
 		.await
 		.or(Err(LocationDeleteError::NotFound))?;
@@ -103,17 +103,14 @@ async fn location_edit_form(
 	Extension(auth_user): Extension<AuthUser>,
 	Path(id): Path<i32>,
 ) -> Result<Html<String>, LocationEditFormGetError> {
-	let location = sqlx::query_as!(
-		LocationItem,
-		"SELECT id, formatted_address, city, state_or_province, area FROM locations WHERE id = $1",
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await
-	.map_err(|e| match e {
-		sqlx::Error::RowNotFound => LocationEditFormGetError::NotFound,
-		_ => LocationEditFormGetError::InternalError,
-	})?;
+	let location =
+		sqlx::query_file_as!(LocationItem, "queries/locations/get_location_by_id.sql", id)
+			.fetch_one(&state.model.db)
+			.await
+			.map_err(|e| match e {
+				sqlx::Error::RowNotFound => LocationEditFormGetError::NotFound,
+				_ => LocationEditFormGetError::InternalError,
+			})?;
 	Ok(Html(
 		LocationForm {
 			edit_values: Some(LocationEditFormValues {
@@ -132,8 +129,8 @@ async fn create_location(
 	state: State<AppState>,
 	payload: Form<CreateOrUpdateLocationPayload>,
 ) -> impl IntoResponse {
-	let result = sqlx::query!(
-		"INSERT INTO locations (formatted_address, city, state_or_province, area) VALUES ($1, $2, $3, $4)",
+	let result = sqlx::query_file!(
+		"queries/locations/create_location.sql",
 		payload.formatted_address,
 		payload.city,
 		payload.state_or_province,
@@ -163,28 +160,18 @@ async fn location_list(
 			let rgx = format!("%{escaped}%");
 			(
 				query.q,
-				sqlx::query_as!(
-					LocationItem,
-					"SELECT id, formatted_address, city, state_or_province, area
-					 FROM locations
-					 WHERE formatted_address ILIKE $1 OR city ILIKE $1
-					 ORDER BY id",
-					rgx,
-				)
-				.fetch_all(&state.model.db)
-				.await
-				.or(Err(error::LocationListError::InternalError))?,
+				sqlx::query_file_as!(LocationItem, "queries/locations/search_locations.sql", rgx,)
+					.fetch_all(&state.model.db)
+					.await
+					.or(Err(error::LocationListError::InternalError))?,
 			)
 		}
 		_ => (
 			None,
-			sqlx::query_as!(
-				LocationItem,
-				"SELECT id, formatted_address, city, state_or_province, area FROM locations ORDER BY id"
-			)
-			.fetch_all(&state.model.db)
-			.await
-			.or(Err(error::LocationListError::InternalError))?,
+			sqlx::query_file_as!(LocationItem, "queries/locations/list_locations.sql")
+				.fetch_all(&state.model.db)
+				.await
+				.or(Err(error::LocationListError::InternalError))?,
 		),
 	};
 

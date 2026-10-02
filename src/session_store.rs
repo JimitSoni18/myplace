@@ -124,10 +124,7 @@ pub trait SessionStoreTrait: Send + Sync {
 	async fn delete_session(&self, session_id: &SessionId) -> bool;
 	async fn delete_all_for_user(&self, user_id: i32);
 	/// Rotates the session ID; the new ID keeps the original `started_at`.
-	async fn renew_session(
-		&self,
-		session_id: &SessionId,
-	) -> Result<SessionId, SessionRenewError>;
+	async fn renew_session(&self, session_id: &SessionId) -> Result<SessionId, SessionRenewError>;
 	/// Removes all expired sessions. Returns the number removed.
 	async fn clean_expired(&self) -> usize;
 }
@@ -184,10 +181,7 @@ impl SessionStoreTrait for SessionStore {
 
 	/// Rotates the session ID preserving the original `started_at` so session
 	/// age limits can be enforced later if needed.
-	async fn renew_session(
-		&self,
-		session_id: &SessionId,
-	) -> Result<SessionId, SessionRenewError> {
+	async fn renew_session(&self, session_id: &SessionId) -> Result<SessionId, SessionRenewError> {
 		let mut guard = self.sessions.write().await;
 		let AuthUser {
 			started_at,

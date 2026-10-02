@@ -5,7 +5,11 @@ use axum::{
 	routing::get,
 };
 
-use crate::{AppState, response_types::SetAuthCookie, session_store::{SessionId, SessionStoreTrait as _}};
+use crate::{
+	AppState,
+	response_types::SetAuthCookie,
+	session_store::{SessionId, SessionStoreTrait as _},
+};
 
 pub mod amenities;
 pub mod dashboard;

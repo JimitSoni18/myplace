@@ -39,24 +39,13 @@ async fn amenity_list(
 		projects_count: i64,
 	}
 
-	let rows = sqlx::query_as!(
-		DbRow,
-		r#"
-		SELECT
-			a.id, a.name, a.slug, a.is_active,
-			COUNT(pa.project_id) as "projects_count!: i64"
-		FROM amenities a
-			LEFT JOIN project_amenities pa ON pa.amenity_id = a.id
-		GROUP BY a.id
-		ORDER BY a.name ASC
-		"#
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "failed to fetch amenities");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	let rows = sqlx::query_file_as!(DbRow, "queries/amenities/list_amenities.sql")
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "failed to fetch amenities");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	let amenities = rows
 		.into_iter()
@@ -94,17 +83,13 @@ async fn create_amenity(
 
 	let slug = slugify(trimmed);
 
-	sqlx::query!(
-		"INSERT INTO amenities (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
-		trimmed,
-		slug,
-	)
-	.execute(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "failed to insert amenity");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	sqlx::query_file!("queries/amenities/create_amenity.sql", trimmed, slug,)
+		.execute(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "failed to insert amenity");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	tracing::info!(name = trimmed, slug = %slug, "created amenity");
 	Ok(Redirect::to("/admin/amenities"))
@@ -114,16 +99,13 @@ async fn toggle_amenity(
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<Redirect, StatusCode> {
-	sqlx::query!(
-		"UPDATE amenities SET is_active = NOT is_active WHERE id = $1",
-		id
-	)
-	.execute(&state.model.db)
-	.await
-	.map_err(|e| {
-		tracing::error!(error = ?e, "failed to toggle amenity");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
+	sqlx::query_file!("queries/amenities/toggle_amenity.sql", id)
+		.execute(&state.model.db)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = ?e, "failed to toggle amenity");
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
 
 	Ok(Redirect::to("/admin/amenities"))
 }
@@ -132,7 +114,7 @@ async fn delete_amenity(
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
 ) -> Result<StatusCode, StatusCode> {
-	sqlx::query!("DELETE FROM amenities WHERE id = $1", id)
+	sqlx::query_file!("queries/amenities/delete_amenity.sql", id)
 		.execute(&state.model.db)
 		.await
 		.map_err(|e| {

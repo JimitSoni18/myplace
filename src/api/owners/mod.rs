@@ -62,28 +62,9 @@ async fn owner_dashboard(
 		hero_thumb_key: Option<String>,
 	}
 
-	let rows = sqlx::query_as!(
+	let rows = sqlx::query_file_as!(
 		DbRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(DISTINCT prop.id) as "properties_count!: i64",
-			(
-				SELECT m.thumbnail_key
-				FROM project_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.project_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address
-		ORDER BY p.id DESC
-		"#,
+		"queries/projects/list_owner_portal_projects.sql",
 		owner.owner_id
 	)
 	.fetch_all(&state.model.db)
@@ -142,28 +123,9 @@ async fn owner_projects_list(
 		hero_thumb_key: Option<String>,
 	}
 
-	let rows = sqlx::query_as!(
+	let rows = sqlx::query_file_as!(
 		DbRow,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.category,
-			loc.formatted_address as "location?",
-			COUNT(DISTINCT prop.id) as "properties_count!: i64",
-			(
-				SELECT m.thumbnail_key
-				FROM project_media pm
-				JOIN media m ON m.id = pm.media_id
-				WHERE pm.project_id = p.id
-				ORDER BY pm.sequence ASC
-				LIMIT 1
-			) as hero_thumb_key
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-			LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
-		WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-		GROUP BY p.id, loc.formatted_address
-		ORDER BY p.id DESC
-		"#,
+		"queries/projects/list_owner_portal_projects.sql",
 		owner.owner_id
 	)
 	.fetch_all(&state.model.db)
@@ -221,17 +183,9 @@ async fn owner_project_detail(
 	}
 
 	// Strictly scoped to owner_id
-	let p = sqlx::query_as!(
+	let p = sqlx::query_file_as!(
 		DbProject,
-		r#"
-		SELECT
-			p.id, p.name, p.slug, p.description, p.category,
-			loc.formatted_address as "location_name?",
-			p.start_date, p.launch_date, p.possession_date
-		FROM projects p
-			LEFT JOIN locations loc ON loc.id = p.location_id
-		WHERE p.id = $1 AND p.project_owner_id = $2 AND p.deleted_at IS NULL
-		"#,
+		"queries/projects/get_owner_portal_project_detail.sql",
 		id,
 		owner.owner_id
 	)
@@ -243,35 +197,23 @@ async fn owner_project_detail(
 	})?
 	.ok_or(StatusCode::NOT_FOUND)?;
 
-	let count_row = sqlx::query!(
-		"SELECT COUNT(id) as \"count!: i64\" FROM properties WHERE project_id = $1 AND deleted_at IS NULL",
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let count_row = sqlx::query_file!("queries/projects/count_project_properties.sql", id)
+		.fetch_one(&state.model.db)
+		.await
+		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
 	struct DbMedia {
 		media_id: Uuid,
+		media_type: String,
 		s3_key: String,
 		thumbnail_key: Option<String>,
 		sequence: i16,
 	}
 
-	let media_rows = sqlx::query_as!(
-		DbMedia,
-		r#"
-		SELECT pm.media_id, m.s3_key, m.thumbnail_key, pm.sequence
-		FROM project_media pm
-		JOIN media m ON m.id = pm.media_id
-		WHERE pm.project_id = $1
-		ORDER BY pm.sequence ASC
-		"#,
-		id
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let media_rows = sqlx::query_file_as!(DbMedia, "queries/projects/get_project_media.sql", id)
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
 	let media = media_rows
 		.into_iter()
@@ -284,6 +226,7 @@ async fn owner_project_detail(
 				.unwrap_or_else(|| url.clone());
 			ProjectMediaItem {
 				id: r.media_id,
+				media_type: r.media_type,
 				url,
 				thumbnail_url,
 				sequence: r.sequence,
@@ -300,20 +243,10 @@ async fn owner_project_detail(
 		file_size: Option<i64>,
 	}
 
-	let doc_rows = sqlx::query_as!(
-		DbDoc,
-		r#"
-		SELECT pd.id, pd.media_id, pd.display_name, pd.doc_type, m.s3_key, m.file_size
-		FROM project_documents pd
-		JOIN media m ON m.id = pd.media_id
-		WHERE pd.project_id = $1
-		ORDER BY pd.id DESC
-		"#,
-		id
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+	let doc_rows = sqlx::query_file_as!(DbDoc, "queries/projects/get_project_documents.sql", id)
+		.fetch_all(&state.model.db)
+		.await
+		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
 	let documents = doc_rows
 		.into_iter()
@@ -372,8 +305,5 @@ async fn owner_logout(
 	State(state): State<AppState>,
 ) -> impl IntoResponse {
 	state.session_store.delete_session(&session_id).await;
-	(
-		SetAuthCookie::new("", 0),
-		Redirect::to("/auth/owner-login"),
-	)
+	(SetAuthCookie::new("", 0), Redirect::to("/auth/owner-login"))
 }

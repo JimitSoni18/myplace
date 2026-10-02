@@ -263,7 +263,7 @@
 		<div class="breadcrumb">
 			<a href="/">Home</a> &rarr;
 			<a href="/properties">Properties</a> &rarr;
-			<a href="/projects/{{ project.slug }}">{{ project.name }}</a> &rarr;
+			<a href="/projects/{{ project.id }}-{{ project.slug }}">{{ project.name }}</a> &rarr;
 			<span>{{ property.property_type_name }}</span>
 		</div>
 		<div class="prop-header-flex">
@@ -276,7 +276,7 @@
 				<div class="prop-loc">
 					<span>📍 {{ project.location_name }}</span>
 					<span>&bull;</span>
-					<span>Development: <a href="/projects/{{ project.slug }}" style="color: #60a5fa; text-decoration: underline;">{{ project.name }}</a></span>
+					<span>Development: <a href="/projects/{{ project.id }}-{{ project.slug }}" style="color: #60a5fa; text-decoration: underline;">{{ project.name }}</a></span>
 				</div>
 				<div class="prop-hero-badges">
 					<span class="badge-pill">{{ property.category }}</span>
@@ -298,11 +298,18 @@
 	<!-- Gallery -->
 	{% if !gallery.is_empty() %}
 	<div class="gallery-grid">
-		{% for img in gallery %}
+		{% for item in gallery %}
 		<div class="gallery-item">
-			<a href="{{ img.url }}" target="_blank" rel="noopener">
-				<img src="{{ img.thumbnail_url }}" alt="Property photo" loading="lazy">
+			{% if item.media_type == "video" %}
+			<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+				<source src="{{ item.url }}" type="video/mp4">
+				Your browser does not support the video tag.
+			</video>
+			{% else %}
+			<a href="{{ item.url }}" target="_blank" rel="noopener">
+				<img src="{{ item.thumbnail_url }}" alt="Property photo" loading="lazy">
 			</a>
+			{% endif %}
 		</div>
 		{% endfor %}
 	</div>
@@ -426,12 +433,12 @@
 				<div class="sidebar-widget">
 					<h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Development Details</h3>
 					<div style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 0.25rem;">
-						<a href="/projects/{{ project.slug }}">{{ project.name }}</a>
+						<a href="/projects/{{ project.id }}-{{ project.slug }}">{{ project.name }}</a>
 					</div>
 					<div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-						Developer: <a href="/owners/{{ owner.slug }}" style="color: var(--text-main); font-weight: 600;">{{ owner.name }}</a>
+						Developer: <a href="/owners/{{ owner.id }}-{{ owner.slug }}" style="color: var(--text-main); font-weight: 600;">{{ owner.name }}</a>
 					</div>
-					<a href="/projects/{{ project.slug }}" class="btn-card" style="display: block; text-align: center;">View Entire Project &rarr;</a>
+					<a href="/projects/{{ project.id }}-{{ project.slug }}" class="btn-card" style="display: block; text-align: center;">View Entire Project &rarr;</a>
 				</div>
 
 				<!-- Enquiry Form -->

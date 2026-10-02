@@ -378,7 +378,7 @@
 				</div>
 				<div class="card-body">
 					<h3 class="card-title">
-						<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+						<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
 					</h3>
 					<div class="card-subtitle">
 						<span>📍 {{ p.location_name }}</span>
@@ -387,7 +387,7 @@
 						<div class="spec-item">
 							<span>Developer:</span>
 							<strong>
-								<a href="/owners/{{ p.owner_slug }}">{{ p.owner_name }}</a>
+								<a href="/owners/{{ p.owner_id }}-{{ p.owner_slug }}">{{ p.owner_name }}</a>
 							</strong>
 						</div>
 						<div class="spec-item">
@@ -403,7 +403,7 @@
 							Ready / Ongoing
 							{% endif %}
 						</span>
-						<a href="/projects/{{ p.slug }}" class="btn-card">Explore Project</a>
+						<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn-card">Explore Project</a>
 					</div>
 				</div>
 			</article>
@@ -439,12 +439,12 @@
 				</div>
 				<div class="card-body">
 					<h3 class="card-title">
-						<a href="/properties/{{ prop.slug }}">{{ prop.title }}</a>
+						<a href="/properties/{{ prop.id }}-{{ prop.slug }}">{{ prop.title }}</a>
 					</h3>
 					<div class="card-subtitle">
 						<span>📍 {{ prop.location_name }}</span>
 						<span>&bull;</span>
-						<a href="/projects/{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
+						<a href="/projects/{{ prop.project_id }}-{{ prop.project_slug }}" style="color: var(--primary);">{{ prop.project_name }}</a>
 					</div>
 					<div class="card-specs">
 						{% if let Some(bhk) = prop.bedroom_count %}
@@ -465,7 +465,7 @@
 					</div>
 					<div class="card-footer">
 						<div class="price-tag">{{ prop.price_formatted }}</div>
-						<a href="/properties/{{ prop.slug }}" class="btn-card">View Details</a>
+						<a href="/properties/{{ prop.id }}-{{ prop.slug }}" class="btn-card">View Details</a>
 					</div>
 				</div>
 			</article>
@@ -486,7 +486,7 @@
 
 		<div class="owners-grid">
 			{% for o in featured_owners %}
-			<a href="/owners/{{ o.slug }}" class="owner-card">
+			<a href="/owners/{{ o.id }}-{{ o.slug }}" class="owner-card">
 				{% if let Some(img) = o.image_url %}
 				<img src="{{ img }}" alt="{{ o.name }}" class="owner-avatar" loading="lazy">
 				{% else %}

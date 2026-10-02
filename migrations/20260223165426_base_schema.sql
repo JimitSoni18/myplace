@@ -211,10 +211,10 @@ CREATE TABLE properties (
 	property_type_id INT  NOT NULL REFERENCES property_types(id),
 	unit_number      TEXT,
 	building         TEXT,
-	floor_number     INT,
-	total_floors     INT,
-	built_up_area    NUMERIC(12, 2),   -- square feet (canonical unit)
-	usable_area      NUMERIC(12, 2),   -- square feet
+	floor_number     INT CHECK (floor_number IS NULL OR floor_number >= -50),
+	total_floors     INT CHECK (total_floors IS NULL OR total_floors >= 0),
+	built_up_area    NUMERIC(12, 2) CHECK (built_up_area IS NULL OR built_up_area >= 0),   -- square feet (canonical unit)
+	usable_area      NUMERIC(12, 2) CHECK (usable_area IS NULL OR usable_area >= 0),   -- square feet
 	description      TEXT,
 	slug             TEXT NOT NULL,
 	created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -242,9 +242,9 @@ CREATE INDEX idx_properties_search     ON properties USING GIN(searchable_tokens
 
 CREATE TABLE residential_property_details (
 	property_id    INT NOT NULL PRIMARY KEY REFERENCES properties(id) ON DELETE CASCADE,
-	bedroom_count  NUMERIC(2, 1),   -- 2.5 for studios/lofts etc.
-	bathroom_count SMALLINT,
-	balcony_count  SMALLINT,
+	bedroom_count  NUMERIC(5, 1) CHECK (bedroom_count IS NULL OR (bedroom_count >= 0 AND bedroom_count <= 999.5)),   -- supports fractional up to 999.5 BHK
+	bathroom_count NUMERIC(5, 1) CHECK (bathroom_count IS NULL OR (bathroom_count >= 0 AND bathroom_count <= 999.5)),  -- supports fractional bathrooms up to 999.5
+	balcony_count  SMALLINT CHECK (balcony_count IS NULL OR (balcony_count >= 0 AND balcony_count <= 999)),
 	is_duplex      BOOL NOT NULL DEFAULT FALSE,
 	parking        TEXT            -- free-form for now (e.g. "2 covered")
 );
@@ -279,7 +279,7 @@ CREATE TABLE property_listings (
 	status         TEXT NOT NULL CHECK (status IN ('active', 'closed', 'sold', 'withdrawn'))
 	               DEFAULT 'active',
 	currency_code  CHAR(3) NOT NULL DEFAULT 'INR',
-	price          NUMERIC(18, 2),
+	price          NUMERIC(18, 2) CHECK (price IS NULL OR price >= 0),
 	billing_period TEXT,            -- NULL for sale; 'monthly' / 'yearly' for rent/lease
 	created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()

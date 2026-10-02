@@ -69,8 +69,8 @@ impl FromRequestParts<AppState> for OwnerUser {
 		}
 
 		// 4. Verify project owner status in DB: active must be true, not deleted.
-		let owner_row = sqlx::query!(
-			"SELECT id, name, active FROM project_owners WHERE profile_id = $1 AND deleted_at IS NULL",
+		let owner_row = sqlx::query_file!(
+			"queries/auth/get_owner_by_profile_id.sql",
 			auth_user.user_id
 		)
 		.fetch_optional(&state.model.db)
@@ -80,12 +80,18 @@ impl FromRequestParts<AppState> for OwnerUser {
 			error
 		})?
 		.ok_or_else(|| {
-			tracing::warn!(profile_id = auth_user.user_id, "no project_owner linked to profile");
+			tracing::warn!(
+				profile_id = auth_user.user_id,
+				"no project_owner linked to profile"
+			);
 			error
 		})?;
 
 		if !owner_row.active {
-			tracing::warn!(owner_id = owner_row.id, "inactive owner attempted to access portal");
+			tracing::warn!(
+				owner_id = owner_row.id,
+				"inactive owner attempted to access portal"
+			);
 			return Err(error);
 		}
 

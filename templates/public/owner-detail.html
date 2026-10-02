@@ -139,7 +139,7 @@
 				</div>
 				<div class="card-body">
 					<h3 class="card-title">
-						<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+						<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
 					</h3>
 					<div class="card-subtitle">
 						<span>📍 {{ p.location_name }}</span>
@@ -157,7 +157,7 @@
 						{% endif %}
 					</div>
 					<div class="card-footer">
-						<a href="/projects/{{ p.slug }}" class="btn-card" style="width:100%; text-align:center;">View Project Details &rarr;</a>
+						<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn-card" style="width:100%; text-align:center;">View Project Details &rarr;</a>
 					</div>
 				</div>
 			</article>

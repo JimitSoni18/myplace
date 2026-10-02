@@ -137,7 +137,7 @@
 			</div>
 			<div class="card-body">
 				<h2 class="card-title" style="font-size: 1.15rem;">
-					<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
+					<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
 				</h2>
 				<div class="card-subtitle">
 					<span>📍 {{ p.location_name }}</span>
@@ -146,7 +146,7 @@
 					<div class="spec-item">
 						<span>Developer:</span>
 						<strong>
-							<a href="/owners/{{ p.owner_slug }}">{{ p.owner_name }}</a>
+							<a href="/owners/{{ p.owner_id }}-{{ p.owner_slug }}">{{ p.owner_name }}</a>
 						</strong>
 					</div>
 					<div class="spec-item">
@@ -162,7 +162,7 @@
 						Ready / Under Construction
 						{% endif %}
 					</span>
-					<a href="/projects/{{ p.slug }}" class="btn-card">Explore Project &rarr;</a>
+					<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn-card">Explore Project &rarr;</a>
 				</div>
 			</div>
 		</article>

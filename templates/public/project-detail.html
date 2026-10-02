@@ -313,11 +313,18 @@
 	<!-- Gallery -->
 	{% if !gallery.is_empty() %}
 	<div class="gallery-grid">
-		{% for img in gallery %}
+		{% for item in gallery %}
 		<div class="gallery-item">
-			<a href="{{ img.url }}" target="_blank" rel="noopener">
-				<img src="{{ img.thumbnail_url }}" alt="{{ project.name }} photo" loading="lazy">
+			{% if item.media_type == "video" %}
+			<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+				<source src="{{ item.url }}" type="video/mp4">
+				Your browser does not support the video tag.
+			</video>
+			{% else %}
+			<a href="{{ item.url }}" target="_blank" rel="noopener">
+				<img src="{{ item.thumbnail_url }}" alt="{{ project.name }} photo" loading="lazy">
 			</a>
+			{% endif %}
 		</div>
 		{% endfor %}
 	</div>
@@ -361,7 +368,7 @@
 					<div style="border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
 						<div>
 							<h3 style="font-size: 1.05rem; font-weight: 700;">
-								<a href="/properties/{{ prop.slug }}" style="color: var(--primary);">{{ prop.title }}</a>
+								<a href="/properties/{{ prop.id }}-{{ prop.slug }}" style="color: var(--primary);">{{ prop.title }}</a>
 							</h3>
 							<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
 								<span>{{ prop.property_type_name }}</span> &bull;
@@ -372,7 +379,7 @@
 						</div>
 						<div style="display: flex; align-items: center; gap: 1rem;">
 							<div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">{{ prop.price_formatted }}</div>
-							<a href="/properties/{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
+							<a href="/properties/{{ prop.id }}-{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
 						</div>
 					</div>
 					{% endfor %}
@@ -413,7 +420,7 @@
 					<h3 style="font-size: 1.15rem; font-weight: 700;">{{ owner.name }}</h3>
 					<p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Project Developer</p>
 					<div style="margin-top: 1rem;">
-						<a href="/owners/{{ owner.slug }}" style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">View Developer Portfolio &rarr;</a>
+						<a href="/owners/{{ owner.id }}-{{ owner.slug }}" style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">View Developer Portfolio &rarr;</a>
 					</div>
 				</div>
 

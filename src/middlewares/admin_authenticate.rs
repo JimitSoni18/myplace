@@ -67,4 +67,3 @@ impl FromRequestParts<AppState> for AuthUser {
 		Ok(auth_user)
 	}
 }
-

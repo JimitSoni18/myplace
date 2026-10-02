@@ -1,3 +1,4 @@
+pub mod form;
 pub mod helpers;
 pub mod markdown;
 

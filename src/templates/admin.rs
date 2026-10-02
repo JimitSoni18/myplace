@@ -268,6 +268,7 @@ pub struct ProjectDetailData {
 
 pub struct ProjectMediaItem {
 	pub id: uuid::Uuid,
+	pub media_type: String,
 	pub url: String,
 	pub thumbnail_url: String,
 	pub sequence: i16,
@@ -399,7 +400,7 @@ pub struct PropertyEditData {
 	pub billing_period: Option<String>,
 	// residential
 	pub bedroom_count: Option<f64>,
-	pub bathroom_count: Option<i16>,
+	pub bathroom_count: Option<f64>,
 	pub balcony_count: Option<i16>,
 	pub is_duplex: bool,
 	pub parking: Option<String>,
@@ -434,7 +435,3 @@ pub struct PropertyMediaTemplate<'a> {
 	pub unit_title: String,
 	pub media: Vec<ProjectMediaItem>,
 }
-
-
-
-

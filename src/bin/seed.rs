@@ -22,7 +22,8 @@ async fn main() {
 		std::env::var("ADMIN_USERNAME").expect("ADMIN_USERNAME must be set for the seed binary");
 	let admin_password =
 		std::env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD must be set for the seed binary");
-	let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+	let raw_db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+	let database_url = myplace::config::normalize_db_url(&raw_db_url);
 
 	if admin_username.is_empty() || admin_password.is_empty() {
 		eprintln!("error: ADMIN_USERNAME and ADMIN_PASSWORD must not be empty");

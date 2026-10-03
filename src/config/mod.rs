@@ -38,6 +38,25 @@ pub fn load_dotenv() {
 	}
 }
 
+/// Automatically ensures remote database URLs (e.g. on Render) have `sslmode=require`
+/// if no sslmode is explicitly specified, while preserving plaintext local connections.
+pub fn normalize_db_url(url: &str) -> String {
+	let mut s = url.trim().to_string();
+	if !s.contains("sslmode=")
+		&& !s.contains("localhost")
+		&& !s.contains("127.0.0.1")
+		&& !s.contains("@db:")
+		&& !s.contains("@db/")
+	{
+		if s.contains('?') {
+			s.push_str("&sslmode=require");
+		} else {
+			s.push_str("?sslmode=require");
+		}
+	}
+	s
+}
+
 pub struct Config {
 	/// Main public port (backwards compatible with `port`).
 	pub port: u16,
@@ -128,8 +147,10 @@ impl Config {
 				.unwrap_or_else(|_| "10".to_string())
 				.parse()
 				.expect("error: `MAX_DB_CONNECTIONS` environment variable should be a number"),
-			db_url: std::env::var("DATABASE_URL")
-				.expect("error: `DATABASE_URL` environment variable is not set"),
+			db_url: normalize_db_url(
+				&std::env::var("DATABASE_URL")
+					.expect("error: `DATABASE_URL` environment variable is not set"),
+			),
 			cookie_signing_secret: std::env::var("COOKIE_SIGNING_SECRET")
 				.expect("error: `COOKIE_SIGNING_SECRET` environment variable is not set"),
 			s3_endpoint: std::env::var("S3_ENDPOINT")

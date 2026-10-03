@@ -4,7 +4,8 @@ use sqlx::postgres::PgPoolOptions;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	myplace::config::load_dotenv();
 
-	let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+	let raw_db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+	let database_url = myplace::config::normalize_db_url(&raw_db_url);
 
 	println!("[migrate] connecting to database...");
 	let pool = PgPoolOptions::new()

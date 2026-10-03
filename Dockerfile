@@ -4,7 +4,8 @@
 FROM rust:1.94-alpine3.23 AS base
 # musl-dev: required for static linking on Alpine
 # g++ / make: build scripts in some dependencies
-RUN apk add --no-cache musl-dev g++ make
+# openssl: required for build-time cryptographic key generation
+RUN apk add --no-cache musl-dev g++ make openssl
 WORKDIR /app
 
 # =============================================================================
@@ -35,14 +36,20 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     echo "fn main() {}" > src/bin/seed.rs && \
     echo "fn main() {}" > src/bin/migrate.rs && \
     cargo build --release && \
-    rm -rf src
+    rm -rf src target/release/myplace* target/release/seed* target/release/migrate* \
+           target/release/deps/myplace* target/release/deps/seed* target/release/deps/migrate*
 
-# Copy full source including offline SQLx cache (.sqlx/) and migrations.
+# Copy full source including offline SQLx cache (.sqlx/), build script, and migrations.
 COPY . .
+
+# Generate Ed25519 keys during the build step if not present
+RUN if [ ! -f private.pem ]; then openssl genpkey -algorithm ed25519 -out private.pem; fi && \
+    if [ ! -f public.pem ]; then openssl pkey -in private.pem -pubout -out public.pem; fi
 
 # SQLX_OFFLINE=true allows compilation against .sqlx/ metadata cache without a live database.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
+    touch src/lib.rs src/main.rs src/bin/*.rs && \
     SQLX_OFFLINE=true cargo build --release && \
     cp target/release/myplace  /usr/local/bin/myplace && \
     cp target/release/seed     /usr/local/bin/seed && \

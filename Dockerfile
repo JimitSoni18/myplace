@@ -3,9 +3,8 @@
 # =============================================================================
 FROM rust:1.94-alpine3.23 AS base
 # musl-dev: required for static linking on Alpine
-# postgresql-dev: libpq headers for sqlx
 # g++ / make: build scripts in some dependencies
-RUN apk add --no-cache musl-dev postgresql-dev g++ make
+RUN apk add --no-cache musl-dev g++ make
 WORKDIR /app
 
 # =============================================================================
@@ -19,53 +18,62 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install sqlx-cli --no-default-features --features sqlx-cli/rustls,sqlx-cli/postgres
 
 # Entrypoint: run migrations, then watch for changes.
-# `sqlx migrate run` is idempotent — safe to run on every restart.
-CMD sh -c "sqlx migrate run && cargo watch -x 'run --bin myplace'"
+CMD sh -c "cargo run --bin migrate && cargo watch -x 'run --bin myplace'"
 
 # =============================================================================
 # Stage 3: builder — compiles release binaries
 # =============================================================================
 FROM base AS builder
 
-# Install sqlx-cli for offline preparation (used during image build if needed)
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    cargo install sqlx-cli --no-default-features --features sqlx-cli/rustls,sqlx-cli/postgres
-
-# Pre-cache dependencies by building a stub binary first.
+# Pre-cache dependencies by building a stub crate first.
 COPY Cargo.toml Cargo.lock ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    mkdir src src/bin && \
+    mkdir -p src src/bin && \
+    touch src/lib.rs && \
     echo "fn main() {}" > src/main.rs && \
     echo "fn main() {}" > src/bin/seed.rs && \
+    echo "fn main() {}" > src/bin/migrate.rs && \
     cargo build --release && \
     rm -rf src
 
-# Copy full source and build for real.
+# Copy full source including offline SQLx cache (.sqlx/) and migrations.
 COPY . .
-# SQLX_OFFLINE=true means the macro reads the .sqlx/ cache instead of a live DB.
-# Run `cargo sqlx prepare` locally after schema changes to update the cache.
+
+# SQLX_OFFLINE=true allows compilation against .sqlx/ metadata cache without a live database.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     SQLX_OFFLINE=true cargo build --release && \
     cp target/release/myplace  /usr/local/bin/myplace && \
-    cp target/release/seed     /usr/local/bin/seed
+    cp target/release/seed     /usr/local/bin/seed && \
+    cp target/release/migrate  /usr/local/bin/migrate
 
 # =============================================================================
-# Stage 4: runtime — minimal image with just the binaries + migrations
+# Stage 4: runtime — minimal production image
 # =============================================================================
 FROM alpine:3.23 AS runtime
-RUN apk add --no-cache libpq libgcc
+# ca-certificates: required for outbound HTTPS (e.g. S3 / Cloudflare R2 / Render)
+# ffmpeg + ffprobe: required for video metadata probing, poster thumbnail generation, and faststart optimization
+# libgcc: runtime support for musl-linked binaries
+RUN apk add --no-cache ca-certificates ffmpeg libgcc
+
 WORKDIR /app
 
-COPY --from=builder /usr/local/cargo/bin/sqlx  /usr/local/bin/sqlx
-COPY --from=builder /usr/local/bin/myplace     .
-COPY --from=builder /usr/local/bin/seed        .
-# Migrations need to be available at runtime so sqlx migrate run works.
+# Application binaries
+COPY --from=builder /usr/local/bin/myplace  /app/myplace
+COPY --from=builder /usr/local/bin/seed     /app/seed
+COPY --from=builder /usr/local/bin/migrate  /app/migrate
+
+# Convenience shim so `sqlx migrate run` invokes the migrate binary
+RUN printf '#!/bin/sh\nexec /app/migrate "$@"\n' > /usr/local/bin/sqlx && \
+    chmod +x /usr/local/bin/sqlx
+
+# Static assets and migration definitions
+COPY static/ static/
 COPY migrations/ migrations/
 
-EXPOSE 8080
+EXPOSE 8080 8081 8082
 
-# Run migrations → seed admin → start server.
-# Each step is idempotent and safe to run on every deployment.
-CMD sh -c "sqlx migrate run && ./seed && ./myplace"
+# Run migrations → seed admin user → start server.
+# Each step is idempotent and safe to run on every deployment/container start.
+CMD ["sh", "-c", "./migrate && ./seed && ./myplace"]

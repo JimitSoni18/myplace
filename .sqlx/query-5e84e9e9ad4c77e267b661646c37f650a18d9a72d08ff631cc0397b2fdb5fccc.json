@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(pr.id)\nFROM properties pr\nJOIN property_types pt ON pt.id = pr.property_type_id\nWHERE pr.deleted_at IS NULL AND pt.category = 'RESIDENTIAL';\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5e84e9e9ad4c77e267b661646c37f650a18d9a72d08ff631cc0397b2fdb5fccc"
+}

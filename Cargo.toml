@@ -16,6 +16,10 @@ path = "src/main.rs"
 name = "seed"
 path = "src/bin/seed.rs"
 
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"
+
 [dependencies]
 ammonia = "4"
 argon2 = "0.5.3"
@@ -35,7 +39,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_html_form = "0.4.1"
 serde_json = "1.0"
 serde_urlencoded = "0.7"
-sqlx = { version = "0.8.6", features = ["uuid", "postgres", "runtime-tokio", "time"] }
+sqlx = { version = "0.8.6", features = ["uuid", "postgres", "runtime-tokio", "time", "tls-rustls", "migrate"] }
 time = { version = "0.3.47", features = ["macros", "formatting", "local-offset", "serde"] }
 tokio = { version = "1.49.0", features = ["full"] }
 tower-http = { version = "0.6.8", features = ["fs"] }

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    ((id - 1) / $1) * $1 + 1 AS \"range_start!: i32\",\n    MAX(updated_at) AS \"lastmod!: time::OffsetDateTime\"\nFROM project_owners\nWHERE active = TRUE AND deleted_at IS NULL\nGROUP BY 1\nORDER BY 1 ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "range_start!: i32",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "lastmod!: time::OffsetDateTime",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "2681c7f55b338a8c85517c083f5a1cf4b317e8ef10a9d8386f8b4496bb65b076"
+}

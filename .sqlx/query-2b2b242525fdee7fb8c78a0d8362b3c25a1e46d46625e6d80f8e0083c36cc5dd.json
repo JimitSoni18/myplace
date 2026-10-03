@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE commercial_property_details SET parking = $1 WHERE property_id = $2;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2b2b242525fdee7fb8c78a0d8362b3c25a1e46d46625e6d80f8e0083c36cc5dd"
+}

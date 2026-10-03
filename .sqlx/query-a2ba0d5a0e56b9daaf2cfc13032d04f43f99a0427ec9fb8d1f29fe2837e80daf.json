@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO land_property_details (\n\tproperty_id, parcel_number, zoning, approval_status, development_status\n)\nVALUES ($1, $2, $3, $4, $5);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a2ba0d5a0e56b9daaf2cfc13032d04f43f99a0427ec9fb8d1f29fe2837e80daf"
+}

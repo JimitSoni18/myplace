@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO locations (formatted_address, city, state_or_province, area) VALUES ($1, $2, $3, $4);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ef8b2faf15c18dad013abb8a219c8f759070f3fd5007d7232ca703e3231b732b"
+}

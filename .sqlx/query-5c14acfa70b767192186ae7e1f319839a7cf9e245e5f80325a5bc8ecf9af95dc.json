@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\tINSERT INTO residential_property_details (\n\t\t\t\tproperty_id, bedroom_count, bathroom_count, balcony_count, is_duplex, parking\n\t\t\t)\n\t\t\tVALUES ($1, 2.0, 2.0, 1, false, '1 Covered')\n\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5c14acfa70b767192186ae7e1f319839a7cf9e245e5f80325a5bc8ecf9af95dc"
+}

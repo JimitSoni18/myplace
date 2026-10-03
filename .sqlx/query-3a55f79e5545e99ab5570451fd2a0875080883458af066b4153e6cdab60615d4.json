@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.media_type, m.s3_key, m.thumbnail_key, pm.sequence\nFROM project_media pm\nJOIN media m ON m.id = pm.media_id\nWHERE pm.project_id = $1\nORDER BY pm.sequence ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "media_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "s3_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "thumbnail_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "sequence",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "3a55f79e5545e99ab5570451fd2a0875080883458af066b4153e6cdab60615d4"
+}

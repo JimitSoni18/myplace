@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE land_property_details\nSET parcel_number = $1, zoning = $2, approval_status = $3, development_status = $4\nWHERE property_id = $5;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "427f7014578023eeb214a1832181d68fc8fbd3ca21a4cfa87477b54b423a73a5"
+}

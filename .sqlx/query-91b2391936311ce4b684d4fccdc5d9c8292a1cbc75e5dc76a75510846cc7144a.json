@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\tINSERT INTO projects (project_owner_id, location_id, name, slug, description, category)\n\t\t\t\tVALUES ($1, $2, 'Prestige Falcon City', 'prestige-falcon-city', 'Premium residential apartments in Bengaluru.', 'Residential')\n\t\t\t\tRETURNING id\n\t\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "91b2391936311ce4b684d4fccdc5d9c8292a1cbc75e5dc76a75510846cc7144a"
+}

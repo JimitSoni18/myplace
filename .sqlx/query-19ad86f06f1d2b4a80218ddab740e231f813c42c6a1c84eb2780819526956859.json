@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s3_key, thumbnail_key FROM media WHERE id = $1;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "s3_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "thumbnail_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "19ad86f06f1d2b4a80218ddab740e231f813c42c6a1c84eb2780819526956859"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE property_listings\nSET listing_type = $1, status = $2, price = ($3::float8)::numeric, billing_period = $4, updated_at = NOW()\nWHERE property_id = $5;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Float8",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b3ee7b65af93766e30eee125f90724db6e36bc4bbb453fa849bacb0f20b01928"
+}

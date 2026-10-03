@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO media (id, media_type, mime_type, s3_key, file_size)\nVALUES ($1, 'document', $2, $3, $4);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f4515d39c95e188f9dd5115011040436716763d868a6544e233bd2eaf571aae1"
+}

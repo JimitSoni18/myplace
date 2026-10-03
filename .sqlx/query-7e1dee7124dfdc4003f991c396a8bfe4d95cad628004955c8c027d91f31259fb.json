@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE properties\nSET property_type_id = $1, unit_number = $2, building = $3, floor_number = $4,\n    total_floors = $5, built_up_area = ($6::float8)::numeric, usable_area = ($7::float8)::numeric, description = $8,\n    updated_at = NOW()\nWHERE id = $9 AND project_id = $10 AND deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Text",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7e1dee7124dfdc4003f991c396a8bfe4d95cad628004955c8c027d91f31259fb"
+}

@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, formatted_address, city, state_or_province, area FROM locations ORDER BY id;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "state_or_province",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "area",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "7e0b84631cac8d55a08b2ee5c5a60c2a915486d0b3c600134f499d0ea631d8b3"
+}

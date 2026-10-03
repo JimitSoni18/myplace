@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pt.category, COUNT(p.id) as count\nFROM properties p\nJOIN property_types pt ON pt.id = p.property_type_id\nWHERE p.project_id = $1 AND p.deleted_at IS NULL\nGROUP BY pt.category;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "1da77924246ad44cb6079373b93b40110221c637063a369d2083d060c2a47f7a"
+}

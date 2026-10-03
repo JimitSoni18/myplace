@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tpo.id, po.name, po.slug, po.profile_img_thumb_key,\n\tCOUNT(p.id) as \"project_count!: i64\"\nFROM project_owners po\n\tLEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL\nWHERE po.active = TRUE AND po.deleted_at IS NULL\nGROUP BY po.id\nORDER BY COUNT(p.id) DESC, po.id DESC\nLIMIT 4;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "profile_img_thumb_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "project_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "7d905094cc1984096fb4790b59d67512f612c9c874c788d1305a927f2d90b73d"
+}

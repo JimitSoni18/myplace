@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT profile_img_key, profile_img_thumb_key FROM project_owners WHERE id = $1 AND deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "profile_img_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "profile_img_thumb_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "00c5073f990f99b5731b58c23cf0f654809f1827b2e95742b48f51c7ee1453ea"
+}

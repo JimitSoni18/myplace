@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\tINSERT INTO property_listings (property_id, listing_type, status, price)\n\t\t\tVALUES ($1, 'sale', 'active', 7500000.0)\n\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cfca45281dcbc3e876423b6db7d7f1767344f6db2d1e010081a9a4bcc026b999"
+}

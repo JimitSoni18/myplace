@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.unit_number, p.building,\n\tpt.name as type_name,\n\tp.built_up_area::float8 as \"built_up_area?\",\n\tpl.listing_type as \"listing_type?\",\n\tpl.status as \"status?\",\n\tpl.price::float8 as \"price?\",\n\tCOUNT(DISTINCT pm.media_id) as \"media_count!: i64\",\n\trpd.bedroom_count::float8 as \"bedroom_count?\",\n\trpd.bathroom_count::float8 as \"bathroom_count?\",\n\tlpd.parcel_number as \"parcel_number?\",\n\tlpd.zoning as \"zoning?\"\nFROM properties p\n\tJOIN property_types pt ON pt.id = p.property_type_id\n\tLEFT JOIN property_listings pl ON pl.property_id = p.id\n\tLEFT JOIN property_media pm ON pm.property_id = p.id\n\tLEFT JOIN residential_property_details rpd ON rpd.property_id = p.id\n\tLEFT JOIN land_property_details lpd ON lpd.property_id = p.id\nWHERE p.project_id = $1 AND pt.category = $2 AND p.deleted_at IS NULL\nGROUP BY p.id, pt.name, pl.listing_type, pl.status, pl.price,\n         rpd.bedroom_count, rpd.bathroom_count, lpd.parcel_number, lpd.zoning\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "unit_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "building",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "listing_type?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "status?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "media_count!: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "bedroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 10,
+        "name": "bathroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 11,
+        "name": "parcel_number?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "zoning?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      null,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      true,
+      true
+    ]
+  },
+  "hash": "e6556aa01d90978899a6963267b7c491899fae810fef6d4428ce0ad5921f12e5"
+}

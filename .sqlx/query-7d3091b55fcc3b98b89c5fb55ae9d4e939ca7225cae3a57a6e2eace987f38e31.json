@@ -1,0 +1,114 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.slug,\n\tpt.category, pt.name as property_type_name,\n\tp.built_up_area::float8 as \"built_up_area?\",\n\trpd.bedroom_count::float8 as \"bedroom_count?\",\n\trpd.bathroom_count::float8 as \"bathroom_count?\",\n\tpl.price::float8 as \"price?\",\n\tpl.currency_code as \"currency_code?\",\n\tpl.listing_type as \"listing_type?\",\n\tpl.billing_period as \"billing_period?\",\n\tproj.id as project_id,\n\tproj.name as project_name,\n\tproj.slug as project_slug,\n\tloc.formatted_address as \"location?\",\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM property_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.property_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key\nFROM properties p\n\tJOIN property_types pt ON pt.id = p.property_type_id\n\tJOIN projects proj ON proj.id = p.project_id AND proj.deleted_at IS NULL\n\tJOIN project_owners po ON po.id = proj.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL\n\tLEFT JOIN locations loc ON loc.id = proj.location_id\n\tLEFT JOIN residential_property_details rpd ON rpd.property_id = p.id\n\tLEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'\nWHERE p.deleted_at IS NULL\n  AND ($1::text IS NULL OR pt.category = $1)\n  AND ($2::text IS NULL OR pl.listing_type = $2)\n  AND ($3::text IS NULL OR proj.name ILIKE $3 OR loc.formatted_address ILIKE $3 OR p.unit_number ILIKE $3)\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "property_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "bedroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "bathroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "currency_code?",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "listing_type?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "billing_period?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "project_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "project_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "project_slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "7d3091b55fcc3b98b89c5fb55ae9d4e939ca7225cae3a57a6e2eace987f38e31"
+}

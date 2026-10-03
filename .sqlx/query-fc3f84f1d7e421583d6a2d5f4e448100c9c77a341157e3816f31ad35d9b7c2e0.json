@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\tINSERT INTO project_amenities (project_id, amenity_id)\n\t\t\t\tSELECT $1, id FROM amenities LIMIT 2\n\t\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fc3f84f1d7e421583d6a2d5f4e448100c9c77a341157e3816f31ad35d9b7c2e0"
+}

@@ -1,4 +1,5 @@
 target/
 .git/
-.env
+.env*
+*.pem
 docker-compose.override.yml

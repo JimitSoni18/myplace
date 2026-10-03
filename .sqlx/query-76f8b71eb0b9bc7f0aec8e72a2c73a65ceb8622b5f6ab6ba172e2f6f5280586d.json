@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id,\n\tp.username,\n\tp.password,\n\tu.profile_id\nFROM\n\tprofiles p\nINNER JOIN admin_users u ON u.profile_id = p.id\nWHERE\n\tp.username = $1;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "password",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "profile_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "76f8b71eb0b9bc7f0aec8e72a2c73a65ceb8622b5f6ab6ba172e2f6f5280586d"
+}

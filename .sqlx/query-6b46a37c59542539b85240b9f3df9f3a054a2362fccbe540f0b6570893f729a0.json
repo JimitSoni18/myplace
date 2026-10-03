@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\tINSERT INTO amenities (name, slug, is_active) VALUES\n\t\t\t('Swimming Pool', 'swimming-pool', true),\n\t\t\t('Gymnasium', 'gymnasium', true),\n\t\t\t('Clubhouse', 'clubhouse', true),\n\t\t\t('24/7 Security', '24-7-security', true),\n\t\t\t('Children Play Area', 'children-play-area', true)\n\t\t\tON CONFLICT DO NOTHING\n\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "6b46a37c59542539b85240b9f3df9f3a054a2362fccbe540f0b6570893f729a0"
+}

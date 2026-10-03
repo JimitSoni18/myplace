@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO property_listings (\n\tproperty_id, listing_type, status, currency_code, price, billing_period\n)\nVALUES ($1, $2, $3, 'INR', ($4::float8)::numeric, $5);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Float8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "03f1e2ba7b5fb1ac58df156ed98d480a518ae68ad14ab66cc88aa744db71fe60"
+}

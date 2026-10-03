@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    po.id, po.name, po.slug, pr.username, po.bio, po.email, po.phone, po.website,\n    po.active, po.profile_img_key, po.profile_img_thumb_key, po.created_at,\n    COUNT(p.id) as \"projects_count!: i64\"\nFROM project_owners po\n    LEFT JOIN profiles pr ON pr.id = po.profile_id\n    LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL\nWHERE po.id = $1 AND po.deleted_at IS NULL\nGROUP BY po.id, pr.username;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "bio",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "website",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "profile_img_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "profile_img_thumb_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "projects_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "77bfffdc4796fde020f216af158288ecbc4fd73cfa455311f14d8e972ac7caa3"
+}

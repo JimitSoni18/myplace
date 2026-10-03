@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pm.media_id, m.media_type, m.s3_key, m.thumbnail_key, pm.sequence\nFROM property_media pm\nJOIN media m ON m.id = pm.media_id\nWHERE pm.property_id = $1\nORDER BY pm.sequence ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "media_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "media_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "s3_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "thumbnail_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "sequence",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "1b1502acd8fa50682fd43266a24a69008a57dd0cca64f26686aa3e44e0743832"
+}

@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.project_owner_id, po.name as owner_name,\n\tp.location_id, loc.formatted_address as \"location_name?\",\n\tp.name, p.slug, p.description, p.category,\n\tp.start_date, p.launch_date, p.possession_date, p.created_at\nFROM projects p\n\tJOIN project_owners po ON po.id = p.project_owner_id\n\tLEFT JOIN locations loc ON loc.id = p.location_id\nWHERE p.id = $1 AND p.deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "location_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "location_name?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "start_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 10,
+        "name": "launch_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 11,
+        "name": "possession_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "5008ef7ceadba9991c8cf9e2ab1a7c8eb5192570c990041a3901762f25476404"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE properties SET deleted_at = NOW() WHERE id = $1 AND project_id = $2;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ba13fa7fe738c891cd94b7a0a769f6f2b95b6ef0c71f29ceea4884d45acaf79a"
+}

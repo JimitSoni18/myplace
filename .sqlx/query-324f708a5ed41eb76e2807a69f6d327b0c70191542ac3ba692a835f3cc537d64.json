@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug, p.category,\n\tloc.formatted_address as \"location?\",\n\tpo.id as owner_id, po.name as owner_name, po.slug as owner_slug, po.profile_img_thumb_key as owner_image_key\nFROM projects p\n\tJOIN project_owners po ON po.id = p.project_owner_id\n\tLEFT JOIN locations loc ON loc.id = p.location_id\nWHERE p.id = $1;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "owner_slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "owner_image_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "324f708a5ed41eb76e2807a69f6d327b0c70191542ac3ba692a835f3cc537d64"
+}

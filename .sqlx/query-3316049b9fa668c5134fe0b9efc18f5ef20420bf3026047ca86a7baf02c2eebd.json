@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_media\nSET sequence = -sequence - 1000\nWHERE project_id = $1;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3316049b9fa668c5134fe0b9efc18f5ef20420bf3026047ca86a7baf02c2eebd"
+}

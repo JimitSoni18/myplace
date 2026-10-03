@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.project_id, pr.name as project_name,\n\tp.unit_number, p.building,\n\tpt.category, pt.name as type_name,\n\tpl.price::float8 as \"price?\",\n\tpl.status as \"status?\"\nFROM properties p\n\tJOIN projects pr ON pr.id = p.project_id\n\tJOIN property_types pt ON pt.id = p.property_type_id\n\tLEFT JOIN property_listings pl ON pl.property_id = p.id\nWHERE p.deleted_at IS NULL\n\tAND ($1::int IS NULL OR p.project_id = $1)\n\tAND ($2::text IS NULL OR pt.category = $2)\n\tAND ($3::text IS NULL OR (p.unit_number ILIKE $3 OR p.building ILIKE $3))\nORDER BY p.id DESC\nLIMIT 50;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "project_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "building",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "status?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "d0ac148d8922c3af23686bd8f0ca455893694e863c10cb2cacf5bf36e4ea9e2c"
+}

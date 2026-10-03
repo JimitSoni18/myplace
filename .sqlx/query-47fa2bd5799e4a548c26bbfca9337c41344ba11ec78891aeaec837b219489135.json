@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, formatted_address, city, state_or_province, area\nFROM locations\nWHERE formatted_address ILIKE $1 OR city ILIKE $1\nORDER BY id;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "state_or_province",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "area",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "47fa2bd5799e4a548c26bbfca9337c41344ba11ec78891aeaec837b219489135"
+}

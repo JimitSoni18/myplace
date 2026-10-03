@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE property_media\nSET sequence = $3\nWHERE property_id = $1 AND media_id = $2;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f5f6216f241290a831c4bba27f4dc43224b88e0b9a4d9df45e8a01ed1a06e5f"
+}

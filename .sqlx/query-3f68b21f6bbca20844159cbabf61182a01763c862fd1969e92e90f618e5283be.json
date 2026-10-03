@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE residential_property_details\nSET bedroom_count = ($1::float8)::numeric, bathroom_count = ($2::float8)::numeric, balcony_count = $3, is_duplex = $4, parking = $5\nWHERE property_id = $6;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Float8",
+        "Float8",
+        "Int2",
+        "Bool",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f68b21f6bbca20844159cbabf61182a01763c862fd1969e92e90f618e5283be"
+}

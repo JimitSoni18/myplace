@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_owners\nSET profile_img_key = $1, profile_img_thumb_key = $2, updated_at = NOW()\nWHERE id = $3;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ebae84722f7e93bdd01c36517189976d5c6e78698a042188d9925c6fdb7e60a0"
+}

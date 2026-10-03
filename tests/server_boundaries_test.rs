@@ -37,6 +37,19 @@ async fn test_public_server_does_not_expose_admin_or_owner_routes() {
 	);
 	assert!(body.contains(&expected));
 
+	// Health check endpoint works
+	let health_resp = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/healthz")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(health_resp.status(), StatusCode::OK);
+
 	// Admin routes must not be exposed (404)
 	let response = app
 		.clone()
@@ -144,6 +157,19 @@ async fn test_admin_server_boundaries_and_auth() {
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::OK);
 
+	// Health check endpoint is accessible unauthenticated
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/healthz")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(response.status(), StatusCode::OK);
+
 	// Public routes must not be exposed on admin server
 	let response = app
 		.clone()
@@ -214,6 +240,19 @@ async fn test_owner_server_boundaries_and_auth() {
 		.oneshot(
 			Request::builder()
 				.uri("/auth/owner-login")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(response.status(), StatusCode::OK);
+
+	// Health check endpoint is accessible unauthenticated
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/healthz")
 				.body(Body::empty())
 				.unwrap(),
 		)

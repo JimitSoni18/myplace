@@ -117,6 +117,7 @@ impl Deref for SessionId {
 /// An abstraction over session storage. The in-memory implementation is used
 /// today; this trait makes it easy to swap in a Redis-backed implementation
 /// later without touching any handlers.
+#[allow(async_fn_in_trait)]
 pub trait SessionStoreTrait: Send + Sync {
 	async fn create_session(&self, auth_user: AuthUser) -> SessionId;
 	/// Returns the session if it exists **and has not expired**.

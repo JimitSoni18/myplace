@@ -1,0 +1,161 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.property_type_id, pt.category,\n\tp.unit_number, p.building, p.floor_number, p.total_floors,\n\tp.built_up_area::float8 as \"built_up_area?\",\n\tp.usable_area::float8 as \"usable_area?\",\n\tp.description,\n\tpl.listing_type as \"listing_type?\",\n\tpl.status as \"status?\",\n\tpl.price::float8 as \"price?\",\n\tpl.billing_period,\n\trpd.bedroom_count::float8 as \"bedroom_count?\",\n\trpd.bathroom_count::float8 as \"bathroom_count?\",\n\trpd.balcony_count as \"balcony_count?\",\n\trpd.is_duplex as \"is_duplex?\",\n\trpd.parking as \"parking_res?\",\n\tcpd.parking as \"parking_com?\",\n\tlpd.parcel_number as \"parcel_number?\",\n\tlpd.zoning as \"zoning?\",\n\tlpd.approval_status as \"approval_status?\",\n\tlpd.development_status as \"development_status?\"\nFROM properties p\n\tJOIN property_types pt ON pt.id = p.property_type_id\n\tLEFT JOIN property_listings pl ON pl.property_id = p.id\n\tLEFT JOIN residential_property_details rpd ON rpd.property_id = p.id\n\tLEFT JOIN commercial_property_details cpd ON cpd.property_id = p.id\n\tLEFT JOIN land_property_details lpd ON lpd.property_id = p.id\nWHERE p.id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "property_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "building",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "floor_number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "total_floors",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "usable_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "listing_type?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "status?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 13,
+        "name": "billing_period",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "bedroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 15,
+        "name": "bathroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 16,
+        "name": "balcony_count?",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 17,
+        "name": "is_duplex?",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 18,
+        "name": "parking_res?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "parking_com?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "parcel_number?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "zoning?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "approval_status?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 23,
+        "name": "development_status?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      null,
+      null,
+      true,
+      false,
+      false,
+      null,
+      true,
+      null,
+      null,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "44a2a6a8390852d52937234f54d4112ae1bedfb9479171f166470ccff534ec08"
+}

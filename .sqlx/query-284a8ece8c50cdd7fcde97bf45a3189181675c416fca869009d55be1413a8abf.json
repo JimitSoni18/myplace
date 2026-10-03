@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    po.id, po.name, po.active, po.profile_img_thumb_key,\n    po.email,\n    COUNT(p.id) as \"projects_count!: i64\"\nFROM project_owners po\n    LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL\nWHERE po.deleted_at IS NULL\nGROUP BY po.id\nORDER BY po.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "profile_img_thumb_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "projects_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "284a8ece8c50cdd7fcde97bf45a3189181675c416fca869009d55be1413a8abf"
+}

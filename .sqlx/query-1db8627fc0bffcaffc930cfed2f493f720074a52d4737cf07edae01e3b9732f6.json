@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE amenities SET is_active = NOT is_active WHERE id = $1;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1db8627fc0bffcaffc930cfed2f493f720074a52d4737cf07edae01e3b9732f6"
+}

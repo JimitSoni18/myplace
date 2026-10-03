@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    p.id, p.name, p.slug, p.category,\n    loc.formatted_address as \"location?\",\n    COUNT(prop.id) as \"properties_count!: i64\"\nFROM projects p\n    LEFT JOIN locations loc ON loc.id = p.location_id\n    LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL\nWHERE p.project_owner_id = $1 AND p.deleted_at IS NULL\nGROUP BY p.id, loc.formatted_address\nORDER BY p.id DESC\nLIMIT 10;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "properties_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "7647912537497610bff76e0db03813cc93cb512e11e2f3bdaff374da6c6f4d5d"
+}

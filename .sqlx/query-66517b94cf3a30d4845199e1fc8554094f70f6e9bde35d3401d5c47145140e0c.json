@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug, p.category,\n\tpo.name as owner_name,\n\tloc.formatted_address as \"location?\",\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM project_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.project_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key,\n\tCOUNT(DISTINCT prop.id) as \"properties_count!: i64\",\n\tCOUNT(DISTINCT pm.media_id) as \"media_count!: i64\"\nFROM projects p\n\tJOIN project_owners po ON po.id = p.project_owner_id\n\tLEFT JOIN locations loc ON loc.id = p.location_id\n\tLEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL\n\tLEFT JOIN project_media pm ON pm.project_id = p.id\nWHERE p.deleted_at IS NULL\n\tAND ($1::int IS NULL OR p.project_owner_id = $1)\n\tAND ($2::text IS NULL OR p.category = $2)\n\tAND ($3::text IS NULL OR p.name ILIKE $3)\nGROUP BY p.id, po.name, loc.formatted_address\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "properties_count!: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "media_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "66517b94cf3a30d4845199e1fc8554094f70f6e9bde35d3401d5c47145140e0c"
+}

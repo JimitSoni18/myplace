@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\tINSERT INTO properties (\n\t\t\t\tproject_id, property_type_id, unit_number, building,\n\t\t\t\tbuilt_up_area, usable_area, description, slug\n\t\t\t)\n\t\t\tVALUES ($1, $2, '101', 'Tower A', 1250.0, 980.0, 'Spacious 2 BHK Apartment', 'unit-101-seed')\n\t\t\tRETURNING id\n\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0e946f5f11b34f68cc5b2c5090020639173a096857eefa9d2f8e8f0d79706b93"
+}

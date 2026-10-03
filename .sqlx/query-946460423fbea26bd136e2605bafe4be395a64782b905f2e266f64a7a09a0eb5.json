@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    a.id, a.name, a.slug, a.is_active,\n    COUNT(pa.project_id) as \"projects_count!: i64\"\nFROM amenities a\n    LEFT JOIN project_amenities pa ON pa.amenity_id = a.id\nGROUP BY a.id\nORDER BY a.name ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "projects_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "946460423fbea26bd136e2605bafe4be395a64782b905f2e266f64a7a09a0eb5"
+}

@@ -1,5 +1,43 @@
 use std::sync::LazyLock;
 
+/// Explicit environment variable loading based on `APP_ENV` (or `ENVIRONMENT`).
+/// - "test": loads `.env.test`, falls back to `.env`.
+/// - "production": relies on system/platform environment variables (Render), only loading `.env.production` if explicitly present locally.
+/// - "development" (default): loads `.env.development`, falls back to `.env`.
+pub fn load_dotenv() {
+	let env_name = std::env::var("APP_ENV")
+		.or_else(|_| std::env::var("ENVIRONMENT"))
+		.or_else(|_| std::env::var("RUST_ENV"))
+		.unwrap_or_else(|_| {
+			if std::env::args().any(|arg| arg.contains("test"))
+				|| std::env::current_exe()
+					.map(|p| p.to_string_lossy().contains("test"))
+					.unwrap_or(false)
+			{
+				"test".to_string()
+			} else {
+				"development".to_string()
+			}
+		});
+
+	match env_name.to_lowercase().as_str() {
+		"test" => {
+			let _ = dotenvy::from_filename(".env.test");
+			let _ = dotenvy::dotenv();
+		}
+		"production" => {
+			// In production, system environment variables take precedence.
+			// Only try .env.production if it exists on disk locally.
+			let _ = dotenvy::from_filename(".env.production");
+		}
+		_ => {
+			// Development mode
+			let _ = dotenvy::from_filename(".env.development");
+			let _ = dotenvy::dotenv();
+		}
+	}
+}
+
 pub struct Config {
 	/// Main public port (backwards compatible with `port`).
 	pub port: u16,
@@ -44,36 +82,36 @@ pub struct Config {
 
 impl Config {
 	pub fn load_from_env() -> Self {
-		let _ = dotenvy::dotenv();
+		load_dotenv();
 
-		let public_port: u16 = dotenvy::var("PUBLIC_PORT")
-			.or_else(|_| dotenvy::var("PORT"))
+		let public_port: u16 = std::env::var("PUBLIC_PORT")
+			.or_else(|_| std::env::var("PORT"))
 			.unwrap_or_else(|_| "8080".to_string())
 			.parse()
 			.expect("error: invalid public port");
 
-		let admin_port: u16 = dotenvy::var("ADMIN_PORT")
+		let admin_port: u16 = std::env::var("ADMIN_PORT")
 			.unwrap_or_else(|_| "8081".to_string())
 			.parse()
 			.expect("error: invalid admin port");
 
-		let owner_port: u16 = dotenvy::var("OWNER_PORT")
+		let owner_port: u16 = std::env::var("OWNER_PORT")
 			.unwrap_or_else(|_| "8082".to_string())
 			.parse()
 			.expect("error: invalid owner port");
 
-		let public_site_origin = dotenvy::var("PUBLIC_SITE_ORIGIN")
-			.or_else(|_| dotenvy::var("SITE_BASE_URL"))
+		let public_site_origin = std::env::var("PUBLIC_SITE_ORIGIN")
+			.or_else(|_| std::env::var("SITE_BASE_URL"))
 			.unwrap_or_else(|_| format!("http://localhost:{}", public_port))
 			.trim_end_matches('/')
 			.to_string();
 
-		let admin_site_origin = dotenvy::var("ADMIN_SITE_ORIGIN")
+		let admin_site_origin = std::env::var("ADMIN_SITE_ORIGIN")
 			.unwrap_or_else(|_| format!("http://localhost:{}", admin_port))
 			.trim_end_matches('/')
 			.to_string();
 
-		let owner_site_origin = dotenvy::var("OWNER_SITE_ORIGIN")
+		let owner_site_origin = std::env::var("OWNER_SITE_ORIGIN")
 			.unwrap_or_else(|_| format!("http://localhost:{}", owner_port))
 			.trim_end_matches('/')
 			.to_string();
@@ -86,39 +124,41 @@ impl Config {
 			public_site_origin: public_site_origin.clone(),
 			admin_site_origin,
 			owner_site_origin,
-			max_db_connections: dotenvy::var("MAX_DB_CONNECTIONS")
-				.expect("error: `MAX_DB_CONNECTIONS` environment variable is not set")
+			max_db_connections: std::env::var("MAX_DB_CONNECTIONS")
+				.unwrap_or_else(|_| "10".to_string())
 				.parse()
 				.expect("error: `MAX_DB_CONNECTIONS` environment variable should be a number"),
-			db_url: dotenvy::var("DATABASE_URL")
+			db_url: std::env::var("DATABASE_URL")
 				.expect("error: `DATABASE_URL` environment variable is not set"),
-			cookie_signing_secret: dotenvy::var("COOKIE_SIGNING_SECRET")
+			cookie_signing_secret: std::env::var("COOKIE_SIGNING_SECRET")
 				.expect("error: `COOKIE_SIGNING_SECRET` environment variable is not set"),
-			s3_endpoint: dotenvy::var("S3_ENDPOINT")
+			s3_endpoint: std::env::var("S3_ENDPOINT")
 				.expect("error: `S3_ENDPOINT` environment variable is not set"),
-			s3_bucket: dotenvy::var("S3_BUCKET")
+			s3_bucket: std::env::var("S3_BUCKET")
 				.expect("error: `S3_BUCKET` environment variable is not set"),
-			s3_access_key_id: dotenvy::var("AWS_ACCESS_KEY_ID")
+			s3_access_key_id: std::env::var("AWS_ACCESS_KEY_ID")
 				.expect("error: `AWS_ACCESS_KEY_ID` environment variable is not set"),
-			s3_secret_access_key: dotenvy::var("AWS_SECRET_ACCESS_KEY")
+			s3_secret_access_key: std::env::var("AWS_SECRET_ACCESS_KEY")
 				.expect("error: `AWS_SECRET_ACCESS_KEY` environment variable is not set"),
-			s3_region: dotenvy::var("AWS_DEFAULT_REGION").unwrap_or_else(|_| "garage".to_string()),
-			asset_base_url: dotenvy::var("ASSET_BASE_URL")
+			s3_region: std::env::var("AWS_DEFAULT_REGION")
+				.or_else(|_| std::env::var("AWS_REGION"))
+				.unwrap_or_else(|_| "garage".to_string()),
+			asset_base_url: std::env::var("ASSET_BASE_URL")
 				.expect("error: `ASSET_BASE_URL` environment variable is not set"),
-			page_cache_capacity: dotenvy::var("PAGE_CACHE_CAPACITY")
+			page_cache_capacity: std::env::var("PAGE_CACHE_CAPACITY")
 				.ok()
 				.and_then(|v| v.parse().ok())
 				.unwrap_or(50),
 			site_base_url: public_site_origin,
-			sitemap_projects_range: dotenvy::var("SITEMAP_PROJECTS_RANGE")
+			sitemap_projects_range: std::env::var("SITEMAP_PROJECTS_RANGE")
 				.ok()
 				.and_then(|v| v.parse().ok())
 				.unwrap_or(1000),
-			sitemap_owners_range: dotenvy::var("SITEMAP_OWNERS_RANGE")
+			sitemap_owners_range: std::env::var("SITEMAP_OWNERS_RANGE")
 				.ok()
 				.and_then(|v| v.parse().ok())
 				.unwrap_or(500),
-			sitemap_properties_range: dotenvy::var("SITEMAP_PROPERTIES_RANGE")
+			sitemap_properties_range: std::env::var("SITEMAP_PROPERTIES_RANGE")
 				.ok()
 				.and_then(|v| v.parse().ok())
 				.unwrap_or(2000),

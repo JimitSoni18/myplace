@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_owners\nSET name = $1, bio = $2, email = $3, phone = $4, website = $5, active = $6, slug = $7, updated_at = NOW()\nWHERE id = $8 AND deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d01f013d0c97ed848e2e0f3f55c02be5274fe8bb9856156bde98f968de8a6cf5"
+}

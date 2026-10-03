@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_owners SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6b2b5a570df0b16f6db48c2c1f0c0c8af133c64a8cce281ad96e975c78734489"
+}

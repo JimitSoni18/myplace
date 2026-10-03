@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    proj.id,\n    proj.name,\n    po.name   AS owner_name,\n    loc.formatted_address AS location,\n    proj.category,\n    COUNT(DISTINCT pr.id)                                                   AS \"total_properties: i64\",\n    COUNT(DISTINCT pl.id) FILTER (WHERE pl.status = 'active')               AS \"available_properties: i64\"\nFROM projects proj\nJOIN project_owners po ON po.id = proj.project_owner_id\nJOIN locations     loc ON loc.id = proj.location_id\nLEFT JOIN properties pr ON pr.project_id = proj.id AND pr.deleted_at IS NULL\nLEFT JOIN property_listings pl ON pl.property_id = pr.id\nWHERE proj.deleted_at IS NULL\n  AND proj.created_at >= NOW() - INTERVAL '30 days'\nGROUP BY proj.id, po.name, loc.formatted_address\nORDER BY proj.created_at DESC\nLIMIT 20;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "location",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_properties: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "available_properties: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "69cad280793d574218baaf7a8aff51193156cb32308e7e2d082d3ef221aa86e9"
+}

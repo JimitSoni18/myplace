@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.slug,\n\tpt.category, pt.name as property_type_name,\n\tp.built_up_area::float8 as \"built_up_area?\",\n\trpd.bedroom_count::float8 as \"bedroom_count?\",\n\trpd.bathroom_count::float8 as \"bathroom_count?\",\n\tpl.price::float8 as \"price?\",\n\tpl.currency_code as \"currency_code?\",\n\tpl.listing_type as \"listing_type?\",\n\tpl.billing_period as \"billing_period?\",\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM property_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.property_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key\nFROM properties p\n\tJOIN property_types pt ON pt.id = p.property_type_id\n\tLEFT JOIN residential_property_details rpd ON rpd.property_id = p.id\n\tLEFT JOIN property_listings pl ON pl.property_id = p.id AND pl.status = 'active'\nWHERE p.project_id = $1 AND p.deleted_at IS NULL\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "property_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "bedroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "bathroom_count?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "currency_code?",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "listing_type?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "billing_period?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "c842ca584579823e43553c718a18e76844fb20be351168547c804dc455d5a67a"
+}

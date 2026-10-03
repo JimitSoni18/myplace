@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(MAX(sequence), -1) + 1 as \"next_seq!: i16\"\nFROM project_media\nWHERE project_id = $1;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "next_seq!: i16",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a3b310109e3f9bd9eda064ba0c2c87df4444c0f328ff987a024644fcc3946639"
+}

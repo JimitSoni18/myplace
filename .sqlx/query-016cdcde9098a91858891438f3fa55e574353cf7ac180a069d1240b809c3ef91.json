@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug, p.category,\n\tloc.formatted_address as \"location?\",\n\tCOUNT(DISTINCT prop.id) as \"properties_count!: i64\",\n\tp.possession_date,\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM project_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.project_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key\nFROM projects p\n\tLEFT JOIN locations loc ON loc.id = p.location_id\n\tLEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL\nWHERE p.project_owner_id = $1 AND p.deleted_at IS NULL\nGROUP BY p.id, loc.formatted_address\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "properties_count!: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "possession_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 7,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      null
+    ]
+  },
+  "hash": "016cdcde9098a91858891438f3fa55e574353cf7ac180a069d1240b809c3ef91"
+}

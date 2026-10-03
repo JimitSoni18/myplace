@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_amenities (project_id, amenity_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b84adee9d44933a292f98ac340bc0ba4ee82d09bb6b8ac09bc3609bde5398f2d"
+}

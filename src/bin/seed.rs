@@ -15,8 +15,8 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 
 #[tokio::main]
 async fn main() {
-	// Load .env so local dev works the same as Docker
-	let _ = dotenvy::dotenv();
+	// Load environment variables (.env.development, .env, or system env based on APP_ENV)
+	myplace::config::load_dotenv();
 
 	let admin_username =
 		std::env::var("ADMIN_USERNAME").expect("ADMIN_USERNAME must be set for the seed binary");

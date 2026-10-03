@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO properties (\n\tproject_id, property_type_id, unit_number, building, floor_number,\n\ttotal_floors, built_up_area, usable_area, description, slug\n)\nVALUES ($1, $2, $3, $4, $5, $6, ($7::float8)::numeric, ($8::float8)::numeric, $9, $10)\nRETURNING id;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Float8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b669638e9b51a5ee5e3864dec64c6aa764a7e470132a8c23872bdbee9ec1cb06"
+}

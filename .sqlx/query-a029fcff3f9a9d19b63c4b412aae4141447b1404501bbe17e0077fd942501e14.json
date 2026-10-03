@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 FROM profiles p\n\t\t INNER JOIN admin_users a ON a.profile_id = p.id\n\t\t WHERE p.username = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "?column?",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a029fcff3f9a9d19b63c4b412aae4141447b1404501bbe17e0077fd942501e14"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE property_media\nSET sequence = -sequence - 1000\nWHERE property_id = $1;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a4e70618ae84c9261a6082f702d9a055a8d7ac0ee74352d493f1355d325ee73"
+}

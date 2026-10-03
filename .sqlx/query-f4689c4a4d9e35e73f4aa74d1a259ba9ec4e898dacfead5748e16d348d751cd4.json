@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.name\nFROM property_amenities pa\nJOIN amenities a ON a.id = pa.amenity_id\nWHERE pa.property_id = $1 AND a.is_active = TRUE\nORDER BY a.name ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f4689c4a4d9e35e73f4aa74d1a259ba9ec4e898dacfead5748e16d348d751cd4"
+}

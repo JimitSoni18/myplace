@@ -1,7 +1,31 @@
-use axum::{Router, middleware, response::Redirect, routing::get};
+use axum::{
+	Router,
+	extract::State,
+	http::StatusCode,
+	middleware,
+	response::{IntoResponse, Json, Redirect},
+	routing::get,
+};
+use serde_json::json;
 use tower_http::services::ServeDir;
 
 use crate::{AppState, api, middlewares::owner_authenticate::OwnerUser, session_store::AuthUser};
+
+async fn healthz_handler(State(state): State<AppState>) -> impl IntoResponse {
+	match sqlx::query("SELECT 1").execute(&state.model.db).await {
+		Ok(_) => (
+			StatusCode::OK,
+			Json(json!({ "status": "ok", "database": "connected" })),
+		),
+		Err(e) => {
+			tracing::error!(error = %e, "health check failed: database ping error");
+			(
+				StatusCode::SERVICE_UNAVAILABLE,
+				Json(json!({ "status": "error", "message": "database unavailable" })),
+			)
+		}
+	}
+}
 
 /// Constructs the Admin server router.
 /// Listens on `CONFIG.admin_port`.
@@ -19,6 +43,8 @@ pub fn admin_router(state: AppState) -> Router {
 	let static_asset_server = ServeDir::new("static");
 
 	Router::new()
+		.route("/healthz", get(healthz_handler))
+		.route("/health", get(healthz_handler))
 		.merge(admin_routes)
 		.with_state(state)
 		.fallback_service(static_asset_server)
@@ -38,6 +64,8 @@ pub fn owner_router(state: AppState) -> Router {
 	let static_asset_server = ServeDir::new("static");
 
 	Router::new()
+		.route("/healthz", get(healthz_handler))
+		.route("/health", get(healthz_handler))
 		.merge(owner_routes)
 		.with_state(state)
 		.fallback_service(static_asset_server)
@@ -52,6 +80,8 @@ pub fn public_router(state: AppState) -> Router {
 	let static_asset_server = ServeDir::new("static");
 
 	Router::new()
+		.route("/healthz", get(healthz_handler))
+		.route("/health", get(healthz_handler))
 		.merge(public_routes)
 		.with_state(state)
 		.fallback_service(static_asset_server)

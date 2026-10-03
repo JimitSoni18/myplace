@@ -56,8 +56,9 @@ pub fn router() -> Router<AppState> {
 		.post(owner_login);
 
 	Router::new()
-		.route("/admin-login", admin_login_router)
+		.route("/admin-login", admin_login_router.clone())
 		.route("/owner-login", owner_login_router)
+		.route("/login", admin_login_router)
 }
 
 #[derive(Deserialize)]

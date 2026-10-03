@@ -27,18 +27,60 @@ async fn healthz_handler(State(state): State<AppState>) -> impl IntoResponse {
 	}
 }
 
-/// Constructs the Admin server router.
-/// Listens on `CONFIG.admin_port`.
-/// Exposes `/admin` (protected by Admin auth) and `/auth` (admin login/logout).
-/// Does NOT expose public or owner routes.
-pub fn admin_router(state: AppState) -> Router {
+/// Constructs the unified multiplexed router.
+/// Serves all 3 front-ends on a single domain / port:
+/// - Public site at `/`
+/// - Admin portal at `/admin` (protected by Admin auth)
+/// - Owner portal at `/owner` (protected by Owner auth)
+/// - Unified Auth at `/auth` (admin & owner login/logout)
+pub fn multiplexed_router(state: AppState) -> Router {
 	let admin_routes = Router::new()
 		.nest("/admin", api::admin::router())
 		.layer(middleware::from_extractor_with_state::<AuthUser, AppState>(
 			state.clone(),
 		))
+		.route("/admin/login", get(|| async { Redirect::to("/auth/admin-login") }));
+
+	let owner_routes = Router::new()
+		.nest("/owner", api::owners::router())
+		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(
+			state.clone(),
+		))
+		.route("/owner/login", get(|| async { Redirect::to("/auth/owner-login") }));
+
+	let auth_routes = Router::new()
+		.nest("/auth", api::auth::router())
+		.route("/login", get(|| async { Redirect::to("/auth/admin-login") }));
+
+	let public_routes = api::public::router();
+	let static_asset_server = ServeDir::new("static");
+
+	Router::new()
+		.route("/healthz", get(healthz_handler))
+		.route("/health", get(healthz_handler))
+		.merge(admin_routes)
+		.merge(owner_routes)
+		.merge(auth_routes)
+		.merge(public_routes)
+		.with_state(state)
+		.fallback_service(static_asset_server)
+}
+
+/// Constructs the Admin server router for port-isolated mode.
+/// Listens on `CONFIG.admin_port`.
+/// Exposes admin routes directly at `/` without requiring the `/admin` prefix,
+/// while also supporting `/admin/*` for backwards compatibility.
+pub fn admin_router(state: AppState) -> Router {
+	let admin_core = api::admin::router()
+		.layer(middleware::from_extractor_with_state::<AuthUser, AppState>(
+			state.clone(),
+		));
+
+	let admin_routes = Router::new()
+		.merge(admin_core.clone())
+		.nest("/admin", admin_core)
 		.nest("/auth", api::auth::admin_auth_router())
-		.route("/", get(|| async { Redirect::to("/admin") }));
+		.route("/login", get(|| async { Redirect::to("/auth/admin-login") }));
 
 	let static_asset_server = ServeDir::new("static");
 
@@ -50,16 +92,21 @@ pub fn admin_router(state: AppState) -> Router {
 		.fallback_service(static_asset_server)
 }
 
-/// Constructs the Project Owner server router.
+/// Constructs the Project Owner server router for port-isolated mode.
 /// Listens on `CONFIG.owner_port`.
-/// Exposes `/owner` (protected by Owner auth) and `/auth` (owner login/logout).
-/// Does NOT expose public or admin routes.
+/// Exposes owner routes directly at `/` without requiring the `/owner` prefix,
+/// while also supporting `/owner/*` for backwards compatibility.
 pub fn owner_router(state: AppState) -> Router {
+	let owner_core = api::owners::router()
+		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(
+			state.clone(),
+		));
+
 	let owner_routes = Router::new()
-		.nest("/owner", api::owners::router())
-		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(state.clone()))
+		.merge(owner_core.clone())
+		.nest("/owner", owner_core)
 		.nest("/auth", api::auth::owner_auth_router())
-		.route("/", get(|| async { Redirect::to("/owner") }));
+		.route("/login", get(|| async { Redirect::to("/auth/owner-login") }));
 
 	let static_asset_server = ServeDir::new("static");
 

@@ -64,6 +64,11 @@ pub struct Config {
 	pub admin_port: u16,
 	pub owner_port: u16,
 
+	/// When `true` (default), all front-ends (public, admin, owner) are multiplexed
+	/// onto the single public port via path prefixes (`/`, `/admin`, `/owner`).
+	/// When `false`, port-based separation is used (admin and owner listeners on their own ports).
+	pub route_multiplexing: bool,
+
 	/// Canonical origins for the 3 separate servers.
 	pub public_site_origin: String,
 	pub admin_site_origin: String,
@@ -103,6 +108,11 @@ impl Config {
 	pub fn load_from_env() -> Self {
 		load_dotenv();
 
+		let route_multiplexing = std::env::var("ENABLE_ROUTE_MULTIPLEXING")
+			.or_else(|_| std::env::var("ROUTE_MULTIPLEXING"))
+			.map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+			.unwrap_or(cfg!(feature = "route-multiplexing"));
+
 		let public_port: u16 = std::env::var("PUBLIC_PORT")
 			.or_else(|_| std::env::var("PORT"))
 			.unwrap_or_else(|_| "8080".to_string())
@@ -126,12 +136,24 @@ impl Config {
 			.to_string();
 
 		let admin_site_origin = std::env::var("ADMIN_SITE_ORIGIN")
-			.unwrap_or_else(|_| format!("http://localhost:{}", admin_port))
+			.unwrap_or_else(|_| {
+				if route_multiplexing {
+					public_site_origin.clone()
+				} else {
+					format!("http://localhost:{}", admin_port)
+				}
+			})
 			.trim_end_matches('/')
 			.to_string();
 
 		let owner_site_origin = std::env::var("OWNER_SITE_ORIGIN")
-			.unwrap_or_else(|_| format!("http://localhost:{}", owner_port))
+			.unwrap_or_else(|_| {
+				if route_multiplexing {
+					public_site_origin.clone()
+				} else {
+					format!("http://localhost:{}", owner_port)
+				}
+			})
 			.trim_end_matches('/')
 			.to_string();
 
@@ -140,6 +162,7 @@ impl Config {
 			public_port,
 			admin_port,
 			owner_port,
+			route_multiplexing,
 			public_site_origin: public_site_origin.clone(),
 			admin_site_origin,
 			owner_site_origin,
@@ -201,20 +224,110 @@ impl Config {
 	}
 
 	pub fn admin_url(&self, path: &str) -> String {
-		format!(
-			"{}/{}",
-			self.admin_site_origin.trim_end_matches('/'),
-			path.trim_start_matches('/')
-		)
+		let clean = path.trim_start_matches('/');
+		let subpath = if self.route_multiplexing {
+			if clean.starts_with("admin/") || clean == "admin" {
+				clean.to_string()
+			} else {
+				format!("admin/{clean}").trim_end_matches('/').to_string()
+			}
+		} else if clean.starts_with("admin/") {
+			clean.strip_prefix("admin/").unwrap_or("").to_string()
+		} else if clean == "admin" {
+			"".to_string()
+		} else {
+			clean.to_string()
+		};
+
+		if subpath.is_empty() {
+			self.admin_site_origin.clone()
+		} else {
+			format!("{}/{}", self.admin_site_origin.trim_end_matches('/'), subpath)
+		}
 	}
 
 	pub fn owner_url(&self, path: &str) -> String {
-		format!(
-			"{}/{}",
-			self.owner_site_origin.trim_end_matches('/'),
-			path.trim_start_matches('/')
-		)
+		let clean = path.trim_start_matches('/');
+		let subpath = if self.route_multiplexing {
+			if clean.starts_with("owner/") || clean == "owner" {
+				clean.to_string()
+			} else {
+				format!("owner/{clean}").trim_end_matches('/').to_string()
+			}
+		} else if clean.starts_with("owner/") {
+			clean.strip_prefix("owner/").unwrap_or("").to_string()
+		} else if clean == "owner" {
+			"".to_string()
+		} else {
+			clean.to_string()
+		};
+
+		if subpath.is_empty() {
+			self.owner_site_origin.clone()
+		} else {
+			format!("{}/{}", self.owner_site_origin.trim_end_matches('/'), subpath)
+		}
 	}
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(Config::load_from_env);
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_feature_flag_default() {
+		// By default, route-multiplexing feature is enabled in Cargo.toml
+		assert!(cfg!(feature = "route-multiplexing"));
+	}
+
+	#[test]
+	fn test_admin_and_owner_url_multiplexed() {
+		let mut cfg = Config {
+			port: 8080,
+			public_port: 8080,
+			admin_port: 8081,
+			owner_port: 8082,
+			route_multiplexing: true,
+			public_site_origin: "https://myplace.com".to_string(),
+			admin_site_origin: "https://myplace.com".to_string(),
+			owner_site_origin: "https://myplace.com".to_string(),
+			max_db_connections: 10,
+			db_url: "postgres://localhost/test".to_string(),
+			cookie_signing_secret: "secret".to_string(),
+			s3_endpoint: "http://localhost:3900".to_string(),
+			s3_bucket: "bucket".to_string(),
+			s3_access_key_id: "id".to_string(),
+			s3_secret_access_key: "key".to_string(),
+			s3_region: "garage".to_string(),
+			asset_base_url: "http://localhost:3900/bucket".to_string(),
+			page_cache_capacity: 50,
+			site_base_url: "https://myplace.com".to_string(),
+			sitemap_projects_range: 1000,
+			sitemap_owners_range: 500,
+			sitemap_properties_range: 2000,
+		};
+
+		// Multiplexed mode: URLs have /admin and /owner prefixes
+		assert_eq!(cfg.admin_url("/projects"), "https://myplace.com/admin/projects");
+		assert_eq!(cfg.admin_url("/admin/projects"), "https://myplace.com/admin/projects");
+		assert_eq!(cfg.admin_url("/"), "https://myplace.com/admin");
+		assert_eq!(cfg.owner_url("/projects"), "https://myplace.com/owner/projects");
+		assert_eq!(cfg.owner_url("/owner/projects"), "https://myplace.com/owner/projects");
+		assert_eq!(cfg.owner_url("/"), "https://myplace.com/owner");
+
+		// Non-multiplexed (port-isolated) mode: URLs do NOT have prefixes
+		cfg.route_multiplexing = false;
+		cfg.admin_site_origin = "http://localhost:8081".to_string();
+		cfg.owner_site_origin = "http://localhost:8082".to_string();
+
+		assert_eq!(cfg.admin_url("/projects"), "http://localhost:8081/projects");
+		assert_eq!(cfg.admin_url("/admin/projects"), "http://localhost:8081/projects");
+		assert_eq!(cfg.admin_url("/"), "http://localhost:8081");
+		assert_eq!(cfg.owner_url("/projects"), "http://localhost:8082/projects");
+		assert_eq!(cfg.owner_url("/owner/projects"), "http://localhost:8082/projects");
+		assert_eq!(cfg.owner_url("/"), "http://localhost:8082");
+	}
+}
+

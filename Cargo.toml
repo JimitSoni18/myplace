@@ -20,6 +20,10 @@ path = "src/bin/seed.rs"
 name = "migrate"
 path = "src/bin/migrate.rs"
 
+[features]
+default = ["route-multiplexing"]
+route-multiplexing = []
+
 [dependencies]
 ammonia = "4"
 argon2 = "0.5.3"

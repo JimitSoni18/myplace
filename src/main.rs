@@ -36,36 +36,50 @@ async fn main() {
 		});
 	}
 
-	// --- Build 3 separate servers ---
-	let admin_app = servers::admin_router(state.clone());
-	let owner_app = servers::owner_router(state.clone());
-	let public_app = servers::public_router(state.clone());
+	if CONFIG.route_multiplexing {
+		let public_app = servers::multiplexed_router(state);
+		let public_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.public_port);
+		let public_listener = tokio::net::TcpListener::bind(public_addr).await.unwrap();
 
-	let admin_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.admin_port);
-	let owner_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.owner_port);
-	let public_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.public_port);
+		info!(
+			port = CONFIG.public_port,
+			"Multiplexed server listening on port {} (public: /, admin: /admin, owner: /owner, auth: /auth)",
+			CONFIG.public_port
+		);
 
-	let admin_listener = tokio::net::TcpListener::bind(admin_addr).await.unwrap();
-	let owner_listener = tokio::net::TcpListener::bind(owner_addr).await.unwrap();
-	let public_listener = tokio::net::TcpListener::bind(public_addr).await.unwrap();
-
-	info!(port = CONFIG.admin_port, "Admin server listening");
-	info!(port = CONFIG.owner_port, "Owner server listening");
-	info!(port = CONFIG.public_port, "Public server listening");
-
-	let admin_handle = tokio::spawn(async move {
-		axum::serve(admin_listener, admin_app).await.unwrap();
-	});
-	let owner_handle = tokio::spawn(async move {
-		axum::serve(owner_listener, owner_app).await.unwrap();
-	});
-	let public_handle = tokio::spawn(async move {
 		axum::serve(public_listener, public_app).await.unwrap();
-	});
+	} else {
+		// --- Build 3 separate servers ---
+		let admin_app = servers::admin_router(state.clone());
+		let owner_app = servers::owner_router(state.clone());
+		let public_app = servers::public_router(state.clone());
 
-	let (res_admin, res_owner, res_public) =
-		tokio::join!(admin_handle, owner_handle, public_handle);
-	res_admin.unwrap();
-	res_owner.unwrap();
-	res_public.unwrap();
+		let admin_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.admin_port);
+		let owner_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.owner_port);
+		let public_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), CONFIG.public_port);
+
+		let admin_listener = tokio::net::TcpListener::bind(admin_addr).await.unwrap();
+		let owner_listener = tokio::net::TcpListener::bind(owner_addr).await.unwrap();
+		let public_listener = tokio::net::TcpListener::bind(public_addr).await.unwrap();
+
+		info!(port = CONFIG.admin_port, "Admin server listening");
+		info!(port = CONFIG.owner_port, "Owner server listening");
+		info!(port = CONFIG.public_port, "Public server listening");
+
+		let admin_handle = tokio::spawn(async move {
+			axum::serve(admin_listener, admin_app).await.unwrap();
+		});
+		let owner_handle = tokio::spawn(async move {
+			axum::serve(owner_listener, owner_app).await.unwrap();
+		});
+		let public_handle = tokio::spawn(async move {
+			axum::serve(public_listener, public_app).await.unwrap();
+		});
+
+		let (res_admin, res_owner, res_public) =
+			tokio::join!(admin_handle, owner_handle, public_handle);
+		res_admin.unwrap();
+		res_owner.unwrap();
+		res_public.unwrap();
+	}
 }

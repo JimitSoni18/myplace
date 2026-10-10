@@ -3,6 +3,7 @@ use axum::{
 	http::StatusCode,
 	response::{IntoResponse, Response},
 };
+use serde::{Deserialize, Deserializer};
 use std::fmt;
 
 #[derive(Debug)]
@@ -70,8 +71,57 @@ where
 	}
 }
 
+/// Deserializes an `Option<String>`, converting empty strings or whitespace-only strings to `None`.
+/// Non-empty strings are trimmed and returned wrapped in `Some`.
+pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let opt = Option::<String>::deserialize(deserializer)?;
+	Ok(opt.and_then(|s| {
+		let trimmed = s.trim();
+		if trimmed.is_empty() {
+			None
+		} else {
+			Some(trimmed.to_string())
+		}
+	}))
+}
+
+/// Deserializes an `Option<T>` where `T: FromStr`, converting empty strings or whitespace-only strings to `None`.
+pub fn empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+	D: Deserializer<'de>,
+	T: Deserialize<'de> + std::str::FromStr,
+	T::Err: std::fmt::Display,
+{
+	#[derive(Deserialize)]
+	#[serde(untagged)]
+	enum StringOrValue<U> {
+		String(String),
+		Value(U),
+	}
+
+	match Option::<StringOrValue<T>>::deserialize(deserializer)? {
+		None => Ok(None),
+		Some(StringOrValue::String(s)) => {
+			let trimmed = s.trim();
+			if trimmed.is_empty() {
+				Ok(None)
+			} else {
+				trimmed
+					.parse::<T>()
+					.map(Some)
+					.map_err(serde::de::Error::custom)
+			}
+		}
+		Some(StringOrValue::Value(val)) => Ok(Some(val)),
+	}
+}
+
 #[cfg(test)]
 mod tests {
+	use super::*;
 	use serde::Deserialize;
 
 	#[derive(Debug, PartialEq, Eq, Deserialize)]
@@ -152,5 +202,80 @@ mod tests {
 		assert_eq!(parsed.bedroom_count, Some(2.5));
 		assert_eq!(parsed.bathroom_count, Some(1.5));
 		assert_eq!(parsed.balcony_count, Some(3));
+	}
+
+	#[derive(Debug, PartialEq, Eq, Deserialize)]
+	struct FilterTestPayload {
+		#[serde(default, deserialize_with = "empty_string_as_none")]
+		category: Option<String>,
+		#[serde(default, deserialize_with = "empty_string_as_none")]
+		listing_type: Option<String>,
+		#[serde(default, deserialize_with = "empty_string_as_none")]
+		q: Option<String>,
+		#[serde(default, deserialize_with = "empty_as_none")]
+		project_id: Option<i32>,
+	}
+
+	#[test]
+	fn test_empty_string_as_none_urlencoded() {
+		// listing_type=&q=Flat (the exact issue reported by user)
+		let query = "listing_type=&q=Flat";
+		let parsed: FilterTestPayload = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, Some("Flat".to_string()));
+		assert_eq!(parsed.project_id, None);
+
+		// All empty strings submitted via form
+		let query = "category=&listing_type=&q=&project_id=";
+		let parsed: FilterTestPayload = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, None);
+		assert_eq!(parsed.project_id, None);
+
+		// Whitespace-only strings should also be treated as None
+		let query = "category=%20%20&listing_type=%20&q=%20%20%20&project_id=";
+		let parsed: FilterTestPayload = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, None);
+		assert_eq!(parsed.project_id, None);
+
+		// Non-empty values should be preserved and trimmed
+		let query = "category=RESIDENTIAL&listing_type=sale&q=%20Penthouse%20&project_id=42";
+		let parsed: FilterTestPayload = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(parsed.category, Some("RESIDENTIAL".to_string()));
+		assert_eq!(parsed.listing_type, Some("sale".to_string()));
+		assert_eq!(parsed.q, Some("Penthouse".to_string()));
+		assert_eq!(parsed.project_id, Some(42));
+
+		// Completely empty query string
+		let query = "";
+		let parsed: FilterTestPayload = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, None);
+		assert_eq!(parsed.project_id, None);
+	}
+
+	#[test]
+	fn test_empty_string_as_none_html_form() {
+		let body = b"category=&listing_type=&q=Flat&project_id=";
+		let parsed: FilterTestPayload = serde_html_form::from_bytes(body).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, Some("Flat".to_string()));
+		assert_eq!(parsed.project_id, None);
+	}
+
+	#[test]
+	fn test_empty_string_as_none_json() {
+		let json = r#"{"category": "", "listing_type": null, "q": "  Villa  ", "project_id": 99}"#;
+		let parsed: FilterTestPayload = serde_json::from_str(json).unwrap();
+		assert_eq!(parsed.category, None);
+		assert_eq!(parsed.listing_type, None);
+		assert_eq!(parsed.q, Some("Villa".to_string()));
+		assert_eq!(parsed.project_id, Some(99));
 	}
 }

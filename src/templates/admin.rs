@@ -435,3 +435,40 @@ pub struct PropertyMediaTemplate<'a> {
 	pub unit_title: String,
 	pub media: Vec<ProjectMediaItem>,
 }
+
+// ---------------------------------------------------------------------------
+// Admin Users
+// ---------------------------------------------------------------------------
+#[derive(Clone, Debug, Default)]
+pub struct AdminUserItem {
+	pub id: i32,
+	pub username: String,
+	pub created_at: String,
+	pub is_current_user: bool,
+}
+
+#[derive(Template, Default)]
+#[template(path = "admin/admin-user-list.html")]
+pub struct AdminUserListTemplate<'a> {
+	pub admin_name: &'a str,
+	pub page: AdminPage,
+	pub users: Vec<AdminUserItem>,
+	pub q: Option<&'a str>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct AdminUserEditItem {
+	pub id: i32,
+	pub username: String,
+}
+
+pub type AdminUserEditValues<'a> = EditFormValues<'a, AdminUserEditItem>;
+
+#[derive(Template, Default)]
+#[template(path = "admin/admin-user-form.html")]
+pub struct AdminUserFormTemplate<'a> {
+	pub admin_name: &'a str,
+	pub page: AdminPage,
+	pub edit_values: Option<AdminUserEditValues<'a>>,
+	pub is_edit: bool,
+}

@@ -36,7 +36,8 @@ pub mod error;
 
 #[derive(Deserialize)]
 pub struct ProjectListQuery {
-	q: Option<String>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub q: Option<String>,
 }
 
 /// Row for the owner list page.

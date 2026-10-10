@@ -146,6 +146,7 @@ async fn create_location(
 
 #[derive(Deserialize)]
 struct LocationQuery {
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
 	q: Option<String>,
 }
 

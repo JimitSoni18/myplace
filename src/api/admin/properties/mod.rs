@@ -69,8 +69,11 @@ pub fn project_router() -> Router<AppState> {
 
 #[derive(Deserialize)]
 pub struct PropertyAllQuery {
+	#[serde(default, deserialize_with = "crate::utils::form::empty_as_none")]
 	project_id: Option<i32>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
 	category: Option<String>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
 	q: Option<String>,
 }
 

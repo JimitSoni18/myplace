@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id,\n\tp.username,\n\tp.created_at\nFROM\n\tprofiles p\nINNER JOIN admin_users a ON a.profile_id = p.id\nORDER BY p.id ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0176eff2162d59894efa15aaa06250fb4e08bb0ed4b79dfc97eb81cf3b1dbca4"
+}

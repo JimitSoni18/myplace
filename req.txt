@@ -1,0 +1,11 @@
+search input (location, project name, bhk)
+
+location filter (e.g. bopal, thaltej)
+
+bhk
+
+bugalows, commercial, apartments - radio
+
+pricing (range)
+
+lease/rent/sell

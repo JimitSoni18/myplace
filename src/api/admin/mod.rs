@@ -11,6 +11,7 @@ use crate::{
 	session_store::{SessionId, SessionStoreTrait as _},
 };
 
+pub mod admin_users;
 pub mod amenities;
 pub mod dashboard;
 pub mod locations;
@@ -27,6 +28,7 @@ pub fn router() -> Router<AppState> {
 		.nest("/projects", projects::router())
 		.nest("/properties", properties::router())
 		.nest("/amenities", amenities::router())
+		.nest("/users", admin_users::router())
 		.route("/admin-logout", get(logout))
 }
 

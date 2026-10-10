@@ -75,6 +75,18 @@ async fn test_public_server_does_not_expose_admin_or_owner_routes() {
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/admin/users")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
 	// Owner routes must not be exposed (404)
 	let response = app
 		.clone()
@@ -137,6 +149,18 @@ async fn test_admin_server_boundaries_and_auth() {
 		.oneshot(
 			Request::builder()
 				.uri("/admin")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/admin/users")
 				.body(Body::empty())
 				.unwrap(),
 		)

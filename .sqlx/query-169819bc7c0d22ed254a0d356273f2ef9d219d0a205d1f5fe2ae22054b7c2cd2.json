@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE profiles\nSET username = $1, password = $2\nWHERE id = $3;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "169819bc7c0d22ed254a0d356273f2ef9d219d0a205d1f5fe2ae22054b7c2cd2"
+}

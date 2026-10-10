@@ -242,7 +242,11 @@ impl Config {
 		if subpath.is_empty() {
 			self.admin_site_origin.clone()
 		} else {
-			format!("{}/{}", self.admin_site_origin.trim_end_matches('/'), subpath)
+			format!(
+				"{}/{}",
+				self.admin_site_origin.trim_end_matches('/'),
+				subpath
+			)
 		}
 	}
 
@@ -265,7 +269,11 @@ impl Config {
 		if subpath.is_empty() {
 			self.owner_site_origin.clone()
 		} else {
-			format!("{}/{}", self.owner_site_origin.trim_end_matches('/'), subpath)
+			format!(
+				"{}/{}",
+				self.owner_site_origin.trim_end_matches('/'),
+				subpath
+			)
 		}
 	}
 }
@@ -310,11 +318,23 @@ mod tests {
 		};
 
 		// Multiplexed mode: URLs have /admin and /owner prefixes
-		assert_eq!(cfg.admin_url("/projects"), "https://myplace.com/admin/projects");
-		assert_eq!(cfg.admin_url("/admin/projects"), "https://myplace.com/admin/projects");
+		assert_eq!(
+			cfg.admin_url("/projects"),
+			"https://myplace.com/admin/projects"
+		);
+		assert_eq!(
+			cfg.admin_url("/admin/projects"),
+			"https://myplace.com/admin/projects"
+		);
 		assert_eq!(cfg.admin_url("/"), "https://myplace.com/admin");
-		assert_eq!(cfg.owner_url("/projects"), "https://myplace.com/owner/projects");
-		assert_eq!(cfg.owner_url("/owner/projects"), "https://myplace.com/owner/projects");
+		assert_eq!(
+			cfg.owner_url("/projects"),
+			"https://myplace.com/owner/projects"
+		);
+		assert_eq!(
+			cfg.owner_url("/owner/projects"),
+			"https://myplace.com/owner/projects"
+		);
 		assert_eq!(cfg.owner_url("/"), "https://myplace.com/owner");
 
 		// Non-multiplexed (port-isolated) mode: URLs do NOT have prefixes
@@ -323,11 +343,16 @@ mod tests {
 		cfg.owner_site_origin = "http://localhost:8082".to_string();
 
 		assert_eq!(cfg.admin_url("/projects"), "http://localhost:8081/projects");
-		assert_eq!(cfg.admin_url("/admin/projects"), "http://localhost:8081/projects");
+		assert_eq!(
+			cfg.admin_url("/admin/projects"),
+			"http://localhost:8081/projects"
+		);
 		assert_eq!(cfg.admin_url("/"), "http://localhost:8081");
 		assert_eq!(cfg.owner_url("/projects"), "http://localhost:8082/projects");
-		assert_eq!(cfg.owner_url("/owner/projects"), "http://localhost:8082/projects");
+		assert_eq!(
+			cfg.owner_url("/owner/projects"),
+			"http://localhost:8082/projects"
+		);
 		assert_eq!(cfg.owner_url("/"), "http://localhost:8082");
 	}
 }
-

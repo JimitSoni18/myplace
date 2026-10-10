@@ -309,10 +309,12 @@ async fn home_page(State(state): State<AppState>) -> Result<Html<String>, Status
 // 2. PROJECTS LIST: GET /projects
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize)]
-struct ProjectsFilter {
-	category: Option<String>,
-	q: Option<String>,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct ProjectsFilter {
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub category: Option<String>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub q: Option<String>,
 }
 
 async fn projects_list(
@@ -406,8 +408,9 @@ async fn projects_list(
 // 3. PROJECT DETAIL: GET /projects/{slug}
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 struct EnquiryFeedback {
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
 	enquiry: Option<String>,
 }
 
@@ -963,11 +966,14 @@ async fn owner_detail(
 // 6. PROPERTIES LIST: GET /properties
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize)]
-struct PropertiesFilter {
-	category: Option<String>,
-	listing_type: Option<String>,
-	q: Option<String>,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct PropertiesFilter {
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub category: Option<String>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub listing_type: Option<String>,
+	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	pub q: Option<String>,
 }
 
 async fn properties_list(
@@ -1512,4 +1518,55 @@ async fn robots_txt() -> Response {
 		CONFIG.public_site_origin.as_str()
 	);
 	([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_properties_filter_empty_string_as_none() {
+		// Exactly user's case: /properties?listing_type=&q=Flat
+		let query = "listing_type=&q=Flat";
+		let filter: PropertiesFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, None);
+		assert_eq!(filter.listing_type, None);
+		assert_eq!(filter.q, Some("Flat".to_string()));
+
+		// Filter bar submitted with no criteria selected / filled
+		let query = "category=&listing_type=&q=";
+		let filter: PropertiesFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, None);
+		assert_eq!(filter.listing_type, None);
+		assert_eq!(filter.q, None);
+		assert!(filter.category.is_none() && filter.listing_type.is_none() && filter.q.is_none());
+
+		// Whitespace only
+		let query = "category=%20&listing_type=%20%20&q=%20%20%20";
+		let filter: PropertiesFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, None);
+		assert_eq!(filter.listing_type, None);
+		assert_eq!(filter.q, None);
+
+		// With valid inputs
+		let query = "category=RESIDENTIAL&listing_type=rent&q=%202BHK%20";
+		let filter: PropertiesFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, Some("RESIDENTIAL".to_string()));
+		assert_eq!(filter.listing_type, Some("rent".to_string()));
+		assert_eq!(filter.q, Some("2BHK".to_string()));
+	}
+
+	#[test]
+	fn test_projects_filter_empty_string_as_none() {
+		let query = "category=&q=Skyline";
+		let filter: ProjectsFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, None);
+		assert_eq!(filter.q, Some("Skyline".to_string()));
+
+		let query = "category=&q=";
+		let filter: ProjectsFilter = serde_urlencoded::from_str(query).unwrap();
+		assert_eq!(filter.category, None);
+		assert_eq!(filter.q, None);
+		assert!(filter.category.is_none() && filter.q.is_none());
+	}
 }

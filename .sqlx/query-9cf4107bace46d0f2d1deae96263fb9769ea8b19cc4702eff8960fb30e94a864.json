@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM admin_users\nWHERE profile_id = $1;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9cf4107bace46d0f2d1deae96263fb9769ea8b19cc4702eff8960fb30e94a864"
+}

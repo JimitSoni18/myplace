@@ -39,18 +39,23 @@ pub fn multiplexed_router(state: AppState) -> Router {
 		.layer(middleware::from_extractor_with_state::<AuthUser, AppState>(
 			state.clone(),
 		))
-		.route("/admin/login", get(|| async { Redirect::to("/auth/admin-login") }));
+		.route(
+			"/admin/login",
+			get(|| async { Redirect::to("/auth/admin-login") }),
+		);
 
 	let owner_routes = Router::new()
 		.nest("/owner", api::owners::router())
-		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(
-			state.clone(),
-		))
-		.route("/owner/login", get(|| async { Redirect::to("/auth/owner-login") }));
+		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(state.clone()))
+		.route(
+			"/owner/login",
+			get(|| async { Redirect::to("/auth/owner-login") }),
+		);
 
-	let auth_routes = Router::new()
-		.nest("/auth", api::auth::router())
-		.route("/login", get(|| async { Redirect::to("/auth/admin-login") }));
+	let auth_routes = Router::new().nest("/auth", api::auth::router()).route(
+		"/login",
+		get(|| async { Redirect::to("/auth/admin-login") }),
+	);
 
 	let public_routes = api::public::router();
 	let static_asset_server = ServeDir::new("static");
@@ -80,7 +85,10 @@ pub fn admin_router(state: AppState) -> Router {
 		.merge(admin_core.clone())
 		.nest("/admin", admin_core)
 		.nest("/auth", api::auth::admin_auth_router())
-		.route("/login", get(|| async { Redirect::to("/auth/admin-login") }));
+		.route(
+			"/login",
+			get(|| async { Redirect::to("/auth/admin-login") }),
+		);
 
 	let static_asset_server = ServeDir::new("static");
 
@@ -98,15 +106,16 @@ pub fn admin_router(state: AppState) -> Router {
 /// while also supporting `/owner/*` for backwards compatibility.
 pub fn owner_router(state: AppState) -> Router {
 	let owner_core = api::owners::router()
-		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(
-			state.clone(),
-		));
+		.layer(middleware::from_extractor_with_state::<OwnerUser, AppState>(state.clone()));
 
 	let owner_routes = Router::new()
 		.merge(owner_core.clone())
 		.nest("/owner", owner_core)
 		.nest("/auth", api::auth::owner_auth_router())
-		.route("/login", get(|| async { Redirect::to("/auth/owner-login") }));
+		.route(
+			"/login",
+			get(|| async { Redirect::to("/auth/owner-login") }),
+		);
 
 	let static_asset_server = ServeDir::new("static");
 

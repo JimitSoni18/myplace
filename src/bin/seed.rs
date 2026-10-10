@@ -31,11 +31,26 @@ async fn main() {
 	}
 
 	// Connect to Postgres
-	let pool: PgPool = PgPoolOptions::new()
-		.max_connections(2)
-		.connect(&database_url)
-		.await
-		.expect("failed to connect to database");
+	let mut attempts = 0;
+	let pool: PgPool = loop {
+		match PgPoolOptions::new()
+			.max_connections(2)
+			.acquire_timeout(std::time::Duration::from_secs(3))
+			.connect(&database_url)
+			.await
+		{
+			Ok(p) => break p,
+			Err(e) => {
+				attempts += 1;
+				if attempts >= 30 {
+					eprintln!("[seed] failed to connect to database after 30 attempts: {e}");
+					std::process::exit(1);
+				}
+				println!("[seed] waiting for database to be ready (attempt {attempts}/30)...");
+				tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+			}
+		}
+	};
 
 	// Check whether the admin already exists
 	let existing = sqlx::query_scalar!(

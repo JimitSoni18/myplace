@@ -1,0 +1,97 @@
+{% extends "admin/listing-base.html" %}
+
+{% block new_action %}
+<a href="/admin/users/new" class="btn">+ New Admin User</a>
+{% endblock %}
+
+{% block table_content %}
+
+	{% if users.is_empty() %}
+		<p style="padding: 1rem; color: #776;">No admin users found.</p>
+	{% else %}
+		<table>
+			<thead>
+				<tr>
+					<th align="left">ID</th>
+					<th align="left">Username</th>
+					<th align="left">Created</th>
+					<th align="left">Role</th>
+					<th align="left">Actions</th>
+				</tr>
+			</thead>
+
+			<tbody>
+				{% for user in users %}
+					<tr id="row-{{ user.id }}">
+						<td>{{ user.id }}</td>
+						<td>
+							<strong>{{ user.username }}</strong>
+							{% if user.is_current_user %}
+								<span class="badge-you">(You)</span>
+							{% endif %}
+						</td>
+						<td>{{ user.created_at }}</td>
+						<td><span class="badge-role">Administrator</span></td>
+						<td class="actions">
+							<a href="/admin/users/{{ user.id }}/edit" class="action-link">
+								Edit
+							</a>
+
+							{% if !user.is_current_user %}
+							<button onclick="deleteAdmin('{{ user.id }}', '{{ user.username }}')" class="action-link danger">
+								Delete
+							</button>
+							{% endif %}
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	{% endif %}
+
+<style>
+.badge-you {
+	display: inline-block;
+	background: #e3ebf7;
+	color: #1a4f8b;
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0.15rem 0.4rem;
+	border-radius: 4px;
+	margin-left: 0.35rem;
+}
+.badge-role {
+	display: inline-block;
+	background: #e6f4ea;
+	color: #137333;
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+}
+</style>
+
+<script>
+async function deleteAdmin(id, username) {
+	if (!confirm(`Are you sure you want to delete admin user "${username}"?`)) return;
+
+	try {
+		const res = await fetch(`/admin/users/${id}`, {
+			method: "DELETE",
+			credentials: "same-origin"
+		});
+
+		if (res.ok) {
+			document.getElementById(`row-${id}`)?.remove();
+		} else {
+			const text = await res.text();
+			alert(text || "Failed to delete admin user.");
+		}
+	} catch (err) {
+		console.error(err);
+		alert("Network error occurred.");
+	}
+}
+</script>
+
+{% endblock %}

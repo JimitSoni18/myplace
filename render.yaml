@@ -74,7 +74,7 @@ databases:
   # Managed PostgreSQL Database
   # ---------------------------------------------------------------------------
   - name: myplace-db
-    databaseName: myplace-db
+    databaseName: myplace_w9wz
     user: myplace_user
-    plan: basic
+    plan: free
     region: singapore

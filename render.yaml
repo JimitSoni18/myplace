@@ -1,30 +1,33 @@
 # =============================================================================
 # Render Blueprint Specification for MyPlace
 # =============================================================================
-# Deploys:
-# 1. Render Managed PostgreSQL Database (myplace-db)
-# 2. Public Web Service (myplace-public)
-# 3. Admin Web Service (myplace-admin)
-# 4. Owner Web Service (myplace-owner)
-#
-# Each service builds from GitHub using the multi-stage Dockerfile.
-# Server boundaries are strictly maintained.
+# Architecture:
+# 1. Managed PostgreSQL Database (myplace-db)
+# 2. Main Web Application (myplace)
+#    - Native Rust runtime (runtime: rust)
+#    - Path-multiplexed server on port 10000 (public: /, admin: /admin, owner: /owner, auth: /auth)
+#    - Automatic embedded migrations & admin seed via preDeployCommand
+#    - Object storage hosted on Supabase Storage (S3-compatible)
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # 1. Public Server Web Service
+  # 1. Main Path-Multiplexed Web Application
   # ---------------------------------------------------------------------------
   - type: web
-    name: myplace-public
-    runtime: docker
+    name: myplace
+    runtime: rust
     plan: starter
     region: oregon
     healthCheckPath: /healthz
-    preDeployCommand: "./migrate && ./seed"
+    buildCommand: "SQLX_OFFLINE=true cargo build --release"
+    preDeployCommand: "./target/release/migrate && ./target/release/seed"
+    startCommand: "./target/release/myplace"
     envVars:
       - key: APP_ENV
         value: production
+      - key: SQLX_OFFLINE
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: myplace-db
@@ -37,12 +40,12 @@ services:
         sync: false
       - key: JWT_PUBLIC_KEY
         sync: false
+      - key: PORT
+        value: "10000"
       - key: PUBLIC_PORT
         value: "10000"
-      - key: ADMIN_PORT
-        value: "8081"
-      - key: OWNER_PORT
-        value: "8082"
+      - key: ENABLE_ROUTE_MULTIPLEXING
+        value: "true"
       - key: PUBLIC_SITE_ORIGIN
         sync: false
       - key: ADMIN_SITE_ORIGIN
@@ -58,129 +61,13 @@ services:
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
       - key: AWS_DEFAULT_REGION
-        value: auto
+        sync: false
       - key: ASSET_BASE_URL
         sync: false
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
         generateValue: true
-
-  # ---------------------------------------------------------------------------
-  # 2. Admin Server Web Service
-  # ---------------------------------------------------------------------------
-  - type: web
-    name: myplace-admin
-    runtime: docker
-    plan: starter
-    region: oregon
-    healthCheckPath: /healthz
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: myplace-db
-          property: connectionString
-      - key: MAX_DB_CONNECTIONS
-        value: "10"
-      - key: COOKIE_SIGNING_SECRET
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: COOKIE_SIGNING_SECRET
-      - key: JWT_PRIVATE_KEY
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: JWT_PRIVATE_KEY
-      - key: JWT_PUBLIC_KEY
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: JWT_PUBLIC_KEY
-      - key: ADMIN_PORT
-        value: "10000"
-      - key: PUBLIC_PORT
-        value: "8080"
-      - key: OWNER_PORT
-        value: "8082"
-      - key: PUBLIC_SITE_ORIGIN
-        sync: false
-      - key: ADMIN_SITE_ORIGIN
-        sync: false
-      - key: OWNER_SITE_ORIGIN
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: S3_BUCKET
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_DEFAULT_REGION
-        value: auto
-      - key: ASSET_BASE_URL
-        sync: false
-
-  # ---------------------------------------------------------------------------
-  # 3. Project Owner Server Web Service
-  # ---------------------------------------------------------------------------
-  - type: web
-    name: myplace-owner
-    runtime: docker
-    plan: starter
-    region: oregon
-    healthCheckPath: /healthz
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: myplace-db
-          property: connectionString
-      - key: MAX_DB_CONNECTIONS
-        value: "10"
-      - key: COOKIE_SIGNING_SECRET
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: COOKIE_SIGNING_SECRET
-      - key: JWT_PRIVATE_KEY
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: JWT_PRIVATE_KEY
-      - key: JWT_PUBLIC_KEY
-        fromService:
-          type: web
-          name: myplace-public
-          envVarKey: JWT_PUBLIC_KEY
-      - key: OWNER_PORT
-        value: "10000"
-      - key: PUBLIC_PORT
-        value: "8080"
-      - key: ADMIN_PORT
-        value: "8081"
-      - key: PUBLIC_SITE_ORIGIN
-        sync: false
-      - key: ADMIN_SITE_ORIGIN
-        sync: false
-      - key: OWNER_SITE_ORIGIN
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: S3_BUCKET
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_DEFAULT_REGION
-        value: auto
-      - key: ASSET_BASE_URL
-        sync: false
 
 databases:
   # ---------------------------------------------------------------------------

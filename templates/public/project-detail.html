@@ -2,307 +2,217 @@
 
 {% block head_extra %}
 <style>
-	.project-hero {
+	.proj-hero-section {
 		background: #0f172a;
 		color: white;
-		padding: 3.5rem 1.5rem 3rem;
+		padding: 2.75rem 0 2.25rem;
+		border-bottom: 1px solid #1e293b;
 	}
 
-	.project-hero-container {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.breadcrumb {
+	.proj-breadcrumb {
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 		font-size: 0.85rem;
 		color: #94a3b8;
-		margin-bottom: 1rem;
+		margin-bottom: 1.25rem;
 	}
 
-	.breadcrumb a:hover {
+	.proj-breadcrumb a {
+		color: #94a3b8;
+	}
+
+	.proj-breadcrumb a:hover {
 		color: white;
 	}
 
-	.project-header-flex {
+	.proj-hero-grid {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1.75rem;
 	}
 
-	.project-title {
-		font-size: 2.75rem;
+	.proj-title-col {
+		flex: 1;
+		min-width: 320px;
+	}
+
+	.proj-stats-col {
+		text-align: right;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+	}
+
+	.proj-title {
+		font-size: clamp(2rem, 4vw, 3rem);
 		font-weight: 800;
-		line-height: 1.2;
-		letter-spacing: -0.02em;
-		margin-bottom: 0.5rem;
+		line-height: 1.18;
+		letter-spacing: -0.025em;
+		margin-bottom: 0.65rem;
 	}
 
-	.project-loc {
-		font-size: 1.15rem;
-		color: #cbd5e1;
+	.proj-loc-row {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		font-size: 1.05rem;
+		color: #cbd5e1;
+		margin-bottom: 1.25rem;
 	}
 
-	.project-badges {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-
-	.badge-pill {
-		background: rgba(255, 255, 255, 0.15);
-		backdrop-filter: blur(4px);
-		padding: 0.3rem 0.8rem;
-		border-radius: var(--radius-full);
-		font-size: 0.82rem;
-		font-weight: 600;
-	}
-
-	/* Two-column layout */
-	.details-layout {
+	.layout-content-grid {
 		display: grid;
-		grid-template-columns: 2fr 1fr;
-		gap: 2.5rem;
-		margin-top: 2rem;
+		grid-template-columns: minmax(0, 1fr) 380px;
+		gap: 3rem;
+		padding: 3rem 0;
 	}
 
-	/* Gallery */
-	.gallery-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 1rem;
+	.content-panel {
+		background: var(--bg-surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-xl);
+		padding: 2.25rem;
+		box-shadow: var(--shadow-sm);
 		margin-bottom: 2.5rem;
 	}
 
-	.gallery-item {
-		height: 220px;
-		border-radius: var(--radius);
-		overflow: hidden;
-		background: #1e293b;
-	}
-
-	.gallery-item img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.2s ease;
-	}
-
-	.gallery-item img:hover {
-		transform: scale(1.05);
-	}
-
-	/* Section cards */
-	.content-card {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 2rem;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 2rem;
-	}
-
-	.content-card h2 {
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--text-main);
-		margin-bottom: 1.25rem;
-		border-bottom: 1px solid var(--border-subtle);
-		padding-bottom: 0.75rem;
-	}
-
-	.prose {
-		line-height: 1.7;
-		color: #334155;
-	}
-
-	.prose p {
-		margin-bottom: 1rem;
-	}
-
-	.prose ul, .prose ol {
-		margin-left: 1.5rem;
-		margin-bottom: 1rem;
-	}
-
-	/* Amenity tags */
-	.amenity-tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.6rem;
-	}
-
-	.amenity-tag {
-		background: #f1f5f9;
-		color: var(--text-main);
-		font-size: 0.88rem;
-		font-weight: 600;
-		padding: 0.4rem 0.85rem;
-		border-radius: var(--radius-full);
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-
-	/* Sidebar widgets */
-	.sticky-sidebar {
-		position: sticky;
-		top: 80px;
-	}
-
-	.developer-widget {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 1.75rem;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 1.5rem;
-		text-align: center;
-	}
-
-	.dev-avatar {
-		width: 80px;
-		height: 80px;
-		border-radius: var(--radius-full);
-		object-fit: cover;
-		margin: 0 auto 1rem;
-		background: #f1f5f9;
-		border: 2px solid var(--border);
-	}
-
-	.enquiry-card {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 1.75rem;
-		box-shadow: var(--shadow-md);
-	}
-
-	.enquiry-card h3 {
-		font-size: 1.25rem;
-		font-weight: 800;
-		color: var(--text-main);
-		margin-bottom: 0.35rem;
-	}
-
-	.enquiry-card p {
-		font-size: 0.88rem;
-		color: var(--text-muted);
-		margin-bottom: 1.25rem;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		font-size: 0.82rem;
-		font-weight: 700;
-		color: var(--text-main);
-		margin-bottom: 0.35rem;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-
-	.form-group input, .form-group textarea {
-		width: 100%;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.65rem 0.85rem;
-		font-family: inherit;
-		font-size: 0.92rem;
-		color: var(--text-main);
-	}
-
-	.form-group input:focus, .form-group textarea:focus {
-		outline: none;
-		border-color: var(--primary);
-	}
-
-	.btn-submit {
-		width: 100%;
-		background: var(--primary);
-		color: white;
-		border: none;
-		border-radius: var(--radius);
-		padding: 0.85rem;
-		font-weight: 700;
-		font-size: 0.95rem;
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
-
-	.btn-submit:hover {
-		background: var(--primary-dark);
-	}
-
-	.alert-success {
-		background: #dcfce7;
-		color: #166534;
-		border: 1px solid #bbf7d0;
-		border-radius: var(--radius);
-		padding: 0.85rem;
-		font-size: 0.9rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.doc-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.doc-item {
+	.content-panel-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		background: #f8fafc;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.75rem 1rem;
+		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-subtle);
 	}
 
-	@media (max-width: 900px) {
-		.details-layout {
+	.content-panel-title {
+		font-size: 1.4rem;
+		font-weight: 800;
+		color: var(--text-main);
+		letter-spacing: -0.02em;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+
+	.prose-body {
+		font-size: 1.02rem;
+		line-height: 1.75;
+		color: #334155;
+	}
+
+	.prose-body p {
+		margin-bottom: 1.2rem;
+	}
+
+	.prose-body ul, .prose-body ol {
+		margin-left: 1.5rem;
+		margin-bottom: 1.2rem;
+	}
+
+	/* Unit Inventory Cards */
+	.inventory-card {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		padding: 1.25rem 1.5rem;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
+		background: var(--bg-surface);
+		transition: all 0.2s ease;
+	}
+
+	.inventory-card:hover {
+		border-color: #93c5fd;
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
+	}
+
+	/* Document Cards */
+	.doc-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1.25rem;
+		background: var(--bg-subtle);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-md);
+		transition: all 0.2s ease;
+	}
+
+	.doc-card:hover {
+		background: #eff6ff;
+		border-color: #bfdbfe;
+	}
+
+	@media (max-width: 960px) {
+		.layout-content-grid {
 			grid-template-columns: 1fr;
+			gap: 2rem;
 		}
-		.sticky-sidebar {
-			position: static;
+		.proj-stats-col {
+			text-align: left;
+			align-items: flex-start;
 		}
 	}
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="project-hero">
-	<div class="project-hero-container">
-		<div class="breadcrumb">
-			<a href="/">Home</a> &rarr;
-			<a href="/projects">Projects</a> &rarr;
-			<span>{{ project.name }}</span>
-		</div>
-		<div class="project-header-flex">
-			<div>
-				<h1 class="project-title">{{ project.name }}</h1>
-				<div class="project-loc">
-					<span>📍 {{ project.location_name }}</span>
-				</div>
-				<div class="project-badges">
-					<span class="badge-pill">Category: {{ project.category }}</span>
+<!-- Master Project Hero Section -->
+<section class="proj-hero-section">
+	<div class="container">
+		<nav class="proj-breadcrumb" aria-label="Breadcrumb">
+			<a href="/">Home</a>
+			<span>&rsaquo;</span>
+			<a href="/projects">Projects</a>
+			<span>&rsaquo;</span>
+			<span style="color: white; font-weight: 600;">{{ project.name }}</span>
+		</nav>
+
+		<div class="proj-hero-grid">
+			<div class="proj-title-col">
+				<div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.85rem;">
+					<span class="badge badge-emerald">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						Verified RERA Development
+					</span>
+					<span class="badge badge-primary">{{ project.category }}</span>
 					{% if let Some(pos) = project.possession_date %}
-					<span class="badge-pill">Possession: {{ pos }}</span>
+					<span class="badge badge-amber">Possession: {{ pos }}</span>
 					{% endif %}
-					{% if let Some(launch) = project.launch_date %}
-					<span class="badge-pill">Launched: {{ launch }}</span>
-					{% endif %}
+				</div>
+
+				<h1 class="proj-title">{{ project.name }}</h1>
+
+				<div class="proj-loc-row">
+					<span style="display: inline-flex; align-items: center; gap: 0.35rem;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+							<circle cx="12" cy="10" r="3"></circle>
+						</svg>
+						{{ project.location_name }}
+					</span>
+					<span style="color: #475569;">&bull;</span>
+					<span>By Developer: <a href="/owners/{{ owner.id }}-{{ owner.slug }}" style="color: #60a5fa; text-decoration: underline; font-weight: 600;">{{ owner.name }}</a></span>
+				</div>
+			</div>
+
+			<div class="proj-stats-col">
+				<div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-lg); padding: 1rem 1.5rem; text-align: center;">
+					<div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 700;">Published Inventory</div>
+					<div style="font-size: 2rem; font-weight: 800; color: #60a5fa;">{{ properties.len() }} Units</div>
+					<div style="font-size: 0.8rem; color: #cbd5e1;">Available for Purchase & Lease</div>
 				</div>
 			</div>
 		</div>
@@ -310,159 +220,378 @@
 </section>
 
 <div class="container">
-	<!-- Gallery -->
-	{% if !gallery.is_empty() %}
-	<div class="gallery-grid">
-		{% for item in gallery %}
-		<div class="gallery-item">
-			{% if item.media_type == "video" %}
-			<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-				<source src="{{ item.url }}" type="video/mp4">
-				Your browser does not support the video tag.
-			</video>
-			{% else %}
-			<a href="{{ item.url }}" target="_blank" rel="noopener">
-				<img src="{{ item.thumbnail_url }}" alt="{{ project.name }} photo" loading="lazy">
-			</a>
-			{% endif %}
-		</div>
-		{% endfor %}
-	</div>
-	{% endif %}
-
-	<div class="details-layout">
-		<!-- Left Main Content -->
+	<div class="layout-content-grid">
+		<!-- Main Content Column -->
 		<div>
-			<!-- Overview -->
-			<div class="content-card">
-				<h2>Project Overview</h2>
+			<!-- Interactive Media Carousel & Lightbox -->
+			{% if !gallery.is_empty() %}
+			<div class="gallery-showcase" v-scope="createGallery({{ gallery.len() }})" v-init="mounted()">
+				<div class="carousel-main-stage">
+					{% for (idx, item) in gallery.iter().enumerate() %}
+					<div class="carousel-active-media" v-show="currentIndex === {{ idx }}">
+						{% if item.media_type == "video" %}
+						<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width:100%; height:100%; object-fit:cover;">
+							<source src="{{ item.url }}" type="video/mp4">
+						</video>
+						{% else %}
+						<img src="{{ item.url }}" alt="{{ project.name }} visual {{ idx + 1 }}" {% if idx == 0 %}fetchpriority="high"{% else %}loading="lazy"{% endif %} @click="openLightbox()">
+						{% endif %}
+					</div>
+					{% endfor %}
+
+					<!-- Carousel Controls -->
+					<div class="carousel-overlay-controls">
+						<button class="carousel-nav-btn" @click="prev()" aria-label="Previous image">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="15 18 9 12 15 6"></polyline>
+							</svg>
+						</button>
+						<button class="carousel-nav-btn" @click="next()" aria-label="Next image">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="9 18 15 12 9 6"></polyline>
+							</svg>
+						</button>
+					</div>
+
+					<button class="carousel-fullscreen-btn" @click="openLightbox()" aria-label="View Fullscreen">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+						</svg>
+					</button>
+
+					<div class="carousel-counter-badge">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+							<circle cx="8.5" cy="8.5" r="1.5"></circle>
+							<polyline points="21 15 16 10 5 21"></polyline>
+						</svg>
+						<span>Media <strong v-text="currentIndex + 1">1</strong> of {{ gallery.len() }}</span>
+					</div>
+				</div>
+
+				<!-- Thumbnail Scroller -->
+				<div class="carousel-thumbnails-scroller">
+					{% for (idx, item) in gallery.iter().enumerate() %}
+					<div class="carousel-thumb-item" data-index="{{ idx }}" :class="{ active: currentIndex === {{ idx }} }" @click="selectIndex({{ idx }})">
+						<img src="{{ item.thumbnail_url }}" alt="Thumbnail {{ idx + 1 }}" loading="lazy">
+					</div>
+					{% endfor %}
+				</div>
+
+				<!-- Fullscreen Lightbox Modal -->
+				<div class="lightbox-modal" v-if="lightboxOpen" @click.self="closeLightbox()">
+					<button class="lightbox-close-btn" @click="closeLightbox()" aria-label="Close Lightbox">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+					<div class="lightbox-content-box">
+						{% for (idx, item) in gallery.iter().enumerate() %}
+						<div v-show="currentIndex === {{ idx }}">
+							{% if item.media_type == "video" %}
+							<video controls autoplay style="max-height:85vh; max-width:90vw;">
+								<source src="{{ item.url }}" type="video/mp4">
+							</video>
+							{% else %}
+							<img src="{{ item.url }}" alt="Fullscreen Media {{ idx + 1 }}">
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+			{% endif %}
+
+			<!-- Quick Anchor Tabs Navigation -->
+			<nav class="quick-tabs-nav">
+				<a href="#overview" class="quick-tab-link active">Overview</a>
+				<a href="#inventory" class="quick-tab-link">Available Inventory ({{ properties.len() }})</a>
+				{% if !amenities.is_empty() %}
+				<a href="#amenities" class="quick-tab-link">Amenities</a>
+				{% endif %}
+				{% if !documents.is_empty() %}
+				<a href="#documents" class="quick-tab-link">Documents & Compliance</a>
+				{% endif %}
+				<a href="#developer" class="quick-tab-link">Developer</a>
+			</nav>
+
+			<!-- Overview & Narrative -->
+			<section id="overview" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="12" y1="16" x2="12" y2="12"></line>
+							<line x1="12" y1="8" x2="12.01" y2="8"></line>
+						</svg>
+						Development Overview
+					</h2>
+					<span class="badge badge-emerald">Prime Project</span>
+				</div>
+
 				{% if description_html.is_empty() %}
-				<p style="color: var(--text-muted);">No description provided for this development.</p>
+				<p style="color: var(--text-muted); font-size: 1rem;">Official master-plan details and specifications are accessible via the sales dossier.</p>
 				{% else %}
-				<div class="prose">
+				<div class="prose-body">
 					{{ description_html|safe }}
 				</div>
 				{% endif %}
-			</div>
+			</section>
 
-			<!-- Amenities -->
-			{% if !amenities.is_empty() %}
-			<div class="content-card">
-				<h2>Project Amenities & Features</h2>
-				<div class="amenity-tags">
-					{% for a in amenities %}
-					<span class="amenity-tag">✓ {{ a }}</span>
-					{% endfor %}
+			<!-- Available Inventory Section -->
+			<section id="inventory" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="7" height="7"></rect>
+							<rect x="14" y="3" width="7" height="7"></rect>
+							<rect x="14" y="14" width="7" height="7"></rect>
+							<rect x="3" y="14" width="7" height="7"></rect>
+						</svg>
+						Available Properties in this Project ({{ properties.len() }})
+					</h2>
 				</div>
-			</div>
-			{% endif %}
 
-			<!-- Properties Available in this project -->
-			<div class="content-card">
-				<h2>Available Properties in this Project ({{ properties.len() }})</h2>
 				{% if properties.is_empty() %}
-				<p style="color: var(--text-muted);">No active unit listings currently published in this project.</p>
+				<div style="background: var(--bg-subtle); border-radius: var(--radius-md); padding: 2.5rem; text-align: center;">
+					<h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No Published Units Currently</h3>
+					<p style="color: var(--text-muted); margin-bottom: 1.25rem;">New towers and releases are added on a rolling schedule. Enquire to join the priority waitlist.</p>
+					<a href="#enquiry" class="btn btn-primary btn-sm">Join Priority Waitlist</a>
+				</div>
 				{% else %}
-				<div style="display: flex; flex-direction: column; gap: 1rem;">
+				<div style="display: flex; flex-direction: column; gap: 1.25rem;">
 					{% for prop in properties %}
-					<div style="border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+					<div class="inventory-card">
 						<div>
-							<h3 style="font-size: 1.05rem; font-weight: 700;">
-								<a href="/properties/{{ prop.id }}-{{ prop.slug }}" style="color: var(--primary);">{{ prop.title }}</a>
+							<h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.35rem;">
+								<a href="/properties/{{ prop.id }}-{{ prop.slug }}" style="color: var(--text-main);">{{ prop.title }}</a>
 							</h3>
-							<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
-								<span>{{ prop.property_type_name }}</span> &bull;
-								<span style="text-transform: capitalize;">{{ prop.listing_type }}</span>
-								{% if let Some(bhk) = prop.bedroom_count %} &bull; <strong>{{ bhk }} BHK</strong>{% endif %}
-								{% if let Some(area) = prop.built_up_area %} &bull; <strong>{{ area }} sq.ft</strong>{% endif %}
+							<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--text-muted);">
+								<span class="badge badge-primary">{{ prop.property_type_name }}</span>
+								<span class="badge badge-amber" style="text-transform: capitalize;">{{ prop.listing_type }}</span>
+								{% if let Some(bhk) = prop.bedroom_count %}
+								<span>&bull; <strong>{{ bhk }} BHK</strong></span>
+								{% endif %}
+								{% if let Some(area) = prop.built_up_area %}
+								<span>&bull; <strong>{{ area }} sq.ft</strong></span>
+								{% endif %}
 							</div>
 						</div>
-						<div style="display: flex; align-items: center; gap: 1rem;">
-							<div style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">{{ prop.price_formatted }}</div>
-							<a href="/properties/{{ prop.id }}-{{ prop.slug }}" class="btn-card">View Property &rarr;</a>
+
+						<div style="display: flex; align-items: center; gap: 1.25rem;">
+							<div style="text-align: right;">
+								<div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Price</div>
+								<div style="font-size: 1.35rem; font-weight: 800; color: var(--primary);">{{ prop.price_formatted }}</div>
+							</div>
+							<a href="/properties/{{ prop.id }}-{{ prop.slug }}" class="btn btn-primary btn-sm">
+								<span>View Unit</span>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="5" y1="12" x2="19" y2="12"></line>
+									<polyline points="12 5 19 12 12 19"></polyline>
+								</svg>
+							</a>
 						</div>
 					</div>
 					{% endfor %}
 				</div>
 				{% endif %}
-			</div>
+			</section>
 
-			<!-- Documents -->
-			{% if !documents.is_empty() %}
-			<div class="content-card">
-				<h2>Official Documents & Approvals</h2>
-				<div class="doc-list">
-					{% for doc in documents %}
-					<div class="doc-item">
-						<div>
-							<strong>{{ doc.display_name }}</strong>
-							<span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-left: 0.5rem;">({{ doc.doc_type }})</span>
-							<span style="font-size: 0.8rem; color: var(--text-light); margin-left: 0.5rem;">{{ doc.file_size_formatted }}</span>
-						</div>
-						<a href="{{ doc.url }}" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600; font-size: 0.88rem;">Download PDF &rarr;</a>
+			<!-- Project Amenities -->
+			{% if !amenities.is_empty() %}
+			<section id="amenities" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+						</svg>
+						Development Amenities & Infrastructure ({{ amenities.len() }})
+					</h2>
+				</div>
+
+				<div class="amenity-chip-grid">
+					{% for a in amenities %}
+					<div class="amenity-chip">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						<span>{{ a }}</span>
 					</div>
 					{% endfor %}
 				</div>
-			</div>
+			</section>
 			{% endif %}
+
+			<!-- Official Documents & Approvals Vault -->
+			{% if !documents.is_empty() %}
+			<section id="documents" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+							<polyline points="14 2 14 8 20 8"></polyline>
+							<line x1="16" y1="13" x2="8" y2="13"></line>
+							<line x1="16" y1="17" x2="8" y2="17"></line>
+							<polyline points="10 9 9 9 8 9"></polyline>
+						</svg>
+						Compliance & Official Documents Vault
+					</h2>
+					<span class="badge badge-emerald">Verified Legal Docs</span>
+				</div>
+
+				<div style="display: flex; flex-direction: column; gap: 0.85rem;">
+					{% for doc in documents %}
+					<div class="doc-card">
+						<div style="display: flex; align-items: center; gap: 0.85rem;">
+							<div style="width: 38px; height: 38px; border-radius: var(--radius-sm); background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">
+								PDF
+							</div>
+							<div>
+								<div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">{{ doc.display_name }}</div>
+								<div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+									Type: {{ doc.doc_type }} &bull; Size: {{ doc.file_size_formatted }}
+								</div>
+							</div>
+						</div>
+						<a href="{{ doc.url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+							<span>Download</span>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+								<polyline points="7 10 12 15 17 10"></polyline>
+								<line x1="12" y1="15" x2="12" y2="3"></line>
+							</svg>
+						</a>
+					</div>
+					{% endfor %}
+				</div>
+			</section>
+			{% endif %}
+
+			<!-- Developer Profile Showcase Card -->
+			<section id="developer" class="content-panel" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+							<circle cx="12" cy="7" r="4"></circle>
+						</svg>
+						About the Developer: {{ owner.name }}
+					</h2>
+				</div>
+
+				<div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+					{% if let Some(img) = owner.image_url %}
+					<img src="{{ img }}" alt="{{ owner.name }}" style="width: 72px; height: 72px; border-radius: var(--radius-full); object-fit: cover; border: 2px solid var(--border);">
+					{% else %}
+					<div style="width: 72px; height: 72px; border-radius: var(--radius-full); background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+						🏛️
+					</div>
+					{% endif %}
+					<div>
+						<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">{{ owner.name }}</h3>
+						<div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+							Verified Real Estate Builder & Developer Partner
+						</div>
+					</div>
+				</div>
+
+				<a href="/owners/{{ owner.id }}-{{ owner.slug }}" class="btn btn-secondary btn-sm">
+					<span>View Full Developer Portfolio & Projects</span>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="5" y1="12" x2="19" y2="12"></line>
+						<polyline points="12 5 19 12 12 19"></polyline>
+					</svg>
+				</a>
+			</section>
 		</div>
 
-		<!-- Right Sidebar -->
+		<!-- Right Column: Sticky Project Enquiry Card -->
 		<div>
-			<div class="sticky-sidebar">
-				<!-- Developer profile card -->
-				<div class="developer-widget">
-					{% if let Some(img) = owner.image_url %}
-					<img src="{{ img }}" alt="{{ owner.name }}" class="dev-avatar">
-					{% else %}
-					<div class="dev-avatar" style="display:flex; align-items:center; justify-content:center; font-size:2rem;">🏛️</div>
-					{% endif %}
-					<h3 style="font-size: 1.15rem; font-weight: 700;">{{ owner.name }}</h3>
-					<p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Project Developer</p>
-					<div style="margin-top: 1rem;">
-						<a href="/owners/{{ owner.id }}-{{ owner.slug }}" style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">View Developer Portfolio &rarr;</a>
-					</div>
+			<div class="sticky-conversion-card" id="enquiry">
+				<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+					<div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+					<span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">Verified Sales Desk</span>
 				</div>
 
-				<!-- Lead Enquiry Form -->
-				<div class="enquiry-card">
-					<h3>Request Callback & Brochure</h3>
-					<p>Directly contact the verified project sales desk.</p>
+				<h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem; letter-spacing: -0.02em;">
+					Request Project Dossier
+				</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+					Connect directly with the verified project sales office for latest unit pricing, payment milestones, and brochure.
+				</p>
 
-					{% if enquiry_success %}
-					<div class="alert-success">
-						✓ Thank you! Your enquiry has been forwarded. A sales representative will get in touch shortly.
+				{% if enquiry_success %}
+				<div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 1rem; border-radius: var(--radius-md); font-size: 0.92rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+						<polyline points="22 4 12 14.01 9 11.01"></polyline>
+					</svg>
+					<div>
+						<strong>Enquiry Received!</strong> A representative from the {{ project.name }} desk will reach out with the brochure.
 					</div>
-					{% endif %}
-
-					{% if let Some(err) = enquiry_error %}
-					<div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;">
-						{{ err }}
-					</div>
-					{% endif %}
-
-					<form action="/projects/{{ project.id }}/enquire" method="post">
-						<div class="form-group">
-							<label for="name">Your Full Name *</label>
-							<input type="text" id="name" name="name" required placeholder="John Doe">
-						</div>
-						<div class="form-group">
-							<label for="phone">Phone Number *</label>
-							<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210">
-						</div>
-						<div class="form-group">
-							<label for="email">Email Address</label>
-							<input type="email" id="email" name="email" placeholder="john@example.com">
-						</div>
-						<div class="form-group">
-							<label for="message">Message / Queries</label>
-							<textarea id="message" name="message" rows="3" placeholder="I am interested in 3 BHK floor plans and pricing..."></textarea>
-						</div>
-						<button type="submit" class="btn-submit">Submit Enquiry</button>
-					</form>
 				</div>
+				{% endif %}
+
+				{% if let Some(err) = enquiry_error %}
+				<div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.9rem; margin-bottom: 1.5rem;">
+					{{ err }}
+				</div>
+				{% endif %}
+
+				<form action="/projects/{{ project.id }}/enquire" method="post">
+					<div style="margin-bottom: 1.15rem;">
+						<label for="name" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Full Name *</label>
+						<input type="text" id="name" name="name" required placeholder="e.g. Priyanshu Dave" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.15rem;">
+						<label for="phone" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Phone Number *</label>
+						<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.15rem;">
+						<label for="email" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Email Address</label>
+						<input type="email" id="email" name="email" placeholder="priyanshu@example.com" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.5rem;">
+						<label for="message" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Message / Inquiry</label>
+						<textarea id="message" name="message" rows="3" placeholder="I am interested in pricing and floor plans for 3 BHK units..." class="form-control-input"></textarea>
+					</div>
+
+					<button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+						<span>Download Brochure & Contact</span>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="5" y1="12" x2="19" y2="12"></line>
+							<polyline points="12 5 19 12 12 19"></polyline>
+						</svg>
+					</button>
+
+					<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+							<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+						</svg>
+						<span>Direct verified builder enquiry &bull; Zero spam</span>
+					</div>
+				</form>
 			</div>
 		</div>
 	</div>
+</div>
+
+<!-- Mobile Quick Action Bar -->
+<div class="mobile-action-bar">
+	<div>
+		<div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Development</div>
+		<div style="font-size:1.1rem; font-weight:800; color:var(--primary); line-height:1.1;">{{ project.name }}</div>
+	</div>
+	<a href="#enquiry" class="btn btn-primary btn-sm">
+		<span>Get Brochure</span>
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<polyline points="6 9 12 15 18 9"></polyline>
+		</svg>
+	</a>
 </div>
 {% endblock %}

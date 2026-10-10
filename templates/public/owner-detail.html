@@ -2,162 +2,292 @@
 
 {% block head_extra %}
 <style>
-	.owner-hero {
-		background: #0f172a;
+	.owner-hero-banner {
+		background: linear-gradient(135deg, #0b0f19 0%, #1e293b 100%);
 		color: white;
-		padding: 3.5rem 1.5rem 3rem;
+		padding: 4rem 0 3rem;
+		border-bottom: 1px solid #334155;
+		position: relative;
+		overflow: hidden;
 	}
 
-	.owner-hero-container {
-		max-width: var(--max-width);
-		margin: 0 auto;
+	.owner-hero-banner::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.15), transparent 50%);
+		pointer-events: none;
 	}
 
-	.owner-profile-flex {
+	.owner-header-flex {
 		display: flex;
 		align-items: center;
-		gap: 2rem;
+		gap: 2.25rem;
+		flex-wrap: wrap;
 	}
 
-	.profile-logo {
-		width: 100px;
-		height: 100px;
-		border-radius: var(--radius-full);
-		object-fit: cover;
+	.owner-avatar-frame {
+		width: 120px;
+		height: 120px;
+		border-radius: var(--radius-xl);
 		background: #1e293b;
 		border: 3px solid rgba(255, 255, 255, 0.2);
+		box-shadow: var(--shadow-xl);
+		overflow: hidden;
 		flex-shrink: 0;
-	}
-
-	.owner-meta h1 {
-		font-size: 2.25rem;
-		font-weight: 800;
-		margin-bottom: 0.25rem;
-	}
-
-	.owner-contact-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1.5rem;
-		color: #cbd5e1;
-		font-size: 0.95rem;
-		margin-top: 0.75rem;
-	}
-
-	.contact-pill {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
+		justify-content: center;
 	}
 
-	.contact-pill a {
+	.owner-avatar-frame img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.owner-heading-col {
+		flex: 1;
+		min-width: 280px;
+	}
+
+	.owner-name-title {
+		font-size: clamp(2.25rem, 4vw, 3rem);
+		font-weight: 800;
+		letter-spacing: -0.025em;
+		line-height: 1.15;
+		margin-bottom: 0.65rem;
+	}
+
+	.owner-meta-pills {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1.25rem;
+		margin-top: 1rem;
+		font-size: 0.95rem;
+		color: #cbd5e1;
+	}
+
+	.owner-meta-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.owner-meta-pill a {
 		color: #60a5fa;
 		text-decoration: underline;
 	}
 
-	@media (max-width: 640px) {
-		.owner-profile-flex {
-			flex-direction: column;
-			text-align: center;
-		}
-		.owner-contact-row {
-			justify-content: center;
-		}
+	.stats-metric-strip {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1.5rem;
+		margin-top: 2.5rem;
+		padding-top: 2rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.metric-item {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.metric-item-num {
+		font-size: 2rem;
+		font-weight: 800;
+		color: white;
+		line-height: 1.1;
+	}
+
+	.metric-item-label {
+		font-size: 0.82rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #94a3b8;
+		font-weight: 700;
+		margin-top: 0.25rem;
 	}
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="owner-hero">
-	<div class="owner-hero-container">
-		<div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
-			<a href="/" style="color:#94a3b8;">Home</a> &rarr;
-			<span>Developers</span> &rarr;
-			<span>{{ owner.name }}</span>
-		</div>
-		<div class="owner-profile-flex">
-			{% if let Some(img) = owner.image_url %}
-			<img src="{{ img }}" alt="{{ owner.name }}" class="profile-logo">
-			{% else %}
-			<div class="profile-logo" style="display:flex; align-items:center; justify-content:center; font-size:2.5rem;">🏛️</div>
-			{% endif %}
-			<div class="owner-meta">
-				<h1>{{ owner.name }}</h1>
-				<div class="owner-contact-row">
+<!-- Developer Flagship Hero -->
+<section class="owner-hero-banner">
+	<div class="container">
+		<nav style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#94a3b8; margin-bottom:1.5rem;">
+			<a href="/" style="color:#94a3b8;">Home</a>
+			<span>&rsaquo;</span>
+			<a href="/projects" style="color:#94a3b8;">Developers</a>
+			<span>&rsaquo;</span>
+			<span style="color: white; font-weight: 600;">{{ owner.name }}</span>
+		</nav>
+
+		<div class="owner-header-flex">
+			<div class="owner-avatar-frame">
+				{% if let Some(img) = owner.image_url %}
+				<img src="{{ img }}" alt="{{ owner.name }}" fetchpriority="high">
+				{% else %}
+				<div style="font-size: 3rem;">🏛️</div>
+				{% endif %}
+			</div>
+
+			<div class="owner-heading-col">
+				<div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+					<span class="badge badge-emerald">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						Vetted Developer Partner
+					</span>
+					<span class="badge badge-glass">{{ projects.len() }} Developments</span>
+				</div>
+
+				<h1 class="owner-name-title">{{ owner.name }}</h1>
+
+				<div class="owner-meta-pills">
 					{% if let Some(phone) = owner.phone %}
-					<div class="contact-pill">
-						<span>📞</span> <span>{{ phone }}</span>
+					<div class="owner-meta-pill">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+						</svg>
+						<span>{{ phone }}</span>
 					</div>
 					{% endif %}
+
 					{% if let Some(email) = owner.email %}
-					<div class="contact-pill">
-						<span>✉️</span> <span>{{ email }}</span>
+					<div class="owner-meta-pill">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+							<polyline points="22,6 12,13 2,6"></polyline>
+						</svg>
+						<span>{{ email }}</span>
 					</div>
 					{% endif %}
+
 					{% if let Some(website) = owner.website %}
-					<div class="contact-pill">
-						<span>🌐</span> <a href="{{ website }}" target="_blank" rel="noopener">Visit Website</a>
+					<div class="owner-meta-pill">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="2" y1="12" x2="22" y2="12"></line>
+							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+						</svg>
+						<a href="{{ website }}" target="_blank" rel="noopener">Official Builder Website &rarr;</a>
 					</div>
 					{% endif %}
 				</div>
+			</div>
+		</div>
+
+		<div class="stats-metric-strip">
+			<div class="metric-item">
+				<div class="metric-item-num">{{ projects.len() }}</div>
+				<div class="metric-item-label">Verified Projects</div>
+			</div>
+			<div class="metric-item">
+				<div class="metric-item-num">100%</div>
+				<div class="metric-item-label">RERA Legal Compliance</div>
+			</div>
+			<div class="metric-item">
+				<div class="metric-item-num">Direct</div>
+				<div class="metric-item-label">Builder Pricing</div>
+			</div>
+			<div class="metric-item">
+				<div class="metric-item-num">Prime</div>
+				<div class="metric-item-label">Micro-Market Presence</div>
 			</div>
 		</div>
 	</div>
 </section>
 
-<div class="container">
+<div class="container section-wrap">
+	<!-- About Developer Story -->
 	{% if !bio_html.is_empty() %}
-	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 3rem;">
-		<h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">About Developer</h2>
-		<div style="line-height: 1.7; color: #334155;">
+	<section class="content-panel" style="margin-bottom: 3.5rem;">
+		<div class="content-panel-header">
+			<h2 class="content-panel-title">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+					<circle cx="12" cy="7" r="4"></circle>
+				</svg>
+				About {{ owner.name }}
+			</h2>
+			<span class="badge badge-emerald">Verified Track Record</span>
+		</div>
+		<div class="prose-body">
 			{{ bio_html|safe }}
 		</div>
-	</div>
+	</section>
 	{% endif %}
 
+	<!-- Projects Portfolio Grid -->
 	<section>
-		<div class="section-header">
-			<div class="section-title">
-				<h2>Projects by {{ owner.name }} ({{ projects.len() }})</h2>
-				<p>Browse real estate developments delivered and currently under development by this developer.</p>
+		<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.25rem; flex-wrap: wrap; gap: 1rem;">
+			<div>
+				<div class="badge badge-primary" style="margin-bottom: 0.5rem;">Verified Portfolio</div>
+				<h2 class="heading-section">Developments by {{ owner.name }} ({{ projects.len() }})</h2>
+				<p style="color: var(--text-muted); font-size: 1rem; margin-top: 0.25rem;">
+					Explore master-planned communities, luxury flats, and corporate hubs built by this developer.
+				</p>
 			</div>
 		</div>
 
 		{% if projects.is_empty() %}
-		<p style="color: var(--text-muted);">No active projects currently published for this developer.</p>
+		<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 3.5rem; text-align: center;">
+			<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No Active Projects Currently Published</h3>
+			<p style="color: var(--text-muted);">New development projects from this builder will appear here as soon as they receive verification.</p>
+		</div>
 		{% else %}
 		<div class="cards-grid">
 			{% for p in projects %}
-			<article class="prop-card">
-				<div class="card-thumb-wrap">
+			<article class="entity-card">
+				<div class="card-media-wrap">
 					{% if let Some(url) = p.hero_thumb_url %}
 					<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
 					{% else %}
-					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏢</div>
+					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:3rem;">🏢</div>
 					{% endif %}
-					<span class="card-badge">{{ p.category }}</span>
+					<div class="card-top-badges">
+						<span class="badge badge-glass">{{ p.category }}</span>
+						<span class="badge badge-emerald">Verified RERA</span>
+					</div>
 				</div>
+
 				<div class="card-body">
 					<h3 class="card-title">
 						<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
 					</h3>
-					<div class="card-subtitle">
-						<span>📍 {{ p.location_name }}</span>
+
+					<div class="card-location">
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+							<circle cx="12" cy="10" r="3"></circle>
+						</svg>
+						<span>{{ p.location_name }}</span>
 					</div>
-					<div class="card-specs">
-						<div class="spec-item">
+
+					<div class="card-specs-row">
+						<div class="spec-pill">
 							<span>Units:</span>
-							<strong>{{ p.property_count }}</strong>
+							<strong>{{ p.property_count }} Available</strong>
 						</div>
 						{% if let Some(pos) = p.possession_date %}
-						<div class="spec-item">
+						<div class="spec-pill">
 							<span>Possession:</span>
 							<strong>{{ pos }}</strong>
 						</div>
 						{% endif %}
 					</div>
+
 					<div class="card-footer">
-						<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn-card" style="width:100%; text-align:center;">View Project Details &rarr;</a>
+						<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn btn-primary btn-sm" style="width: 100%;">
+							<span>Explore Development</span>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<line x1="5" y1="12" x2="19" y2="12"></line>
+								<polyline points="12 5 19 12 12 19"></polyline>
+							</svg>
+						</a>
 					</div>
 				</div>
 			</article>

@@ -2,484 +2,633 @@
 
 {% block head_extra %}
 <style>
-	.prop-hero {
+	.detail-hero-section {
 		background: #0f172a;
 		color: white;
-		padding: 3.5rem 1.5rem 3rem;
+		padding: 2.75rem 0 2.25rem;
+		border-bottom: 1px solid #1e293b;
 	}
 
-	.prop-hero-container {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.breadcrumb {
+	.prop-breadcrumb {
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 		font-size: 0.85rem;
 		color: #94a3b8;
-		margin-bottom: 1rem;
+		margin-bottom: 1.25rem;
 	}
 
-	.breadcrumb a:hover {
+	.prop-breadcrumb a {
+		color: #94a3b8;
+	}
+
+	.prop-breadcrumb a:hover {
 		color: white;
 	}
 
-	.prop-header-flex {
+	.detail-hero-grid {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1.75rem;
 	}
 
-	.prop-title {
-		font-size: 2.5rem;
+	.detail-title-col {
+		flex: 1;
+		min-width: 320px;
+	}
+
+	.detail-price-col {
+		text-align: right;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.35rem;
+	}
+
+	.detail-prop-title {
+		font-size: clamp(2rem, 4vw, 2.75rem);
 		font-weight: 800;
 		line-height: 1.2;
-		letter-spacing: -0.02em;
-		margin-bottom: 0.5rem;
+		letter-spacing: -0.025em;
+		margin-bottom: 0.65rem;
 	}
 
-	.prop-loc {
-		font-size: 1.1rem;
-		color: #cbd5e1;
+	.detail-loc-row {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.prop-hero-price {
-		font-size: 2.25rem;
-		font-weight: 800;
-		color: #60a5fa;
-		text-align: right;
-	}
-
-	.prop-hero-badges {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-
-	.badge-pill {
-		background: rgba(255, 255, 255, 0.15);
-		backdrop-filter: blur(4px);
-		padding: 0.3rem 0.8rem;
-		border-radius: var(--radius-full);
-		font-size: 0.82rem;
-		font-weight: 600;
-	}
-
-	/* Two-column layout */
-	.details-layout {
-		display: grid;
-		grid-template-columns: 2fr 1fr;
-		gap: 2.5rem;
-		margin-top: 2rem;
-	}
-
-	/* Gallery */
-	.gallery-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 1rem;
-		margin-bottom: 2.5rem;
-	}
-
-	.gallery-item {
-		height: 240px;
-		border-radius: var(--radius);
-		overflow: hidden;
-		background: #1e293b;
-	}
-
-	.gallery-item img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.2s ease;
-	}
-
-	.gallery-item img:hover {
-		transform: scale(1.05);
-	}
-
-	/* Section cards */
-	.content-card {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 2rem;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 2rem;
-	}
-
-	.content-card h2 {
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--text-main);
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		font-size: 1.05rem;
+		color: #cbd5e1;
 		margin-bottom: 1.25rem;
-		border-bottom: 1px solid var(--border-subtle);
-		padding-bottom: 0.75rem;
 	}
 
-	/* Specs grid */
-	.specs-table-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-		gap: 1.25rem;
-	}
-
-	.spec-box {
-		background: #f8fafc;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 1rem;
-	}
-
-	.spec-box-label {
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		font-weight: 700;
-		color: var(--text-muted);
-		margin-bottom: 0.25rem;
-	}
-
-	.spec-box-val {
-		font-size: 1.15rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	/* Amenity tags */
-	.amenity-tags {
+	.detail-hero-badges {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.6rem;
 	}
 
-	.amenity-tag {
-		background: #f1f5f9;
-		color: var(--text-main);
-		font-size: 0.88rem;
-		font-weight: 600;
-		padding: 0.4rem 0.85rem;
-		border-radius: var(--radius-full);
+	.layout-content-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 380px;
+		gap: 3rem;
+		padding: 3rem 0;
+	}
+
+	.content-panel {
+		background: var(--bg-surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-xl);
+		padding: 2.25rem;
+		box-shadow: var(--shadow-sm);
+		margin-bottom: 2.5rem;
+	}
+
+	.content-panel-header {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
-	}
-
-	/* Sidebar */
-	.sticky-sidebar {
-		position: sticky;
-		top: 80px;
-	}
-
-	.sidebar-widget {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 1.75rem;
-		box-shadow: var(--shadow-sm);
+		justify-content: space-between;
 		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-subtle);
 	}
 
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		font-size: 0.82rem;
-		font-weight: 700;
+	.content-panel-title {
+		font-size: 1.4rem;
+		font-weight: 800;
 		color: var(--text-main);
-		margin-bottom: 0.35rem;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: -0.02em;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 	}
 
-	.form-group input, .form-group textarea {
-		width: 100%;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.65rem 0.85rem;
-		font-family: inherit;
-		font-size: 0.92rem;
-		color: var(--text-main);
+	.prose-body {
+		font-size: 1.02rem;
+		line-height: 1.75;
+		color: #334155;
 	}
 
-	.form-group input:focus, .form-group textarea:focus {
-		outline: none;
-		border-color: var(--primary);
+	.prose-body p {
+		margin-bottom: 1.2rem;
 	}
 
-	.btn-submit {
-		width: 100%;
-		background: var(--primary);
-		color: white;
-		border: none;
-		border-radius: var(--radius);
-		padding: 0.85rem;
-		font-weight: 700;
-		font-size: 0.95rem;
-		cursor: pointer;
-		transition: background 0.15s ease;
+	.prose-body ul, .prose-body ol {
+		margin-left: 1.5rem;
+		margin-bottom: 1.2rem;
 	}
 
-	.btn-submit:hover {
-		background: var(--primary-dark);
-	}
-
-	.alert-success {
-		background: #dcfce7;
-		color: #166534;
-		border: 1px solid #bbf7d0;
-		border-radius: var(--radius);
-		padding: 0.85rem;
-		font-size: 0.9rem;
-		margin-bottom: 1.25rem;
-	}
-
-	@media (max-width: 900px) {
-		.details-layout {
+	@media (max-width: 960px) {
+		.layout-content-grid {
 			grid-template-columns: 1fr;
+			gap: 2rem;
 		}
-		.sticky-sidebar {
-			position: static;
-		}
-		.prop-hero-price {
+		.detail-price-col {
 			text-align: left;
+			align-items: flex-start;
 		}
 	}
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="prop-hero">
-	<div class="prop-hero-container">
-		<div class="breadcrumb">
-			<a href="/">Home</a> &rarr;
-			<a href="/properties">Properties</a> &rarr;
-			<a href="/projects/{{ project.id }}-{{ project.slug }}">{{ project.name }}</a> &rarr;
-			<span>{{ property.property_type_name }}</span>
-		</div>
-		<div class="prop-header-flex">
-			<div>
-				<h1 class="prop-title">
-					{% if let Some(bhk) = property.bedroom_count %}{{ bhk }} BHK {% endif %}
-					{{ property.property_type_name }}
-					{% if let Some(unit) = property.unit_number %} - Unit {{ unit }}{% endif %}
-				</h1>
-				<div class="prop-loc">
-					<span>📍 {{ project.location_name }}</span>
-					<span>&bull;</span>
-					<span>Development: <a href="/projects/{{ project.id }}-{{ project.slug }}" style="color: #60a5fa; text-decoration: underline;">{{ project.name }}</a></span>
-				</div>
-				<div class="prop-hero-badges">
-					<span class="badge-pill">{{ property.category }}</span>
-					<span class="badge-pill" style="text-transform: capitalize;">For {{ property.listing_type }}</span>
+<!-- Top Hero Header -->
+<section class="detail-hero-section">
+	<div class="container">
+		<nav class="prop-breadcrumb" aria-label="Breadcrumb">
+			<a href="/">Home</a>
+			<span>&rsaquo;</span>
+			<a href="/properties">Properties</a>
+			<span>&rsaquo;</span>
+			<a href="/projects/{{ project.id }}-{{ project.slug }}">{{ project.name }}</a>
+			<span>&rsaquo;</span>
+			<span style="color: white; font-weight: 600;">{{ property.property_type_name }}</span>
+		</nav>
+
+		<div class="detail-hero-grid">
+			<div class="detail-title-col">
+				<div class="detail-hero-badges" style="margin-bottom: 0.85rem;">
+					<span class="badge badge-emerald">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						Verified Listing
+					</span>
+					<span class="badge badge-primary">{{ property.category }}</span>
+					<span class="badge badge-glass" style="text-transform: capitalize;">For {{ property.listing_type }}</span>
 					{% if let Some(period) = property.billing_period %}
-					<span class="badge-pill">Billed {{ period }}</span>
+					<span class="badge badge-glass">Billed {{ period }}</span>
 					{% endif %}
 				</div>
+
+				<h1 class="detail-prop-title">
+					{% if let Some(bhk) = property.bedroom_count %}{{ bhk }} BHK {% endif %}
+					{{ property.property_type_name }}
+					{% if let Some(unit) = property.unit_number %} &mdash; Unit {{ unit }}{% endif %}
+				</h1>
+
+				<div class="detail-loc-row">
+					<span style="display: inline-flex; align-items: center; gap: 0.35rem;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+							<circle cx="12" cy="10" r="3"></circle>
+						</svg>
+						{{ project.location_name }}
+					</span>
+					<span style="color: #475569;">&bull;</span>
+					<span>Development: <a href="/projects/{{ project.id }}-{{ project.slug }}" style="color: #60a5fa; text-decoration: underline; font-weight: 600;">{{ project.name }}</a></span>
+				</div>
 			</div>
-			<div>
-				<div class="prop-hero-price">{{ property.price_formatted }}</div>
-				<div style="color: #cbd5e1; font-size: 0.9rem; text-align: right;">Verified Listing</div>
+
+			<div class="detail-price-col">
+				<div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 700;">Asking Price</div>
+				<div style="font-size: clamp(2rem, 3.5vw, 2.75rem); font-weight: 800; color: #60a5fa; letter-spacing: -0.025em; line-height: 1.1;">
+					{{ property.price_formatted }}
+				</div>
+				{% if let Some(area) = property.built_up_area %}
+				<div style="font-size: 0.9rem; color: #cbd5e1; font-weight: 600;">
+					Approx. {{ area }} sq.ft built-up
+				</div>
+				{% endif %}
 			</div>
 		</div>
 	</div>
 </section>
 
 <div class="container">
-	<!-- Gallery -->
-	{% if !gallery.is_empty() %}
-	<div class="gallery-grid">
-		{% for item in gallery %}
-		<div class="gallery-item">
-			{% if item.media_type == "video" %}
-			<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-				<source src="{{ item.url }}" type="video/mp4">
-				Your browser does not support the video tag.
-			</video>
-			{% else %}
-			<a href="{{ item.url }}" target="_blank" rel="noopener">
-				<img src="{{ item.thumbnail_url }}" alt="Property photo" loading="lazy">
-			</a>
-			{% endif %}
-		</div>
-		{% endfor %}
-	</div>
-	{% endif %}
-
-	<div class="details-layout">
-		<!-- Left Main Content -->
+	<div class="layout-content-grid">
+		<!-- Left Main Content Column -->
 		<div>
-			<!-- Property Specifications -->
-			<div class="content-card">
-				<h2>Property Specifications</h2>
-				<div class="specs-table-grid">
+			<!-- Interactive Media Carousel & Lightbox -->
+			{% if !gallery.is_empty() %}
+			<div class="gallery-showcase" v-scope="createGallery({{ gallery.len() }})" v-init="mounted()">
+				<div class="carousel-main-stage">
+					{% for (idx, item) in gallery.iter().enumerate() %}
+					<div class="carousel-active-media" v-show="currentIndex === {{ idx }}">
+						{% if item.media_type == "video" %}
+						<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width:100%; height:100%; object-fit:cover;">
+							<source src="{{ item.url }}" type="video/mp4">
+						</video>
+						{% else %}
+						<img src="{{ item.url }}" alt="Property Photo {{ idx + 1 }}" {% if idx == 0 %}fetchpriority="high"{% else %}loading="lazy"{% endif %} @click="openLightbox()">
+						{% endif %}
+					</div>
+					{% endfor %}
+
+					<!-- Carousel Controls -->
+					<div class="carousel-overlay-controls">
+						<button class="carousel-nav-btn" @click="prev()" aria-label="Previous photo">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="15 18 9 12 15 6"></polyline>
+							</svg>
+						</button>
+						<button class="carousel-nav-btn" @click="next()" aria-label="Next photo">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="9 18 15 12 9 6"></polyline>
+							</svg>
+						</button>
+					</div>
+
+					<button class="carousel-fullscreen-btn" @click="openLightbox()" aria-label="View Fullscreen Lightbox">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+						</svg>
+					</button>
+
+					<div class="carousel-counter-badge">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+							<circle cx="8.5" cy="8.5" r="1.5"></circle>
+							<polyline points="21 15 16 10 5 21"></polyline>
+						</svg>
+						<span>Photo <strong v-text="currentIndex + 1">1</strong> of {{ gallery.len() }}</span>
+					</div>
+				</div>
+
+				<!-- Thumbnail Scroller -->
+				<div class="carousel-thumbnails-scroller">
+					{% for (idx, item) in gallery.iter().enumerate() %}
+					<div class="carousel-thumb-item" data-index="{{ idx }}" :class="{ active: currentIndex === {{ idx }} }" @click="selectIndex({{ idx }})">
+						<img src="{{ item.thumbnail_url }}" alt="Thumbnail {{ idx + 1 }}" loading="lazy">
+					</div>
+					{% endfor %}
+				</div>
+
+				<!-- Fullscreen Lightbox Modal -->
+				<div class="lightbox-modal" v-if="lightboxOpen" @click.self="closeLightbox()">
+					<button class="lightbox-close-btn" @click="closeLightbox()" aria-label="Close Lightbox">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
+					<div class="lightbox-content-box">
+						{% for (idx, item) in gallery.iter().enumerate() %}
+						<div v-show="currentIndex === {{ idx }}">
+							{% if item.media_type == "video" %}
+							<video controls autoplay style="max-height:85vh; max-width:90vw;">
+								<source src="{{ item.url }}" type="video/mp4">
+							</video>
+							{% else %}
+							<img src="{{ item.url }}" alt="Fullscreen Photo {{ idx + 1 }}">
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+			{% endif %}
+
+			<!-- Quick Anchor Tabs Navigation -->
+			<nav class="quick-tabs-nav">
+				<a href="#specs" class="quick-tab-link active">Specifications</a>
+				<a href="#overview" class="quick-tab-link">Description</a>
+				{% if !amenities.is_empty() %}
+				<a href="#amenities" class="quick-tab-link">Amenities</a>
+				{% endif %}
+				<a href="#calculator" class="quick-tab-link">EMI Estimator</a>
+				<a href="#development" class="quick-tab-link">The Development</a>
+			</nav>
+
+			<!-- Specifications Bento Grid -->
+			<section id="specs" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+							<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+						</svg>
+						Property Specifications
+					</h2>
+					<span class="badge badge-emerald">Verified Metric</span>
+				</div>
+
+				<div class="bento-specs-grid">
 					{% if let Some(area) = property.built_up_area %}
-					<div class="spec-box">
-						<div class="spec-box-label">Built-Up Area</div>
-						<div class="spec-box-val">{{ area }} sq.ft</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="3" width="18" height="18" rx="2"></rect>
+							</svg>
+							Built-Up Area
+						</div>
+						<div class="bento-spec-value">{{ area }} <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">sq.ft</span></div>
 					</div>
 					{% endif %}
 
 					{% if let Some(u_area) = property.usable_area %}
-					<div class="spec-box">
-						<div class="spec-box-label">Usable / Carpet Area</div>
-						<div class="spec-box-val">{{ u_area }} sq.ft</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+							</svg>
+							Carpet / Usable
+						</div>
+						<div class="bento-spec-value">{{ u_area }} <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">sq.ft</span></div>
 					</div>
 					{% endif %}
 
 					{% if let Some(bhk) = property.bedroom_count %}
-					<div class="spec-box">
-						<div class="spec-box-label">Bedrooms</div>
-						<div class="spec-box-val">{{ bhk }} BHK</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"></path>
+							</svg>
+							Bedrooms
+						</div>
+						<div class="bento-spec-value">{{ bhk }} <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">BHK</span></div>
 					</div>
 					{% endif %}
 
 					{% if let Some(bath) = property.bathroom_count %}
-					<div class="spec-box">
-						<div class="spec-box-label">Bathrooms</div>
-						<div class="spec-box-val">{{ bath }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M9 6h6M4 10h16a1 1 0 0 1 1 1v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-6a1 1 0 0 1 1-1z"></path>
+							</svg>
+							Bathrooms
+						</div>
+						<div class="bento-spec-value">{{ bath }}</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(balc) = property.balcony_count %}
-					<div class="spec-box">
-						<div class="spec-box-label">Balconies</div>
-						<div class="spec-box-val">{{ balc }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Balconies</div>
+						<div class="bento-spec-value">{{ balc }}</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(floor) = property.floor_number %}
-					<div class="spec-box">
-						<div class="spec-box-label">Floor</div>
-						<div class="spec-box-val">{{ floor }}{% if let Some(tot) = property.total_floors %} of {{ tot }}{% endif %}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Floor Position</div>
+						<div class="bento-spec-value">
+							{{ floor }}{% if let Some(tot) = property.total_floors %}<span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);"> of {{ tot }}</span>{% endif %}
+						</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(bldg) = property.building %}
-					<div class="spec-box">
-						<div class="spec-box-label">Tower / Wing</div>
-						<div class="spec-box-val">{{ bldg }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Tower / Wing</div>
+						<div class="bento-spec-value" style="font-size: 1.15rem;">{{ bldg }}</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(pkg) = property.parking %}
-					<div class="spec-box">
-						<div class="spec-box-label">Parking</div>
-						<div class="spec-box-val">{{ pkg }}</div>
-					</div>
-					{% endif %}
-
-					{% if let Some(parcel) = property.parcel_number %}
-					<div class="spec-box">
-						<div class="spec-box-label">Parcel / Plot #</div>
-						<div class="spec-box-val">{{ parcel }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Parking</div>
+						<div class="bento-spec-value" style="font-size: 1.15rem;">{{ pkg }}</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(zoning) = property.zoning %}
-					<div class="spec-box">
-						<div class="spec-box-label">Zoning</div>
-						<div class="spec-box-val">{{ zoning }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Zoning</div>
+						<div class="bento-spec-value" style="font-size: 1.15rem;">{{ zoning }}</div>
 					</div>
 					{% endif %}
 
 					{% if let Some(appr) = property.approval_status %}
-					<div class="spec-box">
-						<div class="spec-box-label">Approval</div>
-						<div class="spec-box-val">{{ appr }}</div>
+					<div class="bento-spec-card">
+						<div class="bento-spec-label">Approval Status</div>
+						<div class="bento-spec-value" style="font-size: 1.15rem;">{{ appr }}</div>
 					</div>
 					{% endif %}
 				</div>
-			</div>
+			</section>
 
-			<!-- Description -->
-			<div class="content-card">
-				<h2>Property Description</h2>
+			<!-- Overview & Description -->
+			<section id="overview" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="8" y1="6" x2="21" y2="6"></line>
+							<line x1="8" y1="12" x2="21" y2="12"></line>
+							<line x1="8" y1="18" x2="21" y2="18"></line>
+							<line x1="3" y1="6" x2="3.01" y2="6"></line>
+							<line x1="3" y1="12" x2="3.01" y2="12"></line>
+							<line x1="3" y1="18" x2="3.01" y2="18"></line>
+						</svg>
+						Property Overview
+					</h2>
+				</div>
+
 				{% if description_html.is_empty() %}
-				<p style="color: var(--text-muted);">No description provided for this unit.</p>
+				<p style="color: var(--text-muted); font-size: 1rem;">Detailed architectural and layout notes will be provided upon site consultation.</p>
 				{% else %}
-				<div style="line-height: 1.7; color: #334155;">
+				<div class="prose-body">
 					{{ description_html|safe }}
 				</div>
 				{% endif %}
-			</div>
+			</section>
 
-			<!-- Amenities -->
+			<!-- Amenities & Features -->
 			{% if !amenities.is_empty() %}
-			<div class="content-card">
-				<h2>Amenities & Highlights</h2>
-				<div class="amenity-tags">
+			<section id="amenities" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+						</svg>
+						Amenities & Highlights ({{ amenities.len() }})
+					</h2>
+				</div>
+
+				<div class="amenity-chip-grid">
 					{% for a in amenities %}
-					<span class="amenity-tag">✓ {{ a }}</span>
+					<div class="amenity-chip">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						<span>{{ a }}</span>
+					</div>
 					{% endfor %}
 				</div>
-			</div>
+			</section>
 			{% endif %}
+
+			<!-- Interactive EMI / Loan Estimator -->
+			<section id="calculator" class="content-panel">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="2" y="4" width="20" height="16" rx="2"></rect>
+							<line x1="6" y1="12" x2="10" y2="12"></line>
+							<line x1="8" y1="10" x2="8" y2="14"></line>
+							<line x1="15" y1="11" x2="18" y2="11"></line>
+						</svg>
+						Mortgage & EMI Estimator
+					</h2>
+					<span class="badge badge-amber">Interactive Tool</span>
+				</div>
+
+				<div class="calculator-box" v-scope="createEmiCalculator(8500000)">
+					<div class="calc-header">
+						<div>
+							<h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Estimated Monthly Payment</h3>
+							<p style="font-size: 0.88rem; color: var(--text-muted);">Adjust loan tenure and interest rates to preview your financing options.</p>
+						</div>
+						<div class="calc-result-badge">
+							<div class="calc-result-number" v-text="formattedEmi">₹ 58,846</div>
+							<div class="calc-result-sub">per month</div>
+						</div>
+					</div>
+
+					<div class="calc-controls-grid">
+						<div class="calc-control-group">
+							<label>
+								<span>Down Payment</span>
+								<strong v-text="downPaymentPercent + '%'">20%</strong>
+							</label>
+							<input type="range" min="10" max="60" step="5" v-model="downPaymentPercent">
+							<div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.35rem;">Loan Amount: <strong v-text="formattedLoanAmount"></strong></div>
+						</div>
+
+						<div class="calc-control-group">
+							<label>
+								<span>Interest Rate</span>
+								<strong v-text="interestRate + '%'">8.5%</strong>
+							</label>
+							<input type="range" min="7" max="13" step="0.25" v-model="interestRate">
+							<div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.35rem;">Typical prime residential rate: ~8.5%</div>
+						</div>
+
+						<div class="calc-control-group">
+							<label>
+								<span>Loan Tenure</span>
+								<strong v-text="tenureYears + ' Years'">20 Years</strong>
+							</label>
+							<input type="range" min="5" max="30" step="5" v-model="tenureYears">
+							<div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.35rem;">Total <span v-text="totalMonths">240</span> monthly payments</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Parent Development Project Card -->
+			<section id="development" class="content-panel" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+				<div class="content-panel-header">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M3 21h18"></path>
+							<path d="M5 21V7l8-4v18"></path>
+							<path d="M19 21V11l-6-3"></path>
+						</svg>
+						Part of {{ project.name }}
+					</h2>
+					<span class="badge badge-primary">{{ project.category }} Project</span>
+				</div>
+
+				<p style="font-size: 1rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
+					This unit is located within the verified <strong>{{ project.name }}</strong> master development in {{ project.location_name }}, constructed by <strong>{{ owner.name }}</strong>.
+				</p>
+
+				<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+					<a href="/projects/{{ project.id }}-{{ project.slug }}" class="btn btn-primary btn-sm">
+						<span>Explore Entire Project</span>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="5" y1="12" x2="19" y2="12"></line>
+							<polyline points="12 5 19 12 12 19"></polyline>
+						</svg>
+					</a>
+					<a href="/owners/{{ owner.id }}-{{ owner.slug }}" class="btn btn-secondary btn-sm">
+						<span>View Developer Portfolio</span>
+					</a>
+				</div>
+			</section>
 		</div>
 
-		<!-- Right Sidebar -->
+		<!-- Right Sticky Consultation & Lead Panel -->
 		<div>
-			<div class="sticky-sidebar">
-				<!-- Project & Developer quick widget -->
-				<div class="sidebar-widget">
-					<h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Development Details</h3>
-					<div style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 0.25rem;">
-						<a href="/projects/{{ project.id }}-{{ project.slug }}">{{ project.name }}</a>
-					</div>
-					<div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-						Developer: <a href="/owners/{{ owner.id }}-{{ owner.slug }}" style="color: var(--text-main); font-weight: 600;">{{ owner.name }}</a>
-					</div>
-					<a href="/projects/{{ project.id }}-{{ project.slug }}" class="btn-card" style="display: block; text-align: center;">View Entire Project &rarr;</a>
+			<div class="sticky-conversion-card" id="enquiry">
+				<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+					<div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+					<span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">Verified Advisor Available</span>
 				</div>
 
-				<!-- Enquiry Form -->
-				<div class="sidebar-widget" style="box-shadow: var(--shadow-md);">
-					<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem;">Enquire About This Unit</h3>
-					<p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">Directly connect with the property advisor.</p>
+				<h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem; letter-spacing: -0.02em;">
+					Enquire About This Unit
+				</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+					Get official price breakups, floor plans, and schedule a private guided site tour.
+				</p>
 
-					{% if enquiry_success %}
-					<div class="alert-success">
-						✓ Thank you! Your interest has been submitted. A representative will reach out to you shortly.
+				{% if enquiry_success %}
+				<div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 1rem; border-radius: var(--radius-md); font-size: 0.92rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+						<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+						<polyline points="22 4 12 14.01 9 11.01"></polyline>
+					</svg>
+					<div>
+						<strong>Enquiry Received!</strong> An authorized property representative will contact you shortly with the complete dossier.
 					</div>
-					{% endif %}
-
-					{% if let Some(err) = enquiry_error %}
-					<div style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.88rem;">
-						{{ err }}
-					</div>
-					{% endif %}
-
-					<form action="/properties/{{ property.id }}/enquire" method="post">
-						<div class="form-group">
-							<label for="name">Your Name *</label>
-							<input type="text" id="name" name="name" required placeholder="John Doe">
-						</div>
-						<div class="form-group">
-							<label for="phone">Phone Number *</label>
-							<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210">
-						</div>
-						<div class="form-group">
-							<label for="email">Email Address</label>
-							<input type="email" id="email" name="email" placeholder="john@example.com">
-						</div>
-						<div class="form-group">
-							<label for="message">Message</label>
-							<textarea id="message" name="message" rows="3" placeholder="I would like to schedule a site visit..."></textarea>
-						</div>
-						<button type="submit" class="btn-submit">Submit Enquiry</button>
-					</form>
 				</div>
+				{% endif %}
+
+				{% if let Some(err) = enquiry_error %}
+				<div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.9rem; margin-bottom: 1.5rem;">
+					{{ err }}
+				</div>
+				{% endif %}
+
+				<form action="/properties/{{ property.id }}/enquire" method="post">
+					<div style="margin-bottom: 1.15rem;">
+						<label for="name" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Full Name *</label>
+						<input type="text" id="name" name="name" required placeholder="e.g. Rahul Sharma" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.15rem;">
+						<label for="phone" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Phone Number *</label>
+						<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.15rem;">
+						<label for="email" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Email Address</label>
+						<input type="email" id="email" name="email" placeholder="rahul@example.com" class="form-control-input">
+					</div>
+
+					<div style="margin-bottom: 1.5rem;">
+						<label for="message" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Message / Request</label>
+						<textarea id="message" name="message" rows="3" placeholder="I would like to schedule a private site visit this weekend..." class="form-control-input"></textarea>
+					</div>
+
+					<button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+						<span>Request Detailed Dossier</span>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="5" y1="12" x2="19" y2="12"></line>
+							<polyline points="12 5 19 12 12 19"></polyline>
+						</svg>
+					</button>
+
+					<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+							<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+						</svg>
+						<span>Your contact details are encrypted & protected</span>
+					</div>
+				</form>
 			</div>
 		</div>
 	</div>
+</div>
+
+<!-- Mobile Floating Action Bar -->
+<div class="mobile-action-bar">
+	<div>
+		<div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Asking Price</div>
+		<div style="font-size:1.25rem; font-weight:800; color:var(--primary); line-height:1.1;">{{ property.price_formatted }}</div>
+	</div>
+	<a href="#enquiry" class="btn btn-primary btn-sm">
+		<span>Enquire Now</span>
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<polyline points="6 9 12 15 18 9"></polyline>
+		</svg>
+	</a>
 </div>
 {% endblock %}

@@ -2,167 +2,218 @@
 
 {% block head_extra %}
 <style>
-	.page-header {
+	.catalog-hero {
 		background: #0f172a;
 		color: white;
-		padding: 3.5rem 1.5rem 4rem;
+		padding: 3.5rem 0 4.5rem;
+		border-bottom: 1px solid #1e293b;
 	}
 
-	.page-header-content {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.page-title {
-		font-size: 2.5rem;
+	.catalog-title {
+		font-size: clamp(2.25rem, 4vw, 3rem);
 		font-weight: 800;
+		letter-spacing: -0.025em;
 		margin-bottom: 0.5rem;
-		letter-spacing: -0.02em;
 	}
 
-	.page-desc {
+	.catalog-desc {
 		color: #94a3b8;
 		font-size: 1.1rem;
-		max-width: 600px;
+		max-width: 640px;
+		line-height: 1.6;
 	}
 
-	/* Filter bar */
-	.filter-bar {
+	/* Filter Bar */
+	.catalog-filter-bar {
 		background: white;
 		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 1rem 1.25rem;
-		margin-top: -2rem;
-		margin-bottom: 2.5rem;
-		box-shadow: var(--shadow-md);
+		border-radius: var(--radius-xl);
+		padding: 1.25rem 1.75rem;
+		margin-top: -2.5rem;
+		margin-bottom: 3rem;
+		box-shadow: var(--shadow-lg);
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		gap: 1.5rem;
+		position: relative;
+		z-index: 10;
 	}
 
-	.filter-pills {
+	.filter-chip-group {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem;
 	}
 
-	.filter-pill {
-		padding: 0.45rem 1rem;
+	.filter-chip {
+		padding: 0.5rem 1.15rem;
 		border-radius: var(--radius-full);
-		font-size: 0.88rem;
-		font-weight: 600;
+		font-size: 0.9rem;
+		font-weight: 700;
 		color: var(--text-muted);
-		background: #f1f5f9;
-		transition: all 0.15s ease;
+		background: var(--bg-subtle);
+		border: 1px solid transparent;
+		transition: all var(--duration-fast);
 	}
 
-	.filter-pill:hover, .filter-pill.active {
+	.filter-chip:hover {
+		color: var(--primary);
+		background: #eff6ff;
+	}
+
+	.filter-chip.active {
 		background: var(--primary);
 		color: white;
+		box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
 	}
 
 	.filter-search-form {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
 	}
 
-	.filter-search-form input {
+	.filter-search-input {
 		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.5rem 0.85rem;
-		font-family: inherit;
+		border-radius: var(--radius-md);
+		padding: 0.6rem 1rem;
 		font-size: 0.9rem;
-		min-width: 220px;
+		min-width: 240px;
+		color: var(--text-main);
 	}
 
-	.filter-search-form button {
-		background: var(--primary);
-		color: white;
-		border: none;
-		border-radius: var(--radius);
-		padding: 0.5rem 1rem;
-		font-weight: 600;
-		font-size: 0.9rem;
-		cursor: pointer;
+	.filter-search-input:focus {
+		outline: none;
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
 	}
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="page-header">
-	<div class="page-header-content">
-		<h1 class="page-title">Real-Estate Projects</h1>
-		<p class="page-desc">Browse master-planned residential developments, gated villa communities, and corporate business centers.</p>
+<section class="catalog-hero">
+	<div class="container">
+		<nav style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#94a3b8; margin-bottom:1.25rem;">
+			<a href="/" style="color:#94a3b8;">Home</a>
+			<span>&rsaquo;</span>
+			<span style="color: white; font-weight: 600;">Projects</span>
+		</nav>
+		<h1 class="catalog-title">Premier Master Developments</h1>
+		<p class="catalog-desc">Explore master-planned residential townships, gated villa developments, and corporate business parks with verified builder track records.</p>
 	</div>
 </section>
 
-<div class="container" style="padding-top: 0;">
-	<div class="filter-bar">
-		<div class="filter-pills">
-			<a href="/projects" class="filter-pill {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
-			<a href="/projects?category=Residential" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Residential" %}active{% endif %}{% endif %}">Residential</a>
-			<a href="/projects?category=Commercial" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Commercial" %}active{% endif %}{% endif %}">Commercial</a>
-			<a href="/projects?category=Mixed" class="filter-pill {% if let Some(cat) = category_filter %}{% if cat == &"Mixed" %}active{% endif %}{% endif %}">Mixed Use</a>
+<div class="container" style="padding-bottom: 5rem;">
+	<!-- Filter Toolbar -->
+	<div class="catalog-filter-bar">
+		<div class="filter-chip-group">
+			<a href="/projects" class="filter-chip {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
+			<a href="/projects?category=Residential" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"Residential" %}active{% endif %}{% endif %}">Residential</a>
+			<a href="/projects?category=Commercial" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"Commercial" %}active{% endif %}{% endif %}">Commercial</a>
+			<a href="/projects?category=Mixed" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"Mixed" %}active{% endif %}{% endif %}">Mixed Use</a>
 		</div>
 
 		<form action="/projects" method="get" class="filter-search-form">
 			{% if let Some(cat) = category_filter %}
 			<input type="hidden" name="category" value="{{ cat }}">
 			{% endif %}
-			<input type="text" name="q" placeholder="Search by name or location..." value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
-			<button type="submit">Search</button>
+
+			<input type="text" name="q" placeholder="Search by name, location..." class="filter-search-input" value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+			
+			<button type="submit" class="btn btn-primary btn-sm">
+				<span>Search</span>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+			</button>
 		</form>
 	</div>
 
+	<!-- Results Header -->
+	<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+		<div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted);">
+			Showing <span style="color: var(--text-main); font-weight: 800;">{{ projects.len() }}</span> Verified Master Developments
+		</div>
+		{% if category_filter.is_some() || search_query.is_some() %}
+		<a href="/projects" class="btn btn-secondary btn-sm" style="color: #dc2626;">
+			<span>Reset All Filters</span>
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="18" y1="6" x2="6" y2="18"></line>
+				<line x1="6" y1="6" x2="18" y2="18"></line>
+			</svg>
+		</a>
+		{% endif %}
+	</div>
+
 	{% if projects.is_empty() %}
-	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 3rem; text-align: center;">
-		<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No projects found</h3>
-		<p style="color: var(--text-muted); margin-bottom: 1.25rem;">Try adjusting your search query or category filter.</p>
-		<a href="/projects" style="color: var(--primary); font-weight: 600;">Reset Filters &rarr;</a>
+	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 4rem 2rem; text-align: center; box-shadow: var(--shadow-sm);">
+		<div style="font-size: 3rem; margin-bottom: 1rem;">🏢</div>
+		<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">No projects match your search criteria</h3>
+		<p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+			Try adjusting your keyword query or browse all categories to explore our full development portfolio.
+		</p>
+		<a href="/projects" class="btn btn-primary btn-sm">Reset All Filters</a>
 	</div>
 	{% else %}
 	<div class="cards-grid">
 		{% for p in projects %}
-		<article class="prop-card">
-			<div class="card-thumb-wrap">
+		<article class="entity-card">
+			<div class="card-media-wrap">
 				{% if let Some(url) = p.hero_thumb_url %}
 				<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
 				{% else %}
-				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.5rem;">🏢</div>
+				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:3rem;">🏢</div>
 				{% endif %}
-				<span class="card-badge">{{ p.category }}</span>
+				<div class="card-top-badges">
+					<span class="badge badge-glass">{{ p.category }}</span>
+					<span class="badge badge-emerald">Verified RERA</span>
+				</div>
 			</div>
+
 			<div class="card-body">
-				<h2 class="card-title" style="font-size: 1.15rem;">
+				<h2 class="card-title">
 					<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
 				</h2>
-				<div class="card-subtitle">
-					<span>📍 {{ p.location_name }}</span>
+
+				<div class="card-location">
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+						<circle cx="12" cy="10" r="3"></circle>
+					</svg>
+					<span>{{ p.location_name }}</span>
 				</div>
-				<div class="card-specs">
-					<div class="spec-item">
+
+				<div class="card-specs-row">
+					<div class="spec-pill">
 						<span>Developer:</span>
 						<strong>
 							<a href="/owners/{{ p.owner_id }}-{{ p.owner_slug }}">{{ p.owner_name }}</a>
 						</strong>
 					</div>
-					<div class="spec-item">
-						<span>Available Units:</span>
-						<strong>{{ p.property_count }}</strong>
+					<div class="spec-pill">
+						<span>Units:</span>
+						<strong>{{ p.property_count }} Available</strong>
 					</div>
 				</div>
+
 				<div class="card-footer">
-					<span style="font-size: 0.85rem; color: var(--text-muted);">
+					<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
 						{% if let Some(pos) = p.possession_date %}
 						Possession: {{ pos }}
 						{% else %}
-						Ready / Under Construction
+						Ready / Ongoing
 						{% endif %}
 					</span>
-					<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn-card">Explore Project &rarr;</a>
+					<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn btn-primary btn-sm">
+						<span>Explore</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="5" y1="12" x2="19" y2="12"></line>
+							<polyline points="12 5 19 12 12 19"></polyline>
+						</svg>
+					</a>
 				</div>
 			</div>
 		</article>

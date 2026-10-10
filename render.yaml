@@ -33,6 +33,10 @@ services:
         value: "10"
       - key: COOKIE_SIGNING_SECRET
         generateValue: true
+      - key: JWT_PRIVATE_KEY
+        sync: false
+      - key: JWT_PUBLIC_KEY
+        sync: false
       - key: PUBLIC_PORT
         value: "10000"
       - key: ADMIN_PORT
@@ -85,6 +89,16 @@ services:
           type: web
           name: myplace-public
           envVarKey: COOKIE_SIGNING_SECRET
+      - key: JWT_PRIVATE_KEY
+        fromService:
+          type: web
+          name: myplace-public
+          envVarKey: JWT_PRIVATE_KEY
+      - key: JWT_PUBLIC_KEY
+        fromService:
+          type: web
+          name: myplace-public
+          envVarKey: JWT_PUBLIC_KEY
       - key: ADMIN_PORT
         value: "10000"
       - key: PUBLIC_PORT
@@ -133,6 +147,16 @@ services:
           type: web
           name: myplace-public
           envVarKey: COOKIE_SIGNING_SECRET
+      - key: JWT_PRIVATE_KEY
+        fromService:
+          type: web
+          name: myplace-public
+          envVarKey: JWT_PRIVATE_KEY
+      - key: JWT_PUBLIC_KEY
+        fromService:
+          type: web
+          name: myplace-public
+          envVarKey: JWT_PUBLIC_KEY
       - key: OWNER_PORT
         value: "10000"
       - key: PUBLIC_PORT

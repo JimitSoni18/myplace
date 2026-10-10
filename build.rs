@@ -2,8 +2,9 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-	println!("cargo:rerun-if-changed=private.pem");
-	println!("cargo:rerun-if-changed=public.pem");
+	// Note: Ed25519 keys are loaded at runtime via environment variables (JWT_PRIVATE_KEY / JWT_PUBLIC_KEY)
+	// or local PEM files. We generate fallback keys for local development if missing,
+	// without emitting rerun-if-changed so rebuilds are not unnecessarily triggered.
 
 	if !Path::new("private.pem").exists() || !Path::new("public.pem").exists() {
 		println!(

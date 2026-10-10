@@ -5,7 +5,8 @@ FROM rust:1.94-alpine3.23 AS base
 # musl-dev: required for static linking on Alpine
 # g++ / make: build scripts in some dependencies
 # openssl: required for build-time cryptographic key generation
-RUN apk add --no-cache musl-dev g++ make openssl
+# ffmpeg: required for video metadata probing and processing in dev & test
+RUN apk add --no-cache musl-dev g++ make openssl ffmpeg
 WORKDIR /app
 
 # =============================================================================
@@ -15,48 +16,54 @@ FROM base AS development
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    cargo install cargo-watch && \
-    cargo install sqlx-cli --no-default-features --features sqlx-cli/rustls,sqlx-cli/postgres
+    cargo install cargo-watch
 
 # Entrypoint: run migrations, then watch for changes.
 CMD sh -c "cargo run --bin migrate && cargo watch -x 'run --bin myplace'"
 
 # =============================================================================
-# Stage 3: builder — compiles release binaries
+# Stage 3: chef — install cargo-chef for reliable Docker layer dependency caching
 # =============================================================================
-FROM base AS builder
+FROM base AS chef
+RUN cargo install cargo-chef --locked
 
-# Pre-cache dependencies by building a stub crate first.
-COPY Cargo.toml Cargo.lock ./
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    mkdir -p src src/bin && \
-    touch src/lib.rs && \
-    echo "fn main() {}" > src/main.rs && \
-    echo "fn main() {}" > src/bin/seed.rs && \
-    echo "fn main() {}" > src/bin/migrate.rs && \
-    cargo build --release && \
-    rm -rf src target/release/myplace* target/release/seed* target/release/migrate* \
-           target/release/deps/myplace* target/release/deps/seed* target/release/deps/migrate*
+# =============================================================================
+# Stage 4: planner — generates recipe.json lockfile skeleton
+# =============================================================================
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Copy full source including offline SQLx cache (.sqlx/), build script, and migrations.
+# =============================================================================
+# Stage 5: cacher — compiles only third-party dependencies into a Docker layer
+# =============================================================================
+# This layer is committed to the Docker image and cached in Render's registry.
+# As long as Cargo.toml and Cargo.lock do not change, this step is 100% cached.
+FROM chef AS cacher
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# =============================================================================
+# Stage 6: builder — compiles application release binaries
+# =============================================================================
+FROM chef AS builder
+
+# Restore cached dependencies from cacher layer
+COPY --from=cacher /app/target target
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
+
+# Copy full source including offline SQLx cache (.sqlx/), build script, and migrations
 COPY . .
 
-# Generate Ed25519 keys during the build step if not present
-RUN if [ ! -f private.pem ]; then openssl genpkey -algorithm ed25519 -out private.pem; fi && \
-    if [ ! -f public.pem ]; then openssl pkey -in private.pem -pubout -out public.pem; fi
-
 # SQLX_OFFLINE=true allows compilation against .sqlx/ metadata cache without a live database.
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    touch src/lib.rs src/main.rs src/bin/*.rs && \
-    SQLX_OFFLINE=true cargo build --release && \
+ENV SQLX_OFFLINE=true
+RUN cargo build --release && \
     cp target/release/myplace  /usr/local/bin/myplace && \
     cp target/release/seed     /usr/local/bin/seed && \
     cp target/release/migrate  /usr/local/bin/migrate
 
 # =============================================================================
-# Stage 4: runtime — minimal production image
+# Stage 7: runtime — minimal production image
 # =============================================================================
 FROM alpine:3.23 AS runtime
 # ca-certificates: required for outbound HTTPS (e.g. S3 / Cloudflare R2 / Render)
@@ -84,3 +91,4 @@ EXPOSE 8080 8081 8082
 # Run migrations → seed admin user → start server.
 # Each step is idempotent and safe to run on every deployment/container start.
 CMD ["sh", "-c", "./migrate && ./seed && ./myplace"]
+

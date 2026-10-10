@@ -25,11 +25,35 @@ struct TokenConfig {
 
 const ALG: Algorithm = Algorithm::EdDSA;
 
-static TOKEN_CONFIG: LazyLock<TokenConfig> = LazyLock::new(|| TokenConfig {
-	encoding_key: EncodingKey::from_ed_pem(include_bytes!("../../private.pem")).unwrap(),
-	decoding_key: DecodingKey::from_ed_pem(include_bytes!("../../public.pem")).unwrap(),
-	header: Header::new(ALG),
-	validation: Validation::new(ALG),
+fn load_key_pem(env_var: &str, file_name: &str) -> Vec<u8> {
+	if let Ok(val) = std::env::var(env_var) {
+		let trimmed = val.trim();
+		if !trimmed.is_empty() {
+			return trimmed.replace("\\n", "\n").into_bytes();
+		}
+	}
+	if let Ok(bytes) = std::fs::read(file_name) {
+		return bytes;
+	}
+	panic!(
+		"Error: Could not load Ed25519 key for JWT tokens. \
+		 Expected environment variable `{}` or file `{}` to exist.",
+		env_var, file_name
+	);
+}
+
+static TOKEN_CONFIG: LazyLock<TokenConfig> = LazyLock::new(|| {
+	let private_pem = load_key_pem("JWT_PRIVATE_KEY", "private.pem");
+	let public_pem = load_key_pem("JWT_PUBLIC_KEY", "public.pem");
+
+	TokenConfig {
+		encoding_key: EncodingKey::from_ed_pem(&private_pem)
+			.expect("Failed to parse Ed25519 private key from JWT_PRIVATE_KEY or private.pem"),
+		decoding_key: DecodingKey::from_ed_pem(&public_pem)
+			.expect("Failed to parse Ed25519 public key from JWT_PUBLIC_KEY or public.pem"),
+		header: Header::new(ALG),
+		validation: Validation::new(ALG),
+	}
 });
 
 pub enum EncodingError {

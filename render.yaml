@@ -18,7 +18,7 @@ services:
     name: myplace
     runtime: rust
     plan: starter
-    region: oregon
+    region: singapore
     healthCheckPath: /healthz
     buildCommand: "SQLX_OFFLINE=true cargo build --release"
     preDeployCommand: "./target/release/migrate && ./target/release/seed"
@@ -74,7 +74,7 @@ databases:
   # Managed PostgreSQL Database
   # ---------------------------------------------------------------------------
   - name: myplace-db
-    databaseName: myplace
+    databaseName: myplace-db
     user: myplace_user
     plan: basic
-    region: oregon
+    region: singapore

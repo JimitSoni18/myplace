@@ -12,13 +12,18 @@ use crate::{
 	AppState,
 	config::CONFIG,
 	templates::public::{
-		CategoryStat, HomeTemplate, OwnerDetailTemplate, ProjectDetailTemplate,
-		ProjectsListTemplate, PropertiesListTemplate, PropertyDetailTemplate, PublicDocumentItem,
-		PublicMediaItem, PublicOwnerCard, PublicOwnerDetail, PublicOwnerSummary, PublicProjectCard,
-		PublicProjectDetail, PublicProjectSummary, PublicPropertyCard, PublicPropertyDetail,
+		build_properties_filter_url, ActiveFilterBadge, CategoryStat, HomeTemplate,
+		OwnerDetailTemplate, ProjectDetailTemplate, ProjectsListTemplate, PropertiesListTemplate,
+		PropertyDetailTemplate, PublicDocumentItem, PublicMediaItem, PublicOwnerCard,
+		PublicOwnerDetail, PublicOwnerSummary, PublicProjectCard, PublicProjectDetail,
+		PublicProjectSummary, PublicPropertyCard, PublicPropertyDetail, PublicPropertyTypeOption,
 	},
-	utils::markdown::render_markdown,
+	utils::{
+		form::{empty_as_none, empty_string_as_none, HtmlQuery},
+		markdown::render_markdown,
+	},
 };
+
 
 pub fn router() -> Router<AppState> {
 	Router::new()
@@ -966,28 +971,246 @@ async fn owner_detail(
 // 6. PROPERTIES LIST: GET /properties
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct PropertiesFilter {
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	#[serde(default, deserialize_with = "empty_string_as_none")]
 	pub category: Option<String>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	#[serde(default, deserialize_with = "empty_string_as_none")]
 	pub listing_type: Option<String>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
+	#[serde(default, deserialize_with = "empty_string_as_none")]
 	pub q: Option<String>,
+	#[serde(default, deserialize_with = "empty_as_none")]
+	pub min_price: Option<f64>,
+	#[serde(default, deserialize_with = "empty_as_none")]
+	pub max_price: Option<f64>,
+	#[serde(default)]
+	pub bhk: Vec<String>,
+	#[serde(default)]
+	pub prop_type: Vec<String>,
+}
+
+fn format_inr_short(amount: f64) -> String {
+	if amount >= 10_000_000.0 {
+		let cr = amount / 10_000_000.0;
+		if (cr.fract() * 100.0).round() == 0.0 {
+			format!("₹{:.0} Cr", cr)
+		} else {
+			format!("₹{:.2} Cr", cr)
+		}
+	} else if amount >= 100_000.0 {
+		let l = amount / 100_000.0;
+		if (l.fract() * 100.0).round() == 0.0 {
+			format!("₹{:.0} L", l)
+		} else {
+			format!("₹{:.2} L", l)
+		}
+	} else if amount >= 1_000.0 {
+		format!("₹{:.0}k", amount / 1_000.0)
+	} else {
+		format!("₹{:.0}", amount)
+	}
 }
 
 async fn properties_list(
-	Query(filter): Query<PropertiesFilter>,
+	HtmlQuery(filter): HtmlQuery<PropertiesFilter>,
 	State(state): State<AppState>,
 ) -> Result<Html<String>, StatusCode> {
-	let is_unfiltered =
-		filter.category.is_none() && filter.listing_type.is_none() && filter.q.is_none();
+	// Normalize multi-valued parameters (handles both repeated keys and comma-separated values)
+	let selected_bhks: Vec<String> = filter
+		.bhk
+		.iter()
+		.flat_map(|s| s.split(','))
+		.map(|s| s.trim().to_string())
+		.filter(|s| !s.is_empty())
+		.collect();
+
+	let selected_types: Vec<String> = filter
+		.prop_type
+		.iter()
+		.flat_map(|s| s.split(','))
+		.map(|s| s.trim().to_lowercase())
+		.filter(|s| !s.is_empty())
+		.collect();
+
+	// Load all active property types for the filter UI
+	let property_type_rows = sqlx::query_file_as!(
+		PublicPropertyTypeOption,
+		"queries/properties/list_public_property_types.sql"
+	)
+	.fetch_all(&state.model.db)
+	.await
+	.map_err(|e| {
+		tracing::error!(error = ?e, "db error fetching property types for filter");
+		StatusCode::INTERNAL_SERVER_ERROR
+	})?;
+
+	// Build active filter badges with individual removal URLs
+	let mut active_badges = Vec::new();
+
+	if let Some(cat) = filter.category.as_deref() {
+		let cat_label = match cat {
+			"RESIDENTIAL" => "Residential Homes",
+			"COMMERCIAL" => "Commercial Spaces",
+			"LAND" => "Plots & Land",
+			other => other,
+		};
+		active_badges.push(ActiveFilterBadge {
+			label: format!("Category: {cat_label}"),
+			remove_url: build_properties_filter_url(
+				None,
+				filter.listing_type.as_deref(),
+				filter.q.as_deref(),
+				&selected_bhks,
+				&selected_types,
+				filter.min_price,
+				filter.max_price,
+			),
+		});
+	}
+
+	if let Some(lt) = filter.listing_type.as_deref() {
+		let lt_label = match lt {
+			"sale" => "For Sale",
+			"rent" => "For Rent",
+			"lease" => "For Lease",
+			other => other,
+		};
+		active_badges.push(ActiveFilterBadge {
+			label: format!("Listing: {lt_label}"),
+			remove_url: build_properties_filter_url(
+				filter.category.as_deref(),
+				None,
+				filter.q.as_deref(),
+				&selected_bhks,
+				&selected_types,
+				filter.min_price,
+				filter.max_price,
+			),
+		});
+	}
+
+	if let Some(q) = filter.q.as_deref().filter(|s| !s.trim().is_empty()) {
+		active_badges.push(ActiveFilterBadge {
+			label: format!("Search: \"{q}\""),
+			remove_url: build_properties_filter_url(
+				filter.category.as_deref(),
+				filter.listing_type.as_deref(),
+				None,
+				&selected_bhks,
+				&selected_types,
+				filter.min_price,
+				filter.max_price,
+			),
+		});
+	}
+
+	for bhk in &selected_bhks {
+		let label = if bhk == "5+" {
+			"5+ BHK".to_string()
+		} else {
+			format!("{bhk} BHK")
+		};
+		let remaining_bhks: Vec<String> = selected_bhks
+			.iter()
+			.filter(|b| *b != bhk)
+			.cloned()
+			.collect();
+		active_badges.push(ActiveFilterBadge {
+			label,
+			remove_url: build_properties_filter_url(
+				filter.category.as_deref(),
+				filter.listing_type.as_deref(),
+				filter.q.as_deref(),
+				&remaining_bhks,
+				&selected_types,
+				filter.min_price,
+				filter.max_price,
+			),
+		});
+	}
+
+	for pt_slug in &selected_types {
+		let type_name = property_type_rows
+			.iter()
+			.find(|t| &t.slug == pt_slug)
+			.map(|t| t.name.clone())
+			.unwrap_or_else(|| pt_slug.clone());
+		let remaining_types: Vec<String> = selected_types
+			.iter()
+			.filter(|t| *t != pt_slug)
+			.cloned()
+			.collect();
+		active_badges.push(ActiveFilterBadge {
+			label: format!("Type: {type_name}"),
+			remove_url: build_properties_filter_url(
+				filter.category.as_deref(),
+				filter.listing_type.as_deref(),
+				filter.q.as_deref(),
+				&selected_bhks,
+				&remaining_types,
+				filter.min_price,
+				filter.max_price,
+			),
+		});
+	}
+
+	if filter.min_price.is_some() || filter.max_price.is_some() {
+		let budget_label = match (filter.min_price, filter.max_price) {
+			(Some(min), Some(max)) => {
+				format!("Budget: {} – {}", format_inr_short(min), format_inr_short(max))
+			}
+			(Some(min), None) => format!("Budget: Above {}", format_inr_short(min)),
+			(None, Some(max)) => format!("Budget: Up to {}", format_inr_short(max)),
+			(None, None) => "Budget".to_string(),
+		};
+		active_badges.push(ActiveFilterBadge {
+			label: budget_label,
+			remove_url: build_properties_filter_url(
+				filter.category.as_deref(),
+				filter.listing_type.as_deref(),
+				filter.q.as_deref(),
+				&selected_bhks,
+				&selected_types,
+				None,
+				None,
+			),
+		});
+	}
+
+	let has_active_filters = !active_badges.is_empty();
+	let is_unfiltered = !has_active_filters;
 	let cache_key = "/properties";
 	if is_unfiltered {
 		if let Some(cached_html) = state.page_cache.get(cache_key).await {
 			return Ok(Html(cached_html));
 		}
 	}
+
+	// Prepare parameters for SQL query
+	let mut bhk_exact_floats: Vec<f64> = Vec::new();
+	let mut has_5_plus = false;
+	for bhk_str in &selected_bhks {
+		if bhk_str == "5+" {
+			has_5_plus = true;
+		} else if let Ok(val) = bhk_str.parse::<f64>() {
+			bhk_exact_floats.push(val);
+		}
+	}
+	bhk_exact_floats.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+	bhk_exact_floats.dedup();
+
+	let bhk_exact_param = if bhk_exact_floats.is_empty() {
+		None
+	} else {
+		Some(bhk_exact_floats.as_slice())
+	};
+	let has_5_plus_param = if has_5_plus { Some(true) } else { None };
+
+	let prop_types_param = if selected_types.is_empty() {
+		None
+	} else {
+		Some(selected_types.as_slice())
+	};
 
 	struct DbPropRow {
 		id: i32,
@@ -1015,7 +1238,12 @@ async fn properties_list(
 		"queries/properties/search_public_properties.sql",
 		filter.category.as_deref(),
 		filter.listing_type.as_deref(),
-		search_pattern.as_deref()
+		search_pattern.as_deref(),
+		prop_types_param,
+		bhk_exact_param,
+		has_5_plus_param,
+		filter.min_price,
+		filter.max_price
 	)
 	.fetch_all(&state.model.db)
 	.await
@@ -1069,6 +1297,13 @@ async fn properties_list(
 		listing_type_filter: filter.listing_type.as_deref(),
 		search_query: filter.q.as_deref(),
 		properties,
+		property_types: property_type_rows,
+		selected_property_types: selected_types,
+		selected_bhks,
+		min_price: filter.min_price,
+		max_price: filter.max_price,
+		active_badges,
+		has_active_filters,
 	};
 
 	let html = template.render().map_err(|e| {
@@ -1085,6 +1320,7 @@ async fn properties_list(
 
 	Ok(Html(html))
 }
+
 
 // ---------------------------------------------------------------------------
 // 7. PROPERTY DETAIL: GET /properties/{slug}
@@ -1568,5 +1804,49 @@ mod tests {
 		assert_eq!(filter.category, None);
 		assert_eq!(filter.q, None);
 		assert!(filter.category.is_none() && filter.q.is_none());
+	}
+
+	#[test]
+	fn test_properties_filter_new_fields_html_form() {
+		let query = "category=RESIDENTIAL&listing_type=sale&bhk=2&bhk=3&prop_type=flat&prop_type=penthouse&min_price=5000000&max_price=15000000";
+		let filter: PropertiesFilter = serde_html_form::from_str(query).unwrap();
+		assert_eq!(filter.category, Some("RESIDENTIAL".to_string()));
+		assert_eq!(filter.listing_type, Some("sale".to_string()));
+		assert_eq!(filter.bhk, vec!["2", "3"]);
+		assert_eq!(filter.prop_type, vec!["flat", "penthouse"]);
+		assert_eq!(filter.min_price, Some(5000000.0));
+		assert_eq!(filter.max_price, Some(15000000.0));
+	}
+
+	#[test]
+	fn test_properties_filter_url_builder() {
+		let bhks = vec!["2".to_string(), "3".to_string()];
+		let prop_types = vec!["flat".to_string()];
+		let url = build_properties_filter_url(
+			Some("RESIDENTIAL"),
+			Some("sale"),
+			Some("Prestige"),
+			&bhks,
+			&prop_types,
+			Some(5000000.0),
+			Some(10000000.0),
+		);
+		assert!(url.starts_with("/properties?"));
+		assert!(url.contains("category=RESIDENTIAL"));
+		assert!(url.contains("listing_type=sale"));
+		assert!(url.contains("q=Prestige"));
+		assert!(url.contains("bhk=2"));
+		assert!(url.contains("bhk=3"));
+		assert!(url.contains("prop_type=flat"));
+		assert!(url.contains("min_price=5000000"));
+		assert!(url.contains("max_price=10000000"));
+	}
+
+	#[test]
+	fn test_format_inr_short() {
+		assert_eq!(format_inr_short(10_000_000.0), "₹1 Cr");
+		assert_eq!(format_inr_short(15_000_000.0), "₹1.50 Cr");
+		assert_eq!(format_inr_short(5_000_000.0), "₹50 L");
+		assert_eq!(format_inr_short(25_000.0), "₹25k");
 	}
 }

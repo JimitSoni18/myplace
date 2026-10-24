@@ -117,6 +117,54 @@ function createInventoryFilter() {
 	};
 }
 
+// Properties Directory Filter Helpers
+function setBudgetPreset(min, max) {
+	const minInput = document.getElementById('min_price_input');
+	const maxInput = document.getElementById('max_price_input');
+	if (minInput) minInput.value = min !== null && min !== undefined ? min : '';
+	if (maxInput) maxInput.value = max !== null && max !== undefined ? max : '';
+	const form = document.getElementById('property-filters-form');
+	if (form) form.submit();
+}
+
+function clearBudgetInputs() {
+	const minInput = document.getElementById('min_price_input');
+	const maxInput = document.getElementById('max_price_input');
+	if (minInput) minInput.value = '';
+	if (maxInput) maxInput.value = '';
+	document.querySelectorAll('.preset-chip.active').forEach(el => el.classList.remove('active'));
+}
+
+function clearTypeCheckboxes() {
+	document.querySelectorAll('.types-dropdown-menu input[type="checkbox"]').forEach(cb => {
+		cb.checked = false;
+	});
+}
+
+// Global click-outside listener to close filter dropdowns
+document.addEventListener('click', (e) => {
+	if (!e.target.closest('.filter-dropdown')) {
+		document.querySelectorAll('.filter-dropdown[open]').forEach(d => {
+			d.removeAttribute('open');
+		});
+	}
+});
+
+// Mutually exclusive dropdown open behavior
+document.addEventListener('DOMContentLoaded', () => {
+	document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+		dropdown.addEventListener('toggle', () => {
+			if (dropdown.open) {
+				document.querySelectorAll('.filter-dropdown').forEach(other => {
+					if (other !== dropdown && other.open) {
+						other.removeAttribute('open');
+					}
+				});
+			}
+		});
+	});
+});
+
 // Initialize Petite-Vue if available
 document.addEventListener('DOMContentLoaded', () => {
 	if (window.PetiteVue) {
@@ -128,3 +176,4 @@ document.addEventListener('DOMContentLoaded', () => {
 		}).mount();
 	}
 });
+

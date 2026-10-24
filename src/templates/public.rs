@@ -197,6 +197,20 @@ pub struct OwnerDetailTemplate<'a> {
 	pub projects: Vec<PublicProjectCard>,
 }
 
+#[derive(Clone, Debug)]
+pub struct PublicPropertyTypeOption {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct ActiveFilterBadge {
+	pub label: String,
+	pub remove_url: String,
+}
+
 #[derive(Template)]
 #[template(path = "public/properties.html")]
 pub struct PropertiesListTemplate<'a> {
@@ -208,7 +222,137 @@ pub struct PropertiesListTemplate<'a> {
 	pub listing_type_filter: Option<&'a str>,
 	pub search_query: Option<&'a str>,
 	pub properties: Vec<PublicPropertyCard>,
+	pub property_types: Vec<PublicPropertyTypeOption>,
+	pub selected_property_types: Vec<String>,
+	pub selected_bhks: Vec<String>,
+	pub min_price: Option<f64>,
+	pub max_price: Option<f64>,
+	pub active_badges: Vec<ActiveFilterBadge>,
+	pub has_active_filters: bool,
 }
+
+pub fn build_properties_filter_url(
+	category: Option<&str>,
+	listing_type: Option<&str>,
+	q: Option<&str>,
+	bhks: &[String],
+	prop_types: &[String],
+	min_price: Option<f64>,
+	max_price: Option<f64>,
+) -> String {
+	let mut pairs: Vec<(&str, String)> = Vec::new();
+	if let Some(cat) = category.filter(|s| !s.trim().is_empty()) {
+		pairs.push(("category", cat.to_string()));
+	}
+	if let Some(lt) = listing_type.filter(|s| !s.trim().is_empty()) {
+		pairs.push(("listing_type", lt.to_string()));
+	}
+	if let Some(query) = q.filter(|s| !s.trim().is_empty()) {
+		pairs.push(("q", query.to_string()));
+	}
+	for b in bhks {
+		pairs.push(("bhk", b.to_string()));
+	}
+	for pt in prop_types {
+		pairs.push(("prop_type", pt.to_string()));
+	}
+	if let Some(min) = min_price {
+		pairs.push(("min_price", min.to_string()));
+	}
+	if let Some(max) = max_price {
+		pairs.push(("max_price", max.to_string()));
+	}
+
+	if pairs.is_empty() {
+		"/properties".to_string()
+	} else {
+		let query = serde_urlencoded::to_string(&pairs).unwrap_or_default();
+		format!("/properties?{query}")
+	}
+}
+
+impl<'a> PropertiesListTemplate<'a> {
+	pub fn is_bhk_selected(&self, val: &str) -> bool {
+		self.selected_bhks.iter().any(|b| b == val)
+	}
+
+	pub fn is_type_selected(&self, slug: &str) -> bool {
+		self.selected_property_types.iter().any(|s| s == slug)
+	}
+
+	pub fn is_budget_preset(&self, min: Option<f64>, max: Option<f64>) -> bool {
+		self.min_price == min && self.max_price == max
+	}
+
+	pub fn is_category(&self, cat: &str) -> bool {
+		self.category_filter == Some(cat)
+	}
+
+	pub fn is_listing_type(&self, lt: &str) -> bool {
+		self.listing_type_filter == Some(lt)
+	}
+
+	pub fn is_rental(&self) -> bool {
+		self.listing_type_filter == Some("rent") || self.listing_type_filter == Some("lease")
+	}
+
+	pub fn show_bhk_filter(&self) -> bool {
+		match self.category_filter {
+			Some("COMMERCIAL") | Some("LAND") => false,
+			_ => true,
+		}
+	}
+
+	pub fn has_budget_filter(&self) -> bool {
+		self.min_price.is_some() || self.max_price.is_some()
+	}
+
+	pub fn selected_types_count(&self) -> usize {
+		self.selected_property_types.len()
+	}
+
+	pub fn is_type_in_active_category(&self, pt_category: &str) -> bool {
+		match self.category_filter {
+			Some(cat) => cat == pt_category,
+			None => true,
+		}
+	}
+
+	pub fn category_url(&self, new_cat: Option<&str>) -> String {
+		let bhks = if new_cat == Some("COMMERCIAL") || new_cat == Some("LAND") {
+			Vec::new()
+		} else {
+			self.selected_bhks.clone()
+		};
+
+		let prop_types: Vec<String> = match new_cat {
+			Some(cat) => self
+				.selected_property_types
+				.iter()
+				.filter(|slug| {
+					self.property_types
+						.iter()
+						.any(|pt| &pt.slug == *slug && pt.category == cat)
+				})
+				.cloned()
+				.collect(),
+			None => self.selected_property_types.clone(),
+		};
+
+		build_properties_filter_url(
+			new_cat,
+			self.listing_type_filter,
+			self.search_query,
+			&bhks,
+			&prop_types,
+			self.min_price,
+			self.max_price,
+		)
+	}
+}
+
+
+
 
 #[derive(Template)]
 #[template(path = "public/property-detail.html")]

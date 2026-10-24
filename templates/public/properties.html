@@ -23,22 +23,30 @@
 		line-height: 1.6;
 	}
 
-	/* Filter Bar */
+	/* Main Filter Card */
 	.catalog-filter-bar {
 		background: white;
 		border: 1px solid var(--border);
 		border-radius: var(--radius-xl);
-		padding: 1.25rem 1.75rem;
-		margin-top: -2.5rem;
-		margin-bottom: 3rem;
+		padding: 1.5rem;
+		margin-top: -2.75rem;
+		margin-bottom: 2rem;
 		box-shadow: var(--shadow-lg);
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		position: relative;
+		z-index: 20;
+	}
+
+	.filter-top-row {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1.5rem;
-		position: relative;
-		z-index: 10;
+		gap: 1rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-subtle);
 	}
 
 	.filter-chip-group {
@@ -48,14 +56,17 @@
 	}
 
 	.filter-chip {
-		padding: 0.5rem 1.15rem;
+		padding: 0.45rem 1.1rem;
 		border-radius: var(--radius-full);
-		font-size: 0.9rem;
+		font-size: 0.88rem;
 		font-weight: 700;
 		color: var(--text-muted);
 		background: var(--bg-subtle);
 		border: 1px solid transparent;
 		transition: all var(--duration-fast);
+		display: inline-flex;
+		align-items: center;
+		text-decoration: none;
 	}
 
 	.filter-chip:hover {
@@ -69,7 +80,14 @@
 		box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
 	}
 
-	.filter-form-controls {
+	/* Form Controls */
+	.catalog-filter-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.filter-controls-row {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -85,21 +103,370 @@
 		color: var(--text-main);
 		background: white;
 		cursor: pointer;
+		height: 42px;
+		transition: border-color var(--duration-fast);
 	}
 
-	.filter-search-input {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		padding: 0.6rem 1rem;
-		font-size: 0.9rem;
-		min-width: 220px;
-		color: var(--text-main);
-	}
-
-	.filter-search-input:focus, .filter-select:focus {
+	.filter-select:focus {
 		outline: none;
 		border-color: var(--primary);
 		box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+	}
+
+	.filter-search-wrap {
+		position: relative;
+		flex: 1;
+		min-width: 220px;
+	}
+
+	.filter-search-input {
+		width: 100%;
+		height: 42px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		padding: 0.6rem 1rem 0.6rem 2.4rem;
+		font-size: 0.9rem;
+		color: var(--text-main);
+		transition: all var(--duration-fast);
+	}
+
+	.filter-search-input:focus {
+		outline: none;
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+	}
+
+	.search-icon-svg {
+		position: absolute;
+		left: 0.85rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--text-muted);
+		pointer-events: none;
+	}
+
+	/* Dropdowns (Budget & Property Types) */
+	.filter-dropdown {
+		position: relative;
+		user-select: none;
+	}
+
+	.filter-dropdown-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		padding: 0 1rem;
+		height: 42px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-main);
+		background: white;
+		cursor: pointer;
+		list-style: none;
+		transition: all var(--duration-fast);
+	}
+
+	.filter-dropdown-btn::-webkit-details-marker {
+		display: none;
+	}
+
+	.filter-dropdown-btn:hover {
+		background: var(--bg-subtle);
+		border-color: #cbd5e1;
+	}
+
+	.filter-dropdown-btn.has-value {
+		border-color: var(--primary);
+		background: #eff6ff;
+		color: var(--primary);
+		font-weight: 700;
+	}
+
+	.chevron-icon {
+		transition: transform var(--duration-fast);
+		color: var(--text-muted);
+	}
+
+	details[open] .chevron-icon {
+		transform: rotate(180deg);
+	}
+
+	.filter-dropdown-menu {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		background: white;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-xl);
+		padding: 1.25rem;
+		z-index: 100;
+		min-width: 280px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.budget-dropdown-menu {
+		width: 320px;
+	}
+
+	.types-dropdown-menu {
+		width: 320px;
+		max-height: 400px;
+	}
+
+	.dropdown-section-title {
+		font-size: 0.78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+	}
+
+	.preset-chips-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.45rem;
+	}
+
+	.preset-chip {
+		padding: 0.45rem 0.65rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.82rem;
+		font-weight: 600;
+		text-align: center;
+		background: var(--bg-subtle);
+		border: 1px solid transparent;
+		color: var(--text-main);
+		cursor: pointer;
+		transition: all var(--duration-fast);
+	}
+
+	.preset-chip:hover {
+		background: #eff6ff;
+		color: var(--primary);
+		border-color: var(--border-focus);
+	}
+
+	.preset-chip.active {
+		background: var(--primary);
+		color: white;
+		border-color: var(--primary);
+	}
+
+	.custom-budget-inputs {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.filter-input-sm {
+		width: 100%;
+		height: 36px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.65rem;
+		font-size: 0.85rem;
+		color: var(--text-main);
+	}
+
+	.filter-input-sm:focus {
+		outline: none;
+		border-color: var(--primary);
+	}
+
+	.types-checkboxes-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		max-height: 220px;
+		overflow-y: auto;
+		padding-right: 0.25rem;
+	}
+
+	.type-checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		font-size: 0.88rem;
+		font-weight: 500;
+		color: var(--text-main);
+		padding: 0.35rem 0.5rem;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: background var(--duration-fast);
+	}
+
+	.type-checkbox-label:hover {
+		background: var(--bg-subtle);
+	}
+
+	.type-checkbox-label input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--primary);
+		cursor: pointer;
+	}
+
+	.type-cat-tag {
+		margin-left: auto;
+		font-size: 0.7rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		background: var(--bg-subtle);
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-full);
+	}
+
+	.dropdown-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-subtle);
+		gap: 0.5rem;
+	}
+
+	/* BHK Multi-Select Toggle Row */
+	.bhk-filter-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px dashed var(--border-subtle);
+	}
+
+	.filter-inline-label {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.bhk-chips-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.bhk-toggle-label {
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.bhk-toggle-label input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.bhk-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.35rem 0.9rem;
+		border-radius: var(--radius-full);
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		background: var(--bg-subtle);
+		border: 1px solid var(--border);
+		transition: all var(--duration-fast);
+	}
+
+	.bhk-toggle-label:hover .bhk-pill {
+		color: var(--primary);
+		background: #eff6ff;
+		border-color: #bfdbfe;
+	}
+
+	.bhk-toggle-label:has(input:checked) .bhk-pill {
+		background: var(--primary);
+		color: white;
+		border-color: var(--primary);
+		box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+	}
+
+	/* Active Badges Ribbon */
+	.catalog-active-ribbon {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	.active-count-text {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-muted);
+	}
+
+	.active-count-highlight {
+		color: var(--text-main);
+		font-weight: 800;
+	}
+
+	.active-badges-list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.active-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		background: var(--primary-subtle);
+		color: var(--primary);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		border-radius: var(--radius-full);
+		padding: 0.35rem 0.85rem;
+		font-size: 0.82rem;
+		font-weight: 700;
+		text-decoration: none;
+		transition: all var(--duration-fast);
+	}
+
+	.active-badge:hover {
+		background: #fee2e2;
+		color: #dc2626;
+		border-color: #fca5a5;
+	}
+
+	.badge-remove-x {
+		font-size: 1.15rem;
+		line-height: 1;
+		font-weight: 700;
+	}
+
+	.reset-all-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.85rem;
+		border-radius: var(--radius-full);
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: #dc2626;
+		background: #fef2f2;
+		border: 1px solid #fee2e2;
+		text-decoration: none;
+		transition: all var(--duration-fast);
+	}
+
+	.reset-all-btn:hover {
+		background: #dc2626;
+		color: white;
+		border-color: #dc2626;
 	}
 </style>
 {% endblock %}
@@ -118,53 +485,197 @@
 </section>
 
 <div class="container" style="padding-bottom: 5rem;">
-	<!-- Interactive Filter Toolbar -->
+	<!-- Interactive Filter Card -->
 	<div class="catalog-filter-bar">
-		<div class="filter-chip-group">
-			<a href="/properties" class="filter-chip {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
-			<a href="/properties?category=RESIDENTIAL{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"RESIDENTIAL" %}active{% endif %}{% endif %}">Residential Homes</a>
-			<a href="/properties?category=COMMERCIAL{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"COMMERCIAL" %}active{% endif %}{% endif %}">Commercial Spaces</a>
-			<a href="/properties?category=LAND{% if let Some(lt) = listing_type_filter %}&listing_type={{ lt }}{% endif %}" class="filter-chip {% if let Some(cat) = category_filter %}{% if cat == &"LAND" %}active{% endif %}{% endif %}">Plots & Land</a>
+		<!-- Top Row: Category Chips -->
+		<div class="filter-top-row">
+			<div class="filter-chip-group">
+				<a href="{{ self.category_url(None) }}" class="filter-chip {% if category_filter.is_none() %}active{% endif %}">All Categories</a>
+				<a href="{{ self.category_url(Some("RESIDENTIAL")) }}" class="filter-chip {% if self.is_category("RESIDENTIAL") %}active{% endif %}">Residential Homes</a>
+				<a href="{{ self.category_url(Some("COMMERCIAL")) }}" class="filter-chip {% if self.is_category("COMMERCIAL") %}active{% endif %}">Commercial Spaces</a>
+				<a href="{{ self.category_url(Some("LAND")) }}" class="filter-chip {% if self.is_category("LAND") %}active{% endif %}">Plots & Land</a>
+			</div>
 		</div>
 
-		<form action="/properties" method="get" class="filter-form-controls">
+		<!-- Filter Form Controls -->
+		<form action="/properties" method="get" class="catalog-filter-form" id="property-filters-form">
 			{% if let Some(cat) = category_filter %}
 			<input type="hidden" name="category" value="{{ cat }}">
 			{% endif %}
 
-			<select name="listing_type" class="filter-select">
-				<option value="">All Listing Types</option>
-				<option value="sale" {% if let Some(lt) = listing_type_filter %}{% if lt == &"sale" %}selected{% endif %}{% endif %}>For Sale</option>
-				<option value="rent" {% if let Some(lt) = listing_type_filter %}{% if lt == &"rent" %}selected{% endif %}{% endif %}>For Rent</option>
-				<option value="lease" {% if let Some(lt) = listing_type_filter %}{% if lt == &"lease" %}selected{% endif %}{% endif %}>For Lease</option>
-			</select>
+			<div class="filter-controls-row">
+				<!-- Listing Type -->
+				<select name="listing_type" class="filter-select">
+					<option value="">All Listing Types</option>
+					<option value="sale" {% if self.is_listing_type("sale") %}selected{% endif %}>For Sale</option>
+					<option value="rent" {% if self.is_listing_type("rent") %}selected{% endif %}>For Rent</option>
+					<option value="lease" {% if self.is_listing_type("lease") %}selected{% endif %}>For Lease</option>
+				</select>
 
-			<input type="text" name="q" placeholder="Keywords, project..." class="filter-search-input" value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
-			
-			<button type="submit" class="btn btn-primary btn-sm">
-				<span>Filter</span>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="11" cy="11" r="8"></circle>
-					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-				</svg>
-			</button>
+				<!-- Budget Dropdown -->
+				<details class="filter-dropdown budget-dropdown">
+					<summary class="filter-dropdown-btn {% if self.has_budget_filter() %}has-value{% endif %}">
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="12" y1="1" x2="12" y2="23"></line>
+							<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+						</svg>
+						<span>
+							{% if self.has_budget_filter() %}
+								Budget Active
+							{% else %}
+								Budget
+							{% endif %}
+						</span>
+						<svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</summary>
+					<div class="filter-dropdown-menu budget-dropdown-menu">
+						<div class="dropdown-section-title">Quick Range</div>
+						<div class="preset-chips-grid">
+							{% if self.is_rental() %}
+							<button type="button" class="preset-chip {% if self.is_budget_preset(None, Some(15000.0)) %}active{% endif %}" onclick="setBudgetPreset(null, 15000)">Under ₹15k</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(15000.0), Some(30000.0)) %}active{% endif %}" onclick="setBudgetPreset(15000, 30000)">₹15k – ₹30k</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(30000.0), Some(50000.0)) %}active{% endif %}" onclick="setBudgetPreset(30000, 50000)">₹30k – ₹50k</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(50000.0), Some(100000.0)) %}active{% endif %}" onclick="setBudgetPreset(50000, 100000)">₹50k – ₹1 L</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(100000.0), None) %}active{% endif %}" onclick="setBudgetPreset(100000, null)">Above ₹1 L</button>
+							{% else %}
+							<button type="button" class="preset-chip {% if self.is_budget_preset(None, Some(2500000.0)) %}active{% endif %}" onclick="setBudgetPreset(null, 2500000)">Under ₹25 L</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(2500000.0), Some(5000000.0)) %}active{% endif %}" onclick="setBudgetPreset(2500000, 5000000)">₹25 L – ₹50 L</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(5000000.0), Some(10000000.0)) %}active{% endif %}" onclick="setBudgetPreset(5000000, 10000000)">₹50 L – ₹1 Cr</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(10000000.0), Some(20000000.0)) %}active{% endif %}" onclick="setBudgetPreset(10000000, 20000000)">₹1 Cr – ₹2 Cr</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(20000000.0), Some(50000000.0)) %}active{% endif %}" onclick="setBudgetPreset(20000000, 50000000)">₹2 Cr – ₹5 Cr</button>
+							<button type="button" class="preset-chip {% if self.is_budget_preset(Some(50000000.0), None) %}active{% endif %}" onclick="setBudgetPreset(50000000, null)">Above ₹5 Cr</button>
+							{% endif %}
+						</div>
+
+						<div style="height:1px; background:var(--border-subtle); margin:0.25rem 0;"></div>
+						<div class="dropdown-section-title">Custom Range (₹)</div>
+						<div class="custom-budget-inputs">
+							<input type="number" name="min_price" id="min_price_input" placeholder="Min ₹" class="filter-input-sm" value="{% if let Some(min) = min_price %}{{ min }}{% endif %}" step="1000" min="0">
+							<span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">to</span>
+							<input type="number" name="max_price" id="max_price_input" placeholder="Max ₹" class="filter-input-sm" value="{% if let Some(max) = max_price %}{{ max }}{% endif %}" step="1000" min="0">
+						</div>
+
+						<div class="dropdown-actions">
+							<button type="button" class="btn btn-secondary btn-sm" onclick="clearBudgetInputs()">Clear</button>
+							<button type="submit" class="btn btn-primary btn-sm">Apply</button>
+						</div>
+					</div>
+				</details>
+
+				<!-- Property Type Dropdown -->
+				<details class="filter-dropdown types-dropdown">
+					<summary class="filter-dropdown-btn {% if self.selected_types_count() > 0 %}has-value{% endif %}">
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+							<polyline points="9 22 9 12 15 12 15 22"></polyline>
+						</svg>
+						<span>
+							{% if self.selected_types_count() > 0 %}
+								Type ({{ self.selected_types_count() }})
+							{% else %}
+								Property Type
+							{% endif %}
+						</span>
+						<svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</summary>
+					<div class="filter-dropdown-menu types-dropdown-menu">
+						<div class="dropdown-section-title">Select Property Types</div>
+						<div class="types-checkboxes-list">
+							{% for pt in property_types %}
+							{% if self.is_type_in_active_category(pt.category.as_str()) %}
+							<label class="type-checkbox-label">
+								<input type="checkbox" name="prop_type" value="{{ pt.slug }}" {% if self.is_type_selected(pt.slug.as_str()) %}checked{% endif %}>
+								<span>{{ pt.name }}</span>
+								<span class="type-cat-tag">{{ pt.category }}</span>
+							</label>
+							{% endif %}
+							{% endfor %}
+						</div>
+
+						<div class="dropdown-actions">
+							<button type="button" class="btn btn-secondary btn-sm" onclick="clearTypeCheckboxes()">Clear</button>
+							<button type="submit" class="btn btn-primary btn-sm">Apply</button>
+						</div>
+					</div>
+				</details>
+
+				<!-- Search Input -->
+				<div class="filter-search-wrap">
+					<svg class="search-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+					<input type="text" name="q" placeholder="Keywords, project, locality..." class="filter-search-input" value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+				</div>
+
+				<button type="submit" class="btn btn-primary btn-sm" style="height: 42px;">
+					<span>Filter</span>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+				</button>
+			</div>
+
+			<!-- BHK Multi-Select Buttons (only for Residential or All Categories) -->
+			{% if self.show_bhk_filter() %}
+			<div class="bhk-filter-row">
+				<span class="filter-inline-label">BHK:</span>
+				<div class="bhk-chips-group">
+					<label class="bhk-toggle-label">
+						<input type="checkbox" name="bhk" value="1" {% if self.is_bhk_selected("1") %}checked{% endif %}>
+						<span class="bhk-pill">1 BHK</span>
+					</label>
+					<label class="bhk-toggle-label">
+						<input type="checkbox" name="bhk" value="2" {% if self.is_bhk_selected("2") %}checked{% endif %}>
+						<span class="bhk-pill">2 BHK</span>
+					</label>
+					<label class="bhk-toggle-label">
+						<input type="checkbox" name="bhk" value="3" {% if self.is_bhk_selected("3") %}checked{% endif %}>
+						<span class="bhk-pill">3 BHK</span>
+					</label>
+					<label class="bhk-toggle-label">
+						<input type="checkbox" name="bhk" value="4" {% if self.is_bhk_selected("4") %}checked{% endif %}>
+						<span class="bhk-pill">4 BHK</span>
+					</label>
+					<label class="bhk-toggle-label">
+						<input type="checkbox" name="bhk" value="5+" {% if self.is_bhk_selected("5+") %}checked{% endif %}>
+						<span class="bhk-pill">5+ BHK</span>
+					</label>
+				</div>
+			</div>
+			{% endif %}
 		</form>
 	</div>
 
-	<!-- Active Count Ribbon -->
-	<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
-		<div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted);">
-			Showing <span style="color: var(--text-main); font-weight: 800;">{{ properties.len() }}</span> Verified Properties
+	<!-- Active Badges Ribbon -->
+	<div class="catalog-active-ribbon">
+		<div class="active-count-text">
+			Showing <span class="active-count-highlight">{{ properties.len() }}</span> Verified Properties
 		</div>
-		{% if category_filter.is_some() || listing_type_filter.is_some() || search_query.is_some() %}
-		<a href="/properties" class="btn btn-secondary btn-sm" style="color: #dc2626;">
-			<span>Reset All Filters</span>
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-				<line x1="18" y1="6" x2="6" y2="18"></line>
-				<line x1="6" y1="6" x2="18" y2="18"></line>
-			</svg>
-		</a>
-		{% endif %}
+
+		<div class="active-badges-list">
+			{% for badge in active_badges %}
+			<a href="{{ badge.remove_url }}" class="active-badge" title="Remove filter">
+				<span>{{ badge.label }}</span>
+				<span class="badge-remove-x" aria-hidden="true">&times;</span>
+			</a>
+			{% endfor %}
+
+			{% if has_active_filters %}
+			<a href="/properties" class="reset-all-btn" title="Reset all filters">
+				<span>Reset All Filters</span>
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			</a>
+			{% endif %}
+		</div>
 	</div>
 
 	{% if properties.is_empty() %}
@@ -172,7 +683,7 @@
 		<div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
 		<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">No properties match your filter criteria</h3>
 		<p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
-			Try broadening your search keywords or switching to "All Categories" to view available inventory.
+			Try broadening your budget range, selecting different BHK or property types, or switching to "All Categories" to view available inventory.
 		</p>
 		<a href="/properties" class="btn btn-primary btn-sm">Reset All Filters</a>
 	</div>

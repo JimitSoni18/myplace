@@ -71,6 +71,47 @@ where
 	}
 }
 
+/// An Axum extractor for HTML query string parameters backed by `serde_html_form`.
+/// Supports:
+/// - Single value (`category=RESIDENTIAL`)
+/// - Repeated values from HTML multi-select checkboxes (`bhk=2&bhk=3`, `prop_type=flat&prop_type=villa`)
+/// - Unchecked / missing fields -> `Default::default()` with `#[serde(default)]`
+/// - Safe error handling: malformed / unprocessable inputs return 400 Bad Request instead of 500.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct HtmlQuery<T>(pub T);
+
+impl<T> std::ops::Deref for HtmlQuery<T> {
+	type Target = T;
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T> std::ops::DerefMut for HtmlQuery<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
+impl<S, T> axum::extract::FromRequestParts<S> for HtmlQuery<T>
+where
+	T: serde::de::DeserializeOwned,
+	S: Send + Sync,
+{
+	type Rejection = FormRejection;
+
+	async fn from_request_parts(
+		parts: &mut axum::http::request::Parts,
+		_state: &S,
+	) -> Result<Self, Self::Rejection> {
+		let query = parts.uri.query().unwrap_or("");
+		let value = serde_html_form::from_str::<T>(query)
+			.map_err(|e| FormRejection::Deserialization(e.to_string()))?;
+		Ok(HtmlQuery(value))
+	}
+}
+
+
 /// Deserializes an `Option<String>`, converting empty strings or whitespace-only strings to `None`.
 /// Non-empty strings are trimmed and returned wrapped in `Some`.
 pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
@@ -278,4 +319,24 @@ mod tests {
 		assert_eq!(parsed.q, Some("Villa".to_string()));
 		assert_eq!(parsed.project_id, Some(99));
 	}
+
+	#[test]
+	fn test_html_query_repeated_params() {
+		#[derive(Debug, PartialEq, Eq, Deserialize)]
+		struct QueryTestPayload {
+			#[serde(default)]
+			bhk: Vec<String>,
+			#[serde(default)]
+			prop_type: Vec<String>,
+			#[serde(default, deserialize_with = "empty_string_as_none")]
+			q: Option<String>,
+		}
+
+		let query = "bhk=2&bhk=3&prop_type=flat&prop_type=villa&q=Prestige";
+		let parsed: QueryTestPayload = serde_html_form::from_str(query).unwrap();
+		assert_eq!(parsed.bhk, vec!["2", "3"]);
+		assert_eq!(parsed.prop_type, vec!["flat", "villa"]);
+		assert_eq!(parsed.q, Some("Prestige".to_string()));
+	}
 }
+

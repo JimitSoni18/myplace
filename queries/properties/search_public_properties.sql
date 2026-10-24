@@ -31,4 +31,12 @@ WHERE p.deleted_at IS NULL
   AND ($1::text IS NULL OR pt.category = $1)
   AND ($2::text IS NULL OR pl.listing_type = $2)
   AND ($3::text IS NULL OR proj.name ILIKE $3 OR loc.formatted_address ILIKE $3 OR p.unit_number ILIKE $3)
+  AND ($4::text[] IS NULL OR pt.slug = ANY($4))
+  AND (
+    ($5::float8[] IS NULL AND ($6::bool IS NULL OR $6 = FALSE))
+    OR ($5::float8[] IS NOT NULL AND floor(rpd.bedroom_count)::float8 = ANY($5))
+    OR ($6::bool IS TRUE AND rpd.bedroom_count >= 5.0)
+  )
+  AND ($7::float8 IS NULL OR pl.price::float8 >= $7)
+  AND ($8::float8 IS NULL OR pl.price::float8 <= $8)
 ORDER BY p.id DESC;

@@ -1,57 +1,118 @@
-use askama::Template;
 use axum::{
-	Extension, Router,
+	Json, Router,
 	extract::{Path, State},
 	http::StatusCode,
-	response::{Html, IntoResponse, Redirect},
 	routing::get,
 };
+use serde::Serialize;
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
 	AppState,
 	config::CONFIG,
 	middlewares::owner_authenticate::OwnerUser,
-	response_types::SetAuthCookie,
-	session_store::{SessionId, SessionStoreTrait as _},
-	templates::{
-		admin::{ProjectDocumentItem, ProjectMediaItem},
-		owner::{
-			OwnerDashboardProject, OwnerDashboardTemplate, OwnerProjectDetailData,
-			OwnerProjectDetailTemplate, OwnerProjectListTemplate,
-		},
-	},
-	utils::markdown::render_markdown,
 };
 
 pub fn router() -> Router<AppState> {
 	Router::new()
-		.route("/", get(owner_dashboard))
+		.route("/dashboard", get(owner_dashboard))
 		.route("/projects", get(owner_projects_list))
 		.route("/projects/{id}", get(owner_project_detail))
-		.route("/logout", get(owner_logout))
+		.route("/projects/{id}/properties", get(owner_project_properties))
+		.nest("/notifications", crate::api::notifications::owner_router())
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/", optional_fields = nullable)]
+pub struct OwnerDashboardProject {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+	pub location: String,
+	pub properties_count: i64,
+	pub hero_thumb_url: Option<String>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/")]
+pub struct OwnerDashboardStats {
+	pub total_projects: i64,
+	pub total_properties: i64,
+	pub total_residential: i64,
+	pub total_commercial: i64,
+	pub total_land: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/")]
+pub struct OwnerDashboardResponse {
+	pub owner_name: String,
+	pub username: String,
+	pub stats: OwnerDashboardStats,
+	pub projects: Vec<OwnerDashboardProject>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/")]
+pub struct OwnerProjectMediaItem {
+	pub id: Uuid,
+	pub media_type: String,
+	pub url: String,
+	pub thumbnail_url: String,
+	pub sequence: i16,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/", optional_fields = nullable)]
+pub struct OwnerProjectDocumentItem {
+	pub id: Uuid,
+	pub file_name: String,
+	pub url: String,
+	pub file_size: Option<i64>,
+	pub doc_type: String,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/", optional_fields = nullable)]
+pub struct OwnerProjectDetailResponse {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+	pub location: String,
+	pub description: Option<String>,
+	pub start_date: Option<String>,
+	pub launch_date: Option<String>,
+	pub possession_date: Option<String>,
+	pub properties_count: i64,
+	pub media: Vec<OwnerProjectMediaItem>,
+	pub documents: Vec<OwnerProjectDocumentItem>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "owner/", optional_fields = nullable)]
+pub struct OwnerPropertyItem {
+	pub id: i32,
+	pub unit_number: Option<String>,
+	pub building: Option<String>,
+	pub category: String,
+	pub type_name: String,
+	pub price: f64,
+	pub status: String,
+	pub built_up_area: Option<f64>,
 }
 
 fn format_opt_date(d: Option<time::Date>) -> Option<String> {
-	let fmt = time::macros::format_description!("[month repr:short] [day], [year]");
+	let fmt = time::macros::format_description!("[year]-[month]-[day]");
 	d.and_then(|date| date.format(&fmt).ok())
-}
-
-fn format_bytes(bytes: Option<i64>) -> String {
-	let b = bytes.unwrap_or(0);
-	if b < 1024 {
-		format!("{b} B")
-	} else if b < 1024 * 1024 {
-		format!("{:.1} KB", b as f64 / 1024.0)
-	} else {
-		format!("{:.1} MB", b as f64 / (1024.0 * 1024.0))
-	}
 }
 
 async fn owner_dashboard(
 	owner: OwnerUser,
 	State(state): State<AppState>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Json<OwnerDashboardResponse>, (StatusCode, Json<serde_json::Value>)> {
 	struct DbRow {
 		id: i32,
 		name: String,
@@ -71,13 +132,31 @@ async fn owner_dashboard(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = ?e, "failed to fetch owner projects");
-		StatusCode::INTERNAL_SERVER_ERROR
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to fetch dashboard data" })),
+		)
 	})?;
 
 	let total_projects = rows.len() as i64;
 	let total_properties: i64 = rows.iter().map(|r| r.properties_count).sum();
+	let total_residential: i64 = rows
+		.iter()
+		.filter(|r| r.category.eq_ignore_ascii_case("RESIDENTIAL"))
+		.map(|r| r.properties_count)
+		.sum();
+	let total_commercial: i64 = rows
+		.iter()
+		.filter(|r| r.category.eq_ignore_ascii_case("COMMERCIAL"))
+		.map(|r| r.properties_count)
+		.sum();
+	let total_land: i64 = rows
+		.iter()
+		.filter(|r| r.category.eq_ignore_ascii_case("LAND"))
+		.map(|r| r.properties_count)
+		.sum();
 
-	let recent_projects = rows
+	let projects: Vec<OwnerDashboardProject> = rows
 		.into_iter()
 		.map(|r| {
 			let hero_thumb_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
@@ -93,26 +172,24 @@ async fn owner_dashboard(
 		})
 		.collect();
 
-	let template = OwnerDashboardTemplate {
-		owner_name: &owner.owner_name,
-		username: &owner.username,
-		total_projects,
-		total_properties,
-		recent_projects,
-	};
-
-	let html = template.render().map_err(|e| {
-		tracing::error!(error = ?e, "failed to render owner dashboard");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
-
-	Ok(Html(html))
+	Ok(Json(OwnerDashboardResponse {
+		owner_name: owner.owner_name,
+		username: owner.username,
+		stats: OwnerDashboardStats {
+			total_projects,
+			total_properties,
+			total_residential,
+			total_commercial,
+			total_land,
+		},
+		projects,
+	}))
 }
 
 async fn owner_projects_list(
 	owner: OwnerUser,
 	State(state): State<AppState>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Json<Vec<OwnerDashboardProject>>, (StatusCode, Json<serde_json::Value>)> {
 	struct DbRow {
 		id: i32,
 		name: String,
@@ -132,7 +209,10 @@ async fn owner_projects_list(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = ?e, "failed to fetch owner project list");
-		StatusCode::INTERNAL_SERVER_ERROR
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to fetch projects" })),
+		)
 	})?;
 
 	let projects = rows
@@ -151,25 +231,14 @@ async fn owner_projects_list(
 		})
 		.collect();
 
-	let template = OwnerProjectListTemplate {
-		owner_name: &owner.owner_name,
-		username: &owner.username,
-		projects,
-	};
-
-	let html = template.render().map_err(|e| {
-		tracing::error!(error = ?e, "failed to render owner project list");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
-
-	Ok(Html(html))
+	Ok(Json(projects))
 }
 
 async fn owner_project_detail(
 	owner: OwnerUser,
 	State(state): State<AppState>,
 	Path(id): Path<i32>,
-) -> Result<Html<String>, StatusCode> {
+) -> Result<Json<OwnerProjectDetailResponse>, (StatusCode, Json<serde_json::Value>)> {
 	struct DbProject {
 		id: i32,
 		name: String,
@@ -182,7 +251,6 @@ async fn owner_project_detail(
 		possession_date: Option<time::Date>,
 	}
 
-	// Strictly scoped to owner_id
 	let p = sqlx::query_file_as!(
 		DbProject,
 		"queries/projects/get_owner_portal_project_detail.sql",
@@ -193,14 +261,27 @@ async fn owner_project_detail(
 	.await
 	.map_err(|e| {
 		tracing::error!(error = ?e, "db error fetching project");
-		StatusCode::INTERNAL_SERVER_ERROR
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Database query error" })),
+		)
 	})?
-	.ok_or(StatusCode::NOT_FOUND)?;
+	.ok_or_else(|| {
+		(
+			StatusCode::NOT_FOUND,
+			Json(json!({ "code": "NOT_FOUND", "message": "Project not found or not owned by you" })),
+		)
+	})?;
 
 	let count_row = sqlx::query_file!("queries/projects/count_project_properties.sql", id)
 		.fetch_one(&state.model.db)
 		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+		.map_err(|_| {
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to count properties" })),
+			)
+		})?;
 
 	struct DbMedia {
 		media_id: Uuid,
@@ -213,7 +294,7 @@ async fn owner_project_detail(
 	let media_rows = sqlx::query_file_as!(DbMedia, "queries/projects/get_project_media.sql", id)
 		.fetch_all(&state.model.db)
 		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+		.unwrap_or_default();
 
 	let media = media_rows
 		.into_iter()
@@ -224,7 +305,7 @@ async fn owner_project_detail(
 				.as_ref()
 				.map(|k| CONFIG.asset_url(k))
 				.unwrap_or_else(|| url.clone());
-			ProjectMediaItem {
+			OwnerProjectMediaItem {
 				id: r.media_id,
 				media_type: r.media_type,
 				url,
@@ -234,11 +315,12 @@ async fn owner_project_detail(
 		})
 		.collect();
 
+	#[allow(dead_code)]
 	struct DbDoc {
 		id: i32,
 		media_id: Uuid,
-		display_name: String,
-		doc_type: String,
+		display_name: Option<String>,
+		doc_type: Option<String>,
 		s3_key: String,
 		file_size: Option<i64>,
 	}
@@ -246,64 +328,110 @@ async fn owner_project_detail(
 	let doc_rows = sqlx::query_file_as!(DbDoc, "queries/projects/get_project_documents.sql", id)
 		.fetch_all(&state.model.db)
 		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+		.unwrap_or_default();
 
 	let documents = doc_rows
 		.into_iter()
 		.map(|r| {
 			let url = CONFIG.asset_url(&r.s3_key);
-			let file_size_formatted = format_bytes(r.file_size);
-			ProjectDocumentItem {
-				id: r.id,
-				media_id: r.media_id,
-				display_name: r.display_name,
-				doc_type: r.doc_type,
+			let file_name = r
+				.display_name
+				.unwrap_or_else(|| r.s3_key.split('/').last().unwrap_or("document").to_string());
+			OwnerProjectDocumentItem {
+				id: r.media_id,
+				file_name,
 				url,
-				file_size_formatted,
+				file_size: r.file_size,
+				doc_type: r.doc_type.unwrap_or_else(|| "brochure".to_string()),
 			}
 		})
 		.collect();
 
-	let description_html = p
-		.description
-		.as_ref()
-		.map(|desc| render_markdown(desc))
-		.unwrap_or_default();
-
-	let project_data = OwnerProjectDetailData {
+	Ok(Json(OwnerProjectDetailResponse {
 		id: p.id,
 		name: p.name,
 		slug: p.slug,
 		category: p.category,
-		location_name: p.location_name.unwrap_or_else(|| "Unspecified".to_string()),
+		location: p.location_name.unwrap_or_else(|| "Unspecified".to_string()),
+		description: p.description,
 		start_date: format_opt_date(p.start_date),
 		launch_date: format_opt_date(p.launch_date),
 		possession_date: format_opt_date(p.possession_date),
-	};
-
-	let template = OwnerProjectDetailTemplate {
-		owner_name: &owner.owner_name,
-		username: &owner.username,
-		project: project_data,
-		description_html,
 		properties_count: count_row.count,
 		media,
 		documents,
-	};
-
-	let html = template.render().map_err(|e| {
-		tracing::error!(error = ?e, "failed to render owner project detail");
-		StatusCode::INTERNAL_SERVER_ERROR
-	})?;
-
-	Ok(Html(html))
+	}))
 }
 
-async fn owner_logout(
-	_owner: OwnerUser,
-	session_id: Extension<SessionId>,
+async fn owner_project_properties(
+	owner: OwnerUser,
 	State(state): State<AppState>,
-) -> impl IntoResponse {
-	state.session_store.delete_session(&session_id).await;
-	(SetAuthCookie::new("", 0), Redirect::to("/auth/owner-login"))
+	Path(id): Path<i32>,
+) -> Result<Json<Vec<OwnerPropertyItem>>, (StatusCode, Json<serde_json::Value>)> {
+	// Verify project ownership
+	let is_owned = sqlx::query_scalar::<_, i32>(
+		"SELECT id FROM projects WHERE id = $1 AND project_owner_id = $2 AND deleted_at IS NULL",
+	)
+	.bind(id)
+	.bind(owner.owner_id)
+	.fetch_optional(&state.model.db)
+	.await
+	.map_err(|_| {
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to verify project ownership" })),
+		)
+	})?
+	.is_some();
+
+	if !is_owned {
+		return Err((
+			StatusCode::NOT_FOUND,
+			Json(json!({ "code": "NOT_FOUND", "message": "Project not found or not owned by you" })),
+		));
+	}
+
+	#[derive(sqlx::FromRow)]
+	struct DbRow {
+		id: i32,
+		unit_number: Option<String>,
+		building: Option<String>,
+		category: String,
+		type_name: String,
+		price: f64,
+		status: Option<String>,
+		built_up_area: Option<f64>,
+	}
+
+	let rows = sqlx::query_as::<_, DbRow>(
+		r#"
+		SELECT p.id, p.unit_number, p.building, pt.category, pt.name as type_name,
+		       COALESCE(pl.price, 0.0) as price, pl.status, p.built_up_area
+		FROM properties p
+		JOIN property_types pt ON pt.id = p.property_type_id
+		LEFT JOIN property_listings pl ON pl.property_id = p.id
+		WHERE p.project_id = $1 AND p.deleted_at IS NULL
+		ORDER BY p.id DESC
+		"#,
+	)
+	.bind(id)
+	.fetch_all(&state.model.db)
+	.await
+	.unwrap_or_default();
+
+	let items = rows
+		.into_iter()
+		.map(|r| OwnerPropertyItem {
+			id: r.id,
+			unit_number: r.unit_number,
+			building: r.building,
+			category: r.category,
+			type_name: r.type_name,
+			price: r.price,
+			status: r.status.unwrap_or_else(|| "available".to_string()),
+			built_up_area: r.built_up_area,
+		})
+		.collect();
+
+	Ok(Json(items))
 }

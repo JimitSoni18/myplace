@@ -1,26 +1,16 @@
-use askama::Template;
 use axum::{
-	Extension, Form, Router,
+	Json, Router,
 	extract::{Path, Query, State},
 	http::StatusCode,
-	response::{Html, IntoResponse, Redirect},
-	routing::{MethodRouter, get},
+	routing::get,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::{
-	AppState,
-	api::admin::locations::error::{LocationDeleteError, LocationEditFormGetError},
-	session_store::AuthUser,
-	templates::admin::{AdminPage, LocationEditFormValues, LocationForm, LocationTemplate},
-	utils,
-};
+use crate::{AppState, session_store::AuthUser, utils};
 
-mod error;
-
-// ---------------------------------------------------------------------------
-// DB row — matches the new structured locations schema
-// ---------------------------------------------------------------------------
+#[derive(Serialize, Deserialize, Clone, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct LocationItem {
 	pub id: i32,
 	pub formatted_address: String,
@@ -29,161 +19,177 @@ pub struct LocationItem {
 	pub area: Option<String>,
 }
 
-#[derive(Deserialize)]
-struct CreateOrUpdateLocationPayload {
-	formatted_address: String,
-	city: Option<String>,
-	state_or_province: Option<String>,
-	area: Option<String>,
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct CreateOrUpdateLocationPayload {
+	pub formatted_address: String,
+	pub city: Option<String>,
+	pub state_or_province: Option<String>,
+	pub area: Option<String>,
+}
+
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct LocationQuery {
+	#[serde(default)]
+	pub q: Option<String>,
 }
 
 pub fn router() -> Router<AppState> {
-	let create_router = MethodRouter::new()
-		.get(location_create_form)
-		.post(create_location);
-	let edit_router = MethodRouter::new()
-		.get(location_edit_form)
-		.put(update_location)
-		.delete(delete_location);
 	Router::new()
-		.route("/", get(location_list))
-		.route("/new", create_router)
-		.route("/{id}", edit_router)
+		.route("/", get(list_locations).post(create_location))
+		.route("/{id}", get(get_location).put(update_location).delete(delete_location))
 }
 
-async fn location_create_form(
-	Extension(auth_user): Extension<AuthUser>,
-) -> Result<Html<String>, error::LocationListError> {
-	Ok(Html(
-		LocationForm {
-			page: AdminPage::Locations,
-			admin_name: &auth_user.username,
-			edit_values: None,
+async fn list_locations(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Query(query): Query<LocationQuery>,
+) -> Result<Json<Vec<LocationItem>>, (StatusCode, Json<serde_json::Value>)> {
+	let locations = match query.q.filter(|s| !s.trim().is_empty()) {
+		Some(ref q) => {
+			let escaped = utils::sql::escape(q.trim());
+			let pattern = format!("%{escaped}%");
+			sqlx::query_file_as!(
+				LocationItem,
+				"queries/locations/search_locations.sql",
+				pattern
+			)
+			.fetch_all(&state.model.db)
+			.await
 		}
-		.render()
-		.or(Err(error::LocationListError::InternalError))?,
+		None => {
+			sqlx::query_file_as!(LocationItem, "queries/locations/list_locations.sql")
+				.fetch_all(&state.model.db)
+				.await
+		}
+	}
+	.map_err(|e| {
+		tracing::error!(error = ?e, "failed to fetch locations");
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to fetch locations" })),
+		)
+	})?;
+
+	Ok(Json(locations))
+}
+
+async fn get_location(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+) -> Result<Json<LocationItem>, (StatusCode, Json<serde_json::Value>)> {
+	let location = sqlx::query_file_as!(
+		LocationItem,
+		"queries/locations/get_location_by_id.sql",
+		id
+	)
+	.fetch_one(&state.model.db)
+	.await
+	.map_err(|e| match e {
+		sqlx::Error::RowNotFound => (
+			StatusCode::NOT_FOUND,
+			Json(json!({ "code": "NOT_FOUND", "message": "Location not found" })),
+		),
+		_ => {
+			tracing::error!(error = ?e, "failed to get location");
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "INTERNAL_ERROR", "message": "Database query error" })),
+			)
+		}
+	})?;
+
+	Ok(Json(location))
+}
+
+async fn create_location(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Json(payload): Json<CreateOrUpdateLocationPayload>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+	let address = payload.formatted_address.trim();
+	if address.is_empty() {
+		return Err((
+			StatusCode::BAD_REQUEST,
+			Json(json!({ "code": "VALIDATION_ERROR", "message": "Address is required" })),
+		));
+	}
+
+	let result = sqlx::query_file!(
+		"queries/locations/create_location.sql",
+		address,
+		payload.city.as_deref().map(|s| s.trim()),
+		payload.state_or_province.as_deref().map(|s| s.trim()),
+		payload.area.as_deref().map(|s| s.trim()),
+	)
+	.execute(&state.model.db)
+	.await
+	.map_err(|e| {
+		tracing::error!(error = ?e, "failed to create location");
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to create location" })),
+		)
+	})?;
+
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({ "success": true, "rows_affected": result.rows_affected() })),
 	))
 }
 
 async fn update_location(
-	state: State<AppState>,
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-	payload: Form<CreateOrUpdateLocationPayload>,
-) -> impl IntoResponse {
-	let result = sqlx::query_file!(
+	Json(payload): Json<CreateOrUpdateLocationPayload>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+	let address = payload.formatted_address.trim();
+	if address.is_empty() {
+		return Err((
+			StatusCode::BAD_REQUEST,
+			Json(json!({ "code": "VALIDATION_ERROR", "message": "Address is required" })),
+		));
+	}
+
+	sqlx::query_file!(
 		"queries/locations/update_location.sql",
-		payload.formatted_address,
-		payload.city,
-		payload.state_or_province,
-		payload.area,
+		address,
+		payload.city.as_deref().map(|s| s.trim()),
+		payload.state_or_province.as_deref().map(|s| s.trim()),
+		payload.area.as_deref().map(|s| s.trim()),
 		id,
 	)
 	.execute(&state.model.db)
-	.await;
+	.await
+	.map_err(|e| {
+		tracing::error!(error = ?e, "failed to update location");
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to update location" })),
+		)
+	})?;
 
-	if result.is_err() {
-		return Err(StatusCode::INTERNAL_SERVER_ERROR);
-	}
-	Ok(StatusCode::OK)
+	Ok(Json(json!({ "success": true, "message": "Location updated" })))
 }
 
 async fn delete_location(
-	state: State<AppState>,
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Redirect, LocationDeleteError> {
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
 	sqlx::query_file!("queries/locations/delete_location.sql", id)
 		.execute(&state.model.db)
 		.await
-		.or(Err(LocationDeleteError::NotFound))?;
-	Ok(Redirect::to("/admin/locations"))
-}
-
-async fn location_edit_form(
-	state: State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(id): Path<i32>,
-) -> Result<Html<String>, LocationEditFormGetError> {
-	let location =
-		sqlx::query_file_as!(LocationItem, "queries/locations/get_location_by_id.sql", id)
-			.fetch_one(&state.model.db)
-			.await
-			.map_err(|e| match e {
-				sqlx::Error::RowNotFound => LocationEditFormGetError::NotFound,
-				_ => LocationEditFormGetError::InternalError,
-			})?;
-	Ok(Html(
-		LocationForm {
-			edit_values: Some(LocationEditFormValues {
-				error: None,
-				default_values: location,
-			}),
-			page: AdminPage::Locations,
-			admin_name: &auth_user.username,
-		}
-		.render()
-		.or(Err(LocationEditFormGetError::InternalError))?,
-	))
-}
-
-async fn create_location(
-	state: State<AppState>,
-	payload: Form<CreateOrUpdateLocationPayload>,
-) -> impl IntoResponse {
-	let result = sqlx::query_file!(
-		"queries/locations/create_location.sql",
-		payload.formatted_address,
-		payload.city,
-		payload.state_or_province,
-		payload.area,
-	)
-	.execute(&state.model.db)
-	.await;
-	if result.is_err() {
-		return Err(StatusCode::INTERNAL_SERVER_ERROR);
-	}
-	Ok(Redirect::to("/admin/locations"))
-}
-
-#[derive(Deserialize)]
-struct LocationQuery {
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	q: Option<String>,
-}
-
-async fn location_list(
-	Extension(auth_user): Extension<AuthUser>,
-	state: State<AppState>,
-	Query(query): Query<LocationQuery>,
-) -> Result<Html<String>, error::LocationListError> {
-	let (query_str, locations) = match query.q {
-		Some(ref q) if !q.is_empty() => {
-			let escaped = utils::sql::escape(q.trim());
-			let rgx = format!("%{escaped}%");
+		.map_err(|e| {
+			tracing::error!(error = ?e, "failed to delete location");
 			(
-				query.q,
-				sqlx::query_file_as!(LocationItem, "queries/locations/search_locations.sql", rgx,)
-					.fetch_all(&state.model.db)
-					.await
-					.or(Err(error::LocationListError::InternalError))?,
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to delete location" })),
 			)
-		}
-		_ => (
-			None,
-			sqlx::query_file_as!(LocationItem, "queries/locations/list_locations.sql")
-				.fetch_all(&state.model.db)
-				.await
-				.or(Err(error::LocationListError::InternalError))?,
-		),
-	};
+		})?;
 
-	Ok(Html(
-		LocationTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Locations,
-			q: query_str.as_deref(),
-			locations,
-		}
-		.render()
-		.or(Err(error::LocationListError::InternalError))?,
-	))
+	Ok(StatusCode::NO_CONTENT)
 }

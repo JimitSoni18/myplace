@@ -1,14 +1,18 @@
 use std::str::FromStr as _;
 
-use axum::{extract::FromRequestParts, http::StatusCode, response::Html};
+use axum::{
+	extract::FromRequestParts,
+	http::{StatusCode, header},
+	response::Json,
+};
+use serde_json::json;
 
 use crate::{
 	AppState, crypto,
-	pages::NO_ACCESS_PAGE,
 	session_store::{SessionId, SessionStoreTrait as _, UserRole},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct OwnerUser {
 	pub profile_id: i32,
 	pub owner_id: i32,
@@ -16,59 +20,103 @@ pub struct OwnerUser {
 	pub username: String,
 }
 
+fn parse_signed_session_id(raw: &str) -> Option<uuid::Uuid> {
+	let (id_str, sign) = raw.split_once('.')?;
+	let id = uuid::Uuid::from_str(id_str).ok()?;
+	if crypto::sign_cookie::verify_cookie(&id, sign) {
+		Some(id)
+	} else {
+		None
+	}
+}
+
 impl FromRequestParts<AppState> for OwnerUser {
-	type Rejection = (StatusCode, Html<&'static str>);
+	type Rejection = (StatusCode, Json<serde_json::Value>);
 
 	async fn from_request_parts(
 		parts: &mut axum::http::request::Parts,
 		state: &AppState,
 	) -> Result<Self, Self::Rejection> {
-		let error = (StatusCode::UNAUTHORIZED, NO_ACCESS_PAGE);
-
-		// 1. Parse and verify the signed session cookie.
-		let session_id = SessionId(
-			parts
-				.headers
-				.get(axum::http::header::COOKIE)
-				.and_then(|h| h.to_str().ok())
-				.and_then(|cookies| {
-					cookies.split("; ").find_map(|c| {
-						if let ("session_id", value) = c.trim().split_once('=')? {
-							let (session_id_str, sign) = value.split_once('.')?;
-							let session_id = uuid::Uuid::from_str(session_id_str).ok()?;
-							if crypto::sign_cookie::verify_cookie(&session_id, sign) {
-								return Some(session_id);
-							}
-						}
-						None
-					})
-				})
-				.ok_or_else(|| {
-					tracing::debug!("owner request missing or invalid session cookie");
-					error
-				})?,
+		let unauth_err = (
+			StatusCode::UNAUTHORIZED,
+			Json(json!({
+				"code": "UNAUTHORIZED",
+				"message": "Authentication required or session expired"
+			})),
 		);
 
-		// 2. Look up session — get_session returns None for expired sessions.
-		let auth_user = state
-			.session_store
-			.get_session(&session_id)
-			.await
-			.ok_or_else(|| {
-				tracing::warn!(?session_id, "session not found or expired");
-				error
-			})?;
+		let mut candidate_raw_tokens = Vec::new();
 
-		// 3. Enforce that only ProjectOwner users can access owner routes.
-		if auth_user.role != UserRole::ProjectOwner {
-			tracing::warn!(
-				user_id = auth_user.user_id,
-				"non-owner attempted to access owner route"
-			);
-			return Err(error);
+		// 1. Check Authorization: Bearer <token> header first
+		if let Some(h) = parts
+			.headers
+			.get(header::AUTHORIZATION)
+			.and_then(|h| h.to_str().ok())
+		{
+			if let Some(token) = h.strip_prefix("Bearer ") {
+				candidate_raw_tokens.push(token.trim().to_string());
+			}
 		}
 
-		// 4. Verify project owner status in DB: active must be true, not deleted.
+		// 2. Check ?token=<signed_session_id> query parameter (URL-decoded, essential for EventSource SSE)
+		if let Some(q) = parts.uri.query() {
+			#[derive(serde::Deserialize)]
+			struct QueryParams {
+				token: Option<String>,
+			}
+			if let Ok(qp) = serde_urlencoded::from_str::<QueryParams>(q) {
+				if let Some(t) = qp.token {
+					candidate_raw_tokens.push(t);
+				}
+			}
+		}
+
+		// 3. Check Cookies: owner_session_id takes precedence, fallback to session_id
+		if let Some(cookies) = parts.headers.get(header::COOKIE).and_then(|h| h.to_str().ok()) {
+			let mut owner_cookie = None;
+			let mut general_cookie = None;
+
+			for part in cookies.split(';') {
+				if let Some((name, val)) = part.trim().split_once('=') {
+					if name == "owner_session_id" {
+						owner_cookie = Some(val.to_string());
+					} else if name == "session_id" && general_cookie.is_none() {
+						general_cookie = Some(val.to_string());
+					}
+				}
+			}
+
+			if let Some(c) = owner_cookie {
+				candidate_raw_tokens.push(c);
+			}
+			if let Some(c) = general_cookie {
+				candidate_raw_tokens.push(c);
+			}
+		}
+
+		// 4. Find valid owner session
+		let mut authenticated_session = None;
+		for raw in candidate_raw_tokens {
+			if let Some(uuid) = parse_signed_session_id(&raw) {
+				let session_id = SessionId(uuid);
+				if let Some(auth_user) = state.session_store.get_session(&session_id).await {
+					if auth_user.role == UserRole::ProjectOwner {
+						authenticated_session = Some((session_id, auth_user));
+						break;
+					}
+				}
+			}
+		}
+
+		let (session_id, auth_user) = match authenticated_session {
+			Some(s) => s,
+			None => {
+				tracing::debug!("owner request missing or invalid credentials");
+				return Err(unauth_err);
+			}
+		};
+
+		// 5. Look up project owner record
 		let owner_row = sqlx::query_file!(
 			"queries/auth/get_owner_by_profile_id.sql",
 			auth_user.user_id
@@ -77,14 +125,20 @@ impl FromRequestParts<AppState> for OwnerUser {
 		.await
 		.map_err(|e| {
 			tracing::error!(error = ?e, "db lookup failed during owner auth");
-			error
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({
+					"code": "INTERNAL_ERROR",
+					"message": "Database query error"
+				})),
+			)
 		})?
 		.ok_or_else(|| {
 			tracing::warn!(
 				profile_id = auth_user.user_id,
 				"no project_owner linked to profile"
 			);
-			error
+			unauth_err.clone()
 		})?;
 
 		if !owner_row.active {
@@ -92,7 +146,13 @@ impl FromRequestParts<AppState> for OwnerUser {
 				owner_id = owner_row.id,
 				"inactive owner attempted to access portal"
 			);
-			return Err(error);
+			return Err((
+				StatusCode::FORBIDDEN,
+				Json(json!({
+					"code": "ACCOUNT_INACTIVE",
+					"message": "Owner account is disabled"
+				})),
+			));
 		}
 
 		let owner_user = OwnerUser {

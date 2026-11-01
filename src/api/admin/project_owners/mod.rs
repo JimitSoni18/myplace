@@ -1,86 +1,97 @@
-use askama::Template;
 use aws_sdk_s3::primitives::ByteStream;
 use axum::{
-	Extension, Form, Router,
+	Json, Router,
 	extract::{Multipart, Path, Query, State},
-	response::{Html, Redirect},
+	http::StatusCode,
 	routing::{get, post},
 };
 use image::ImageReader;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use webp::Encoder;
 
 use crate::{
 	AppState,
-	api::admin::project_owners::error::{
-		OwnerCreateFormGetError, OwnerDetailError, OwnerProjectsError, OwnerToggleActiveError,
-		OwnerUpdateFormGetError, ProjectOwnerCreateError, ProjectOwnerDeleteError,
-		ProjectOwnerImageUploadError, ProjectOwnerListError, ProjectOwnerUpdateError,
-	},
 	config::CONFIG,
 	crypto::password_hash,
 	session_store::AuthUser,
-	templates::admin::{
-		AdminPage, EditFormValues, OwnerProjectItem, ProjectOwnerDetailItem,
-		ProjectOwnerDetailTemplate, ProjectOwnerEditItem, ProjectOwnerFormTemplate,
-		ProjectOwnerProjectsTemplate, ProjectOwnerTemplate,
-	},
 	utils::{self, sql::slugify},
 };
 
 pub mod error;
 
-// ---------------------------------------------------------------------------
-// Public types (re-used by templates module)
-// ---------------------------------------------------------------------------
-
-#[derive(Deserialize)]
-pub struct ProjectListQuery {
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	pub q: Option<String>,
-}
-
-/// Row for the owner list page.
-pub struct ProjectList {
-	pub id: i32,
-	pub name: String,
-	pub active: bool,
-	pub profile_img_thumb_key: Option<String>,
-	pub profile_thumb_url: Option<String>,
-	pub projects_count: i64,
-	pub email: Option<String>,
-}
-
-// ---------------------------------------------------------------------------
-// Router
-// ---------------------------------------------------------------------------
-
 pub fn router() -> Router<AppState> {
 	Router::new()
-		.route("/", get(project_owner_list))
-		.route(
-			"/new",
-			get(project_owner_create_form).post(create_project_owner),
-		)
+		.route("/", get(project_owner_list).post(create_project_owner))
 		.route(
 			"/{id}",
-			get(project_owner_detail).delete(delete_project_owner),
-		)
-		.route(
-			"/{id}/edit",
-			get(project_owner_update_form).post(update_project_owner),
+			get(project_owner_detail)
+				.put(update_project_owner)
+				.delete(delete_project_owner),
 		)
 		.route("/{id}/toggle-active", post(toggle_active_project_owner))
 		.route("/{id}/upload-image", post(add_project_owner_image))
+		.route(
+			"/{id}/image",
+			post(add_project_owner_image).delete(remove_project_owner_image),
+		)
 		.route("/{id}/remove-image", post(remove_project_owner_image))
 		.route("/{id}/projects", get(project_owner_projects))
 }
 
-// ---------------------------------------------------------------------------
-// Form payloads
-// ---------------------------------------------------------------------------
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct OwnerListQuery {
+	#[serde(default)]
+	pub q: Option<String>,
+}
 
-#[derive(Deserialize)]
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct OwnerListItem {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub active: bool,
+	pub email: Option<String>,
+	pub phone: Option<String>,
+	pub website: Option<String>,
+	pub profile_thumb_url: Option<String>,
+	pub projects_count: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct OwnerProjectSummary {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+	pub location: String,
+	pub properties_count: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct OwnerDetailResponse {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub username: String,
+	pub bio: Option<String>,
+	pub email: Option<String>,
+	pub phone: Option<String>,
+	pub website: Option<String>,
+	pub active: bool,
+	pub profile_image_url: Option<String>,
+	pub profile_thumb_url: Option<String>,
+	pub created_at: String,
+	pub projects_count: i64,
+	pub projects: Vec<OwnerProjectSummary>,
+}
+
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectOwnerCreatePayload {
 	pub name: String,
 	pub username: String,
@@ -89,171 +100,106 @@ pub struct ProjectOwnerCreatePayload {
 	pub email: Option<String>,
 	pub phone: Option<String>,
 	pub website: Option<String>,
-	pub active: Option<String>,
+	pub active: Option<bool>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectOwnerUpdatePayload {
 	pub name: String,
 	pub bio: Option<String>,
 	pub email: Option<String>,
 	pub phone: Option<String>,
 	pub website: Option<String>,
-	pub active: Option<String>,
+	pub active: Option<bool>,
 }
 
-// ---------------------------------------------------------------------------
-// Handlers
-// ---------------------------------------------------------------------------
-
 async fn project_owner_list(
-	state: State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Query(query): Query<ProjectListQuery>,
-) -> Result<Html<String>, ProjectOwnerListError> {
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Query(query): Query<OwnerListQuery>,
+) -> Result<Json<Vec<OwnerListItem>>, (StatusCode, Json<serde_json::Value>)> {
+	#[derive(sqlx::FromRow)]
 	struct DbRow {
 		id: i32,
 		name: String,
+		slug: String,
 		active: bool,
 		profile_img_thumb_key: Option<String>,
 		projects_count: i64,
 		email: Option<String>,
+		phone: Option<String>,
+		website: Option<String>,
 	}
 
-	let (q, rows) = match query.q {
-		Some(ref query_str) if !query_str.is_empty() => {
-			let escaped = utils::sql::escape(query_str.trim());
-			let rgx = format!("%{escaped}%");
-			let db_rows =
-				sqlx::query_file_as!(DbRow, "queries/project_owners/search_owners.sql", rgx)
-					.fetch_all(&state.model.db)
-					.await
-					.map_err(ProjectOwnerListError::SqlError)?;
-
-			(query.q, db_rows)
+	let rows = match query.q.filter(|s| !s.trim().is_empty()) {
+		Some(ref q) => {
+			let escaped = utils::sql::escape(q.trim());
+			let pattern = format!("%{escaped}%");
+			sqlx::query_as::<_, DbRow>(
+				r#"
+				SELECT po.id, po.name, po.slug, po.active, po.profile_img_thumb_key,
+				       po.email, po.phone, po.website,
+				       COUNT(p.id) as projects_count
+				FROM project_owners po
+				LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
+				WHERE po.deleted_at IS NULL AND (po.name ILIKE $1 OR po.slug ILIKE $1)
+				GROUP BY po.id
+				ORDER BY po.id DESC
+				"#,
+			)
+			.bind(&pattern)
+			.fetch_all(&state.model.db)
+			.await
 		}
-		_ => {
-			let db_rows = sqlx::query_file_as!(DbRow, "queries/project_owners/list_owners.sql")
-				.fetch_all(&state.model.db)
-				.await
-				.map_err(ProjectOwnerListError::SqlError)?;
-
-			(None, db_rows)
+		None => {
+			sqlx::query_as::<_, DbRow>(
+				r#"
+				SELECT po.id, po.name, po.slug, po.active, po.profile_img_thumb_key,
+				       po.email, po.phone, po.website,
+				       COUNT(p.id) as projects_count
+				FROM project_owners po
+				LEFT JOIN projects p ON p.project_owner_id = po.id AND p.deleted_at IS NULL
+				WHERE po.deleted_at IS NULL
+				GROUP BY po.id
+				ORDER BY po.id DESC
+				"#,
+			)
+			.fetch_all(&state.model.db)
+			.await
 		}
-	};
+	}
+	.map_err(|e| {
+		tracing::error!(error = ?e, "failed to fetch project owners");
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Failed to fetch project owners" })),
+		)
+	})?;
 
-	let owners = rows
+	let items = rows
 		.into_iter()
-		.map(|r| {
-			let profile_thumb_url = r
-				.profile_img_thumb_key
-				.as_ref()
-				.map(|k| CONFIG.asset_url(k));
-			ProjectList {
-				id: r.id,
-				name: r.name,
-				active: r.active,
-				profile_img_thumb_key: r.profile_img_thumb_key,
-				profile_thumb_url,
-				projects_count: r.projects_count,
-				email: r.email,
-			}
+		.map(|r| OwnerListItem {
+			id: r.id,
+			name: r.name,
+			slug: r.slug,
+			active: r.active,
+			email: r.email,
+			phone: r.phone,
+			website: r.website,
+			profile_thumb_url: r.profile_img_thumb_key.map(|k| CONFIG.asset_url(&k)),
+			projects_count: r.projects_count,
 		})
 		.collect();
 
-	Ok(Html(
-		ProjectOwnerTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Owners,
-			owners,
-			q: q.as_deref(),
-		}
-		.render()
-		.map_err(ProjectOwnerListError::RenderError)?,
-	))
-}
-
-async fn project_owner_create_form(
-	Extension(auth_user): Extension<AuthUser>,
-) -> Result<Html<String>, OwnerCreateFormGetError> {
-	Ok(Html(
-		ProjectOwnerFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Owners,
-			edit_values: None,
-		}
-		.render()
-		.map_err(OwnerCreateFormGetError::RenderError)?,
-	))
-}
-
-async fn create_project_owner(
-	State(state): State<AppState>,
-	Form(form): Form<ProjectOwnerCreatePayload>,
-) -> Result<Redirect, ProjectOwnerCreateError> {
-	let slug = slugify(&form.name);
-	let is_active = form.active.as_deref() == Some("on");
-
-	// Hash the owner password using Argon2id
-	let password_hash =
-		password_hash::hash(&form.password).map_err(|_| ProjectOwnerCreateError::HashingError)?;
-
-	// Run in a single transaction: profiles + project_owners
-	let mut tx = state
-		.model
-		.db
-		.begin()
-		.await
-		.map_err(ProjectOwnerCreateError::SqlError)?;
-
-	let profile_row = sqlx::query_file!(
-		"queries/project_owners/insert_profile.sql",
-		form.username.trim(),
-		password_hash,
-	)
-	.fetch_one(&mut *tx)
-	.await
-	.map_err(ProjectOwnerCreateError::SqlError)?;
-
-	let owner_row = sqlx::query_file!(
-		"queries/project_owners/insert_owner.sql",
-		profile_row.id,
-		form.name.trim(),
-		slug,
-		form.bio.as_deref(),
-		form.email.as_deref(),
-		form.phone.as_deref(),
-		form.website.as_deref(),
-		is_active,
-	)
-	.fetch_one(&mut *tx)
-	.await
-	.map_err(ProjectOwnerCreateError::SqlError)?;
-
-	tx.commit()
-		.await
-		.map_err(ProjectOwnerCreateError::SqlError)?;
-
-	tracing::info!(
-		owner_id = owner_row.id,
-		name = %form.name,
-		username = %form.username,
-		"created project owner account"
-	);
-
-	state
-		.page_cache
-		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(owner_row.id))
-		.await;
-
-	Ok(Redirect::to(&format!("/admin/owners/{}", owner_row.id)))
+	Ok(Json(items))
 }
 
 async fn project_owner_detail(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Html<String>, OwnerDetailError> {
+) -> Result<Json<OwnerDetailResponse>, (StatusCode, Json<serde_json::Value>)> {
 	struct OwnerDbRow {
 		id: i32,
 		name: String,
@@ -278,8 +224,14 @@ async fn project_owner_detail(
 	.fetch_one(&state.model.db)
 	.await
 	.map_err(|e| match e {
-		sqlx::Error::RowNotFound => OwnerDetailError::NotFound,
-		_ => OwnerDetailError::SqlError(e),
+		sqlx::Error::RowNotFound => (
+			StatusCode::NOT_FOUND,
+			Json(json!({ "code": "NOT_FOUND", "message": "Owner not found" })),
+		),
+		_ => (
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "INTERNAL_ERROR", "message": "Database query error" })),
+		),
 	})?;
 
 	struct ProjectDbRow {
@@ -298,16 +250,7 @@ async fn project_owner_detail(
 	)
 	.fetch_all(&state.model.db)
 	.await
-	.map_err(OwnerDetailError::SqlError)?;
-
-	let profile_image_url = owner_row
-		.profile_img_key
-		.as_ref()
-		.map(|k| CONFIG.asset_url(k));
-	let profile_thumb_url = owner_row
-		.profile_img_thumb_key
-		.as_ref()
-		.map(|k| CONFIG.asset_url(k));
+	.unwrap_or_default();
 
 	let date_fmt = time::macros::format_description!("[month repr:short] [day], [year]");
 	let created_at_str = owner_row
@@ -315,248 +258,246 @@ async fn project_owner_detail(
 		.format(&date_fmt)
 		.unwrap_or_else(|_| "Recently".to_string());
 
-	let detail_item = ProjectOwnerDetailItem {
+	Ok(Json(OwnerDetailResponse {
 		id: owner_row.id,
 		name: owner_row.name,
 		slug: owner_row.slug,
-		username: owner_row
-			.username
-			.unwrap_or_else(|| "unassigned".to_string()),
+		username: owner_row.username.unwrap_or_else(|| "unassigned".to_string()),
 		bio: owner_row.bio,
 		email: owner_row.email,
 		phone: owner_row.phone,
 		website: owner_row.website,
 		active: owner_row.active,
-		profile_image_url,
-		profile_thumb_url,
+		profile_image_url: owner_row.profile_img_key.map(|k| CONFIG.asset_url(&k)),
+		profile_thumb_url: owner_row.profile_img_thumb_key.map(|k| CONFIG.asset_url(&k)),
 		created_at: created_at_str,
 		projects_count: owner_row.projects_count,
-	};
-
-	let recent_projects = project_rows
-		.into_iter()
-		.map(|p| OwnerProjectItem {
-			id: p.id,
-			name: p.name,
-			slug: p.slug,
-			category: p.category,
-			location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
-			properties_count: p.properties_count,
-		})
-		.collect();
-
-	Ok(Html(
-		ProjectOwnerDetailTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Owners,
-			owner: detail_item,
-			recent_projects,
-		}
-		.render()
-		.map_err(OwnerDetailError::RenderError)?,
-	))
+		projects: project_rows
+			.into_iter()
+			.map(|p| OwnerProjectSummary {
+				id: p.id,
+				name: p.name,
+				slug: p.slug,
+				category: p.category,
+				location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
+				properties_count: p.properties_count,
+			})
+			.collect(),
+	}))
 }
 
-async fn project_owner_update_form(
+async fn create_project_owner(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(id): Path<i32>,
-) -> Result<Html<String>, OwnerUpdateFormGetError> {
-	struct DbRow {
-		id: i32,
-		name: String,
-		bio: Option<String>,
-		username: Option<String>,
-		email: Option<String>,
-		phone: Option<String>,
-		website: Option<String>,
-		active: bool,
-		profile_img_key: Option<String>,
-		profile_img_thumb_key: Option<String>,
+	_auth_user: AuthUser,
+	Json(payload): Json<ProjectOwnerCreatePayload>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+	let name = payload.name.trim();
+	let username = payload.username.trim();
+
+	if name.is_empty() || username.is_empty() || payload.password.is_empty() {
+		return Err((
+			StatusCode::BAD_REQUEST,
+			Json(json!({ "code": "VALIDATION_ERROR", "message": "Name, username, and password are required" })),
+		));
 	}
 
-	let owner = sqlx::query_file_as!(DbRow, "queries/project_owners/get_owner_for_edit.sql", id)
-		.fetch_one(&state.model.db)
-		.await
-		.map_err(|e| match e {
-			sqlx::Error::RowNotFound => OwnerUpdateFormGetError::OwnerNotFound,
-			_ => OwnerUpdateFormGetError::SqlError(e),
-		})?;
+	let password_hash = password_hash::hash(&payload.password).map_err(|_| {
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "CRYPTO_ERROR", "message": "Password hashing failed" })),
+		)
+	})?;
 
-	let profile_image_url = owner.profile_img_key.as_ref().map(|k| CONFIG.asset_url(k));
-	let profile_thumb_url = owner
-		.profile_img_thumb_key
-		.as_ref()
-		.map(|k| CONFIG.asset_url(k));
+	let slug = slugify(name);
+	let active = payload.active.unwrap_or(true);
 
-	Ok(Html(
-		ProjectOwnerFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Owners,
-			edit_values: Some(EditFormValues {
-				default_values: ProjectOwnerEditItem {
-					id: owner.id,
-					name: owner.name,
-					bio: owner.bio,
-					username: owner
-						.username
-						.unwrap_or_else(|| format!("owner_{}", owner.id)),
-					email: owner.email,
-					phone: owner.phone,
-					website: owner.website,
-					active: owner.active,
-					profile_image_url,
-					profile_thumb_url,
-				},
-				error: None,
-			}),
+	let mut tx = state.model.db.begin().await.map_err(|_| {
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Transaction error" })),
+		)
+	})?;
+
+	let profile = sqlx::query_file!(
+		"queries/project_owners/insert_profile.sql",
+		username,
+		password_hash
+	)
+	.fetch_one(&mut *tx)
+	.await
+	.map_err(|e| {
+		if let sqlx::Error::Database(ref db_err) = e {
+			if db_err.is_unique_violation() {
+				return (
+					StatusCode::CONFLICT,
+					Json(json!({ "code": "USERNAME_TAKEN", "message": "Username is already in use" })),
+				);
+			}
 		}
-		.render()
-		.map_err(OwnerUpdateFormGetError::RenderError)?,
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to create profile" })),
+		)
+	})?;
+
+	let owner = sqlx::query_file!(
+		"queries/project_owners/insert_owner.sql",
+		profile.id,
+		name,
+		slug,
+		payload.bio.as_deref().map(|s| s.trim()),
+		payload.email.as_deref().map(|s| s.trim()),
+		payload.phone.as_deref().map(|s| s.trim()),
+		payload.website.as_deref().map(|s| s.trim()),
+		active,
+	)
+	.fetch_one(&mut *tx)
+	.await
+	.map_err(|_| {
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to create project owner" })),
+		)
+	})?;
+
+	tx.commit().await.map_err(|_| {
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to commit transaction" })),
+		)
+	})?;
+
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({
+			"id": owner.id,
+			"name": name,
+			"slug": slug,
+			"username": username,
+			"active": active,
+		})),
 	))
 }
 
 async fn update_project_owner(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-	Form(form): Form<ProjectOwnerUpdatePayload>,
-) -> Result<Redirect, ProjectOwnerUpdateError> {
-	let slug = slugify(&form.name);
-	let is_active = form.active.as_deref() == Some("on");
+	Json(payload): Json<ProjectOwnerUpdatePayload>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+	let name = payload.name.trim();
+	if name.is_empty() {
+		return Err((
+			StatusCode::BAD_REQUEST,
+			Json(json!({ "code": "VALIDATION_ERROR", "message": "Name is required" })),
+		));
+	}
+
+	let active = payload.active.unwrap_or(true);
+	let slug = slugify(name);
 
 	sqlx::query_file!(
 		"queries/project_owners/update_owner.sql",
-		form.name.trim(),
-		form.bio.as_deref(),
-		form.email.as_deref(),
-		form.phone.as_deref(),
-		form.website.as_deref(),
-		is_active,
+		name,
+		payload.bio.as_deref().map(|s| s.trim()),
+		payload.email.as_deref().map(|s| s.trim()),
+		payload.phone.as_deref().map(|s| s.trim()),
+		payload.website.as_deref().map(|s| s.trim()),
+		active,
 		slug,
 		id,
 	)
 	.execute(&state.model.db)
 	.await
-	.map_err(ProjectOwnerUpdateError::SqlError)?;
+	.map_err(|e| {
+		tracing::error!(error = ?e, "failed to update owner");
+		(
+			StatusCode::INTERNAL_SERVER_ERROR,
+			Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to update project owner" })),
+		)
+	})?;
 
-	tracing::info!(owner_id = id, "updated project owner profile");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!("/admin/owners/{id}")))
+
+	Ok(Json(json!({ "success": true, "message": "Owner updated successfully" })))
 }
 
 async fn toggle_active_project_owner(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Redirect, OwnerToggleActiveError> {
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
 	sqlx::query_file!("queries/project_owners/toggle_active.sql", id)
 		.execute(&state.model.db)
 		.await
-		.map_err(OwnerToggleActiveError::SqlError)?;
+		.map_err(|e| {
+			tracing::error!(error = ?e, "failed to toggle owner active");
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to toggle active status" })),
+			)
+		})?;
 
-	tracing::info!(owner_id = id, "toggled owner active status");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!("/admin/owners/{id}")))
+
+	Ok(Json(json!({ "success": true, "id": id })))
 }
 
-async fn project_owner_projects(
+async fn add_project_owner_image(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(id): Path<i32>,
-) -> Result<Html<String>, OwnerProjectsError> {
-	let owner = sqlx::query_file!("queries/project_owners/get_owner_name_by_id.sql", id)
-		.fetch_one(&state.model.db)
-		.await
-		.map_err(|e| match e {
-			sqlx::Error::RowNotFound => OwnerProjectsError::NotFound,
-			_ => OwnerProjectsError::SqlError(e),
-		})?;
-
-	struct ProjectDbRow {
-		id: i32,
-		name: String,
-		slug: String,
-		category: String,
-		location: Option<String>,
-		properties_count: i64,
-	}
-
-	let project_rows = sqlx::query_file_as!(
-		ProjectDbRow,
-		"queries/project_owners/get_owner_projects_all.sql",
-		id
-	)
-	.fetch_all(&state.model.db)
-	.await
-	.map_err(OwnerProjectsError::SqlError)?;
-
-	let projects = project_rows
-		.into_iter()
-		.map(|p| OwnerProjectItem {
-			id: p.id,
-			name: p.name,
-			slug: p.slug,
-			category: p.category,
-			location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
-			properties_count: p.properties_count,
-		})
-		.collect();
-
-	Ok(Html(
-		ProjectOwnerProjectsTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Owners,
-			owner_id: owner.id,
-			owner_name: owner.name,
-			projects,
-		}
-		.render()
-		.map_err(OwnerProjectsError::RenderError)?,
-	))
-}
-
-pub async fn add_project_owner_image(
-	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
 	mut multipart: Multipart,
-) -> Result<Redirect, ProjectOwnerImageUploadError> {
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
 	while let Ok(Some(field)) = multipart.next_field().await {
 		if field.name() != Some("image") {
 			continue;
 		}
 
-		let bytes = field
-			.bytes()
-			.await
-			.map_err(|_| ProjectOwnerImageUploadError::FileReadError)?;
+		let bytes = field.bytes().await.map_err(|_| {
+			(
+				StatusCode::BAD_REQUEST,
+				Json(json!({ "code": "READ_ERROR", "message": "Failed to read file buffer" })),
+			)
+		})?;
 
 		let (image_data, thumb_data) = tokio::task::spawn_blocking(move || {
 			let reader = ImageReader::new(std::io::Cursor::new(bytes))
 				.with_guessed_format()
-				.map_err(|_| ProjectOwnerImageUploadError::FileFormatNotSupported)?;
+				.map_err(|_| "Unrecognized image format")?;
 
-			let img = reader
-				.decode()
-				.map_err(ProjectOwnerImageUploadError::ImageDecodeError)?;
+			let img = reader.decode().map_err(|_| "Failed to decode image")?;
 
 			let webp = Encoder::from_image(&img)
-				.map_err(|e| ProjectOwnerImageUploadError::EncoderCreateError(e.to_string()))?
+				.map_err(|e| e.to_string())?
 				.encode(80.0);
 
 			let thumb_img = img.thumbnail(300, 300);
 			let thumb_webp = Encoder::from_image(&thumb_img)
-				.map_err(|e| ProjectOwnerImageUploadError::EncoderCreateError(e.to_string()))?
+				.map_err(|e| e.to_string())?
 				.encode(80.0);
 
-			Ok::<_, ProjectOwnerImageUploadError>((webp.to_vec(), thumb_webp.to_vec()))
+			Ok::<_, String>((webp.to_vec(), thumb_webp.to_vec()))
 		})
 		.await
-		.map_err(|_| ProjectOwnerImageUploadError::Internal)??;
+		.map_err(|_| {
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "INTERNAL_ERROR", "message": "Image processing thread failed" })),
+			)
+		})?
+		.map_err(|msg| {
+			(
+				StatusCode::BAD_REQUEST,
+				Json(json!({ "code": "INVALID_IMAGE", "message": msg })),
+			)
+		})?;
 
 		let base_path = format!("owners/{id}");
 		let thumb_key = format!("{base_path}/thumbnail.webp");
@@ -570,7 +511,13 @@ pub async fn add_project_owner_image(
 			.body(ByteStream::from(thumb_data))
 			.send()
 			.await
-			.map_err(|_| ProjectOwnerImageUploadError::Internal)?;
+			.map_err(|e| {
+				tracing::error!(error = ?e, "S3 upload failed");
+				(
+					StatusCode::INTERNAL_SERVER_ERROR,
+					Json(json!({ "code": "STORAGE_ERROR", "message": "Failed to upload to S3" })),
+				)
+			})?;
 
 		state
 			.s3_client
@@ -580,39 +527,62 @@ pub async fn add_project_owner_image(
 			.body(ByteStream::from(image_data))
 			.send()
 			.await
-			.map_err(|_| ProjectOwnerImageUploadError::Internal)?;
+			.map_err(|e| {
+				tracing::error!(error = ?e, "S3 upload failed");
+				(
+					StatusCode::INTERNAL_SERVER_ERROR,
+					Json(json!({ "code": "STORAGE_ERROR", "message": "Failed to upload to S3" })),
+				)
+			})?;
 
 		sqlx::query_file!(
 			"queries/project_owners/update_owner_image.sql",
 			original_img_key,
 			thumb_key,
-			id,
+			id
 		)
 		.execute(&state.model.db)
 		.await
-		.map_err(|_| ProjectOwnerImageUploadError::ImageUpdateError)?;
+		.map_err(|_| {
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to update owner image records" })),
+			)
+		})?;
 
-		tracing::info!(owner_id = id, key = %original_img_key, "uploaded owner profile image");
 		state
 			.page_cache
 			.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
 			.await;
-		return Ok(Redirect::to(&format!("/admin/owners/{id}")));
+
+		return Ok(Json(json!({
+			"success": true,
+			"profile_image_url": CONFIG.asset_url(&original_img_key),
+			"profile_thumb_url": CONFIG.asset_url(&thumb_key),
+		})));
 	}
 
-	Err(ProjectOwnerImageUploadError::ImageFieldNotPresent)
+	Err((
+		StatusCode::BAD_REQUEST,
+		Json(json!({ "code": "MISSING_FIELD", "message": "No 'image' field provided in multipart form" })),
+	))
 }
 
 async fn remove_project_owner_image(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Redirect, OwnerUpdateFormGetError> {
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
 	let owner = sqlx::query_file!("queries/project_owners/get_owner_image_keys.sql", id)
 		.fetch_one(&state.model.db)
 		.await
-		.map_err(OwnerUpdateFormGetError::SqlError)?;
+		.map_err(|_| {
+			(
+				StatusCode::NOT_FOUND,
+				Json(json!({ "code": "NOT_FOUND", "message": "Owner not found" })),
+			)
+		})?;
 
-	// Best-effort S3 object removal
 	if let Some(key) = owner.profile_img_key {
 		let _ = state
 			.s3_client
@@ -635,30 +605,78 @@ async fn remove_project_owner_image(
 	sqlx::query_file!("queries/project_owners/delete_owner_image.sql", id)
 		.execute(&state.model.db)
 		.await
-		.map_err(OwnerUpdateFormGetError::SqlError)?;
+		.map_err(|_| {
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to delete owner image keys" })),
+			)
+		})?;
 
-	tracing::info!(owner_id = id, "removed owner profile image");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!("/admin/owners/{id}/edit")))
+
+	Ok(Json(json!({ "success": true, "message": "Avatar removed" })))
 }
 
-/// Soft delete — sets `deleted_at` rather than removing the row.
 async fn delete_project_owner(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Redirect, ProjectOwnerDeleteError> {
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
 	sqlx::query_file!("queries/project_owners/delete_owner.sql", id)
 		.execute(&state.model.db)
 		.await
-		.map_err(ProjectOwnerDeleteError::SqlError)?;
+		.map_err(|_| {
+			(
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Failed to delete project owner" })),
+			)
+		})?;
 
-	tracing::info!(owner_id = id, "soft-deleted project owner");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::OwnerUpdated(id))
 		.await;
-	Ok(Redirect::to("/admin/owners"))
+
+	Ok(StatusCode::NO_CONTENT)
+}
+
+async fn project_owner_projects(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+) -> Result<Json<Vec<OwnerProjectSummary>>, (StatusCode, Json<serde_json::Value>)> {
+	struct ProjectDbRow {
+		id: i32,
+		name: String,
+		slug: String,
+		category: String,
+		location: Option<String>,
+		properties_count: i64,
+	}
+
+	let project_rows = sqlx::query_file_as!(
+		ProjectDbRow,
+		"queries/project_owners/get_owner_projects_all.sql",
+		id
+	)
+	.fetch_all(&state.model.db)
+	.await
+	.unwrap_or_default();
+
+	Ok(Json(
+		project_rows
+			.into_iter()
+			.map(|p| OwnerProjectSummary {
+				id: p.id,
+				name: p.name,
+				slug: p.slug,
+				category: p.category,
+				location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
+				properties_count: p.properties_count,
+			})
+			.collect(),
+	))
 }

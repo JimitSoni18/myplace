@@ -1,28 +1,52 @@
-use askama::Template;
 use axum::{
-	Extension, Router,
+	Json, Router,
 	extract::State,
-	response::{Html, IntoResponse},
 	routing::get,
 };
+use serde::Serialize;
 
-use crate::{
-	AppState,
-	session_store::AuthUser,
-	templates::admin::{AdminPage, DashboardRecentProject, DashboardTemplate},
-};
+use crate::{AppState, session_store::AuthUser};
 
 pub fn router() -> Router<AppState> {
 	Router::new().route("/", get(get_dashboard))
 }
 
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct DashboardRecentProject {
+	pub id: i32,
+	pub name: String,
+	pub owner_name: String,
+	pub location: String,
+	pub category: String,
+	pub total_properties: i64,
+	pub available_properties: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct DashboardStats {
+	pub total_owners: i64,
+	pub total_projects: i64,
+	pub total_properties: i64,
+	pub total_residential: i64,
+	pub total_commercial: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct DashboardResponse {
+	pub admin_name: String,
+	pub stats: DashboardStats,
+	pub recent_projects: Vec<DashboardRecentProject>,
+}
+
 async fn get_dashboard(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-) -> impl IntoResponse {
+	auth_user: AuthUser,
+) -> Json<DashboardResponse> {
 	let db = &state.model.db;
 
-	// --- Aggregate stats --- (single query each, indexed columns)
 	let total_owners: i64 = sqlx::query_file_scalar!("queries/dashboard/count_owners.sql")
 		.fetch_one(db)
 		.await
@@ -41,7 +65,6 @@ async fn get_dashboard(
 		.unwrap_or(Some(0))
 		.unwrap_or(0);
 
-	// Category breakdown joins property_types to get the category string.
 	let total_residential: i64 =
 		sqlx::query_file_scalar!("queries/dashboard/count_residential.sql")
 			.fetch_one(db)
@@ -55,7 +78,6 @@ async fn get_dashboard(
 		.unwrap_or(Some(0))
 		.unwrap_or(0);
 
-	// --- Recent projects (created in last 30 days) ---
 	struct RecentProjectRow {
 		id: i32,
 		name: String,
@@ -85,21 +107,15 @@ async fn get_dashboard(
 		})
 		.collect();
 
-	let html = DashboardTemplate {
-		admin_name: &auth_user.username,
-		page: AdminPage::Dashboard,
-		total_owners,
-		total_projects,
-		total_properties,
-		total_residential,
-		total_commercial,
+	Json(DashboardResponse {
+		admin_name: auth_user.username,
+		stats: DashboardStats {
+			total_owners,
+			total_projects,
+			total_properties,
+			total_residential,
+			total_commercial,
+		},
 		recent_projects,
-	}
-	.render()
-	.unwrap_or_else(|e| {
-		tracing::error!(?e, "failed to render dashboard");
-		"Internal error".to_string()
-	});
-
-	Html(html)
+	})
 }

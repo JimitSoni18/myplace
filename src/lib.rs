@@ -10,7 +10,6 @@ pub mod crypto;
 pub mod media;
 pub mod middlewares;
 pub mod model;
-pub mod pages;
 pub mod response_types;
 pub mod servers;
 pub mod session_store;
@@ -20,11 +19,28 @@ pub mod utils;
 
 use crate::{config::CONFIG, model::Model, session_store::SessionStore};
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "notifications/", optional_fields = nullable)]
+pub struct EnquiryNotification {
+	pub id: i32,
+	pub enquiry_type: String, // "project" | "property"
+	pub entity_id: i32,
+	pub entity_name: String,
+	pub owner_id: i32,
+	pub name: String,
+	pub phone: String,
+	pub email: Option<String>,
+	pub message: Option<String>,
+	pub is_read: bool,
+	pub created_at: String,
+}
+
 pub struct AppStateStruct {
 	pub model: Model,
 	pub session_store: SessionStore,
 	pub s3_client: aws_sdk_s3::Client,
 	pub page_cache: crate::cache::PageCache,
+	pub notification_tx: tokio::sync::broadcast::Sender<EnquiryNotification>,
 }
 
 pub type AppState = Arc<AppStateStruct>;
@@ -55,11 +71,13 @@ pub async fn build_app_state() -> AppState {
 	let session_store = SessionStore::default();
 	let s3_client = build_s3_client().await;
 	let page_cache = crate::cache::PageCache::with_db(CONFIG.page_cache_capacity, model.db.clone());
+	let (notification_tx, _) = tokio::sync::broadcast::channel(256);
 
 	Arc::new(AppStateStruct {
 		model,
 		session_store,
 		s3_client,
 		page_cache,
+		notification_tx,
 	})
 }

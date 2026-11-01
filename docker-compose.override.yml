@@ -2,6 +2,7 @@ services:
   app:
     build:
       target: development
+    command: sh -c "cargo run --bin migrate && cargo watch -i 'frontend/**' -i 'target/**' -x 'run --bin myplace'"
     environment:
       # - CARGO_TARGET_DIR=/tmp/target
     volumes:

@@ -1,0 +1,29 @@
+{
+  "name": "myplace-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typegen": "SQLX_OFFLINE=true CARGO_TARGET_DIR=../target cargo run --bin gen_types --manifest-path ../Cargo.toml",
+    "dev:admin": "APP_TARGET=admin vite",
+    "dev:owner": "APP_TARGET=owner vite",
+    "prebuild": "npm run typegen",
+    "build:admin": "APP_TARGET=admin vite build && cp dist/admin/admin.html dist/admin/index.html && cp public/_redirects dist/admin/_redirects",
+    "build:owner": "APP_TARGET=owner vite build && cp dist/owner/owner.html dist/owner/index.html && cp public/_redirects dist/owner/_redirects",
+    "build": "tsc --noEmit && npm run build:admin && npm run build:owner",
+    "preview:admin": "APP_TARGET=admin vite preview --port 3001",
+    "preview:owner": "APP_TARGET=owner vite preview --port 3002"
+  },
+  "devDependencies": {
+    "@solidjs/router": "^1.0.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "autoprefixer": "^10.6.1",
+    "lucide-solid": "^1.61.0",
+    "postcss": "^8.5.31",
+    "solid-js": "^1.9.17",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.5",
+    "vite-plugin-solid": "^2.11.14"
+  }
+}

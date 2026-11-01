@@ -11,11 +11,11 @@ use myplace::{
 use tower::ServiceExt;
 
 #[tokio::test]
-async fn test_public_server_does_not_expose_admin_or_owner_routes() {
+async fn test_unified_server_boundaries_and_api() {
 	let state = build_app_state().await;
-	let app = servers::public_router(state);
+	let app = servers::main_router(state.clone());
 
-	// Public routes exist
+	// 1. Public route works
 	let response = app
 		.clone()
 		.oneshot(
@@ -37,7 +37,7 @@ async fn test_public_server_does_not_expose_admin_or_owner_routes() {
 	);
 	assert!(body.contains(&expected));
 
-	// Health check endpoint works
+	// 2. Health check endpoint works
 	let health_resp = app
 		.clone()
 		.oneshot(
@@ -50,105 +50,12 @@ async fn test_public_server_does_not_expose_admin_or_owner_routes() {
 		.unwrap();
 	assert_eq!(health_resp.status(), StatusCode::OK);
 
-	// Admin routes must not be exposed (404)
+	// 3. Unauthenticated admin API access rejected with 401 JSON
 	let response = app
 		.clone()
 		.oneshot(
 			Request::builder()
-				.uri("/admin")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/admin/projects")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/admin/users")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	// Owner routes must not be exposed (404)
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/owner")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/owner/projects")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	// Auth management routes must not be exposed on public server
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/auth/admin-login")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/auth/owner-login")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn test_admin_server_boundaries_and_auth() {
-	let state = build_app_state().await;
-	let app = servers::admin_router(state.clone());
-
-	// Unauthenticated admin access rejected with 401
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/admin")
+				.uri("/api/admin/dashboard")
 				.body(Body::empty())
 				.unwrap(),
 		)
@@ -156,11 +63,12 @@ async fn test_admin_server_boundaries_and_auth() {
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
+	// 4. Unauthenticated owner API access rejected with 401 JSON
 	let response = app
 		.clone()
 		.oneshot(
 			Request::builder()
-				.uri("/admin/users")
+				.uri("/api/owner/dashboard")
 				.body(Body::empty())
 				.unwrap(),
 		)
@@ -168,145 +76,127 @@ async fn test_admin_server_boundaries_and_auth() {
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
-	// Admin login route is accessible
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/auth/admin-login")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::OK);
-
-	// Health check endpoint is accessible unauthenticated
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/healthz")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::OK);
-
-	// Public routes must not be exposed on admin server
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/projects")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	// Owner routes must not be exposed on admin server
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/owner")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-	// Authenticated admin user can access /admin
+	// 5. Authenticated admin user can access /api/admin/dashboard via Bearer token
 	let auth_admin = AuthUser::new(1, "admin".to_string(), UserRole::Admin);
 	let session_id = state.session_store.create_session(auth_admin).await;
 	let sign = get_signature(&session_id);
-	let cookie_val = format!("session_id={}.{sign}", session_id.0);
+	let signed_token = format!("{}.{sign}", session_id.0);
 
 	let response = app
 		.clone()
 		.oneshot(
 			Request::builder()
-				.uri("/admin")
-				.header(header::COOKIE, cookie_val)
+				.uri("/api/admin/dashboard")
+				.header(header::AUTHORIZATION, format!("Bearer {signed_token}"))
 				.body(Body::empty())
 				.unwrap(),
 		)
 		.await
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::OK);
-}
 
-#[tokio::test]
-async fn test_owner_server_boundaries_and_auth() {
-	let state = build_app_state().await;
-	let app = servers::owner_router(state.clone());
-
-	// Unauthenticated owner access rejected with 401
+	// 6. Authenticated admin user can access /api/admin/dashboard via session cookie
 	let response = app
 		.clone()
 		.oneshot(
 			Request::builder()
-				.uri("/owner")
+				.uri("/api/admin/dashboard")
+				.header(header::COOKIE, format!("session_id={signed_token}"))
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+	assert_eq!(response.status(), StatusCode::OK);
+
+	// 7. Owner user accessing admin API is rejected
+	let auth_owner = AuthUser::new(2, "partner".to_string(), UserRole::ProjectOwner);
+	let owner_session_id = state.session_store.create_session(auth_owner).await;
+	let owner_sign = get_signature(&owner_session_id);
+	let owner_token = format!("{}.{owner_sign}", owner_session_id.0);
+
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri("/api/admin/dashboard")
+				.header(header::AUTHORIZATION, format!("Bearer {owner_token}"))
 				.body(Body::empty())
 				.unwrap(),
 		)
 		.await
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
 
-	// Owner login route is accessible
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/auth/owner-login")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::OK);
+#[tokio::test]
+async fn test_all_frontend_admin_and_owner_routes_exist() {
+	let state = build_app_state().await;
+	let app = servers::main_router(state);
 
-	// Health check endpoint is accessible unauthenticated
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/healthz")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::OK);
+	let required_admin_routes = [
+		"/api/admin/dashboard",
+		"/api/admin/meta/options",
+		"/api/admin/search",
+		"/api/admin/users",
+		"/api/admin/amenities",
+		"/api/admin/locations",
+		"/api/admin/owners",
+		"/api/admin/project_owners",
+		"/api/admin/projects",
+		"/api/admin/properties",
+	];
 
-	// Admin routes must not be exposed on owner server
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/admin")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
+	for route in required_admin_routes {
+		let response = app
+			.clone()
+			.oneshot(
+				Request::builder()
+					.uri(route)
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
 
-	// Public routes must not be exposed on owner server
-	let response = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/projects")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(response.status(), StatusCode::NOT_FOUND);
+		assert_ne!(
+			response.status(),
+			StatusCode::NOT_FOUND,
+			"Route {route} was not found (returned 404)"
+		);
+		assert_eq!(
+			response.status(),
+			StatusCode::UNAUTHORIZED,
+			"Expected route {route} to be protected by admin auth middleware"
+		);
+	}
+
+	let required_owner_routes = [
+		"/api/owner/dashboard",
+		"/api/owner/projects",
+	];
+
+	for route in required_owner_routes {
+		let response = app
+			.clone()
+			.oneshot(
+				Request::builder()
+					.uri(route)
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(
+			response.status(),
+			StatusCode::NOT_FOUND,
+			"Route {route} was not found (returned 404)"
+		);
+		assert_eq!(
+			response.status(),
+			StatusCode::UNAUTHORIZED,
+			"Expected route {route} to be protected by owner auth middleware"
+		);
+	}
 }

@@ -1,85 +1,142 @@
-use askama::Template;
 use axum::{
-	Extension, Router,
+	Json, Router,
 	extract::{Multipart, Path, Query, State},
 	http::StatusCode,
-	response::{Html, Redirect},
 	routing::get,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
 	AppState,
 	config::CONFIG,
 	session_store::AuthUser,
-	templates::admin::{
-		AdminPage, AmenityOptionItem, ProjectMediaItem, ProjectOptionItem, PropertyAllListTemplate,
-		PropertyEditData, PropertyFormTemplate, PropertyGlobalItem, PropertyListItem,
-		PropertyListTemplate, PropertyMediaTemplate, PropertyTypeOption,
-	},
-	utils::{form::Form, sql::slugify},
+	utils::sql::slugify,
 };
 
 pub mod error;
 use error::PropertyError;
 
-/// Router mounted at `/admin/properties`
+/// Router mounted at `/api/admin/properties`
 pub fn router() -> Router<AppState> {
-	Router::new().route("/", get(all_properties_list))
-}
-
-/// Project-scoped router mounted at `/admin/projects/{pid}/properties`
-pub fn project_router() -> Router<AppState> {
 	Router::new()
-		.route("/residential", get(list_residential))
-		.route("/commercial", get(list_commercial))
-		.route("/land", get(list_land))
+		.route("/", get(list_all_properties))
 		.route(
-			"/residential/new",
-			get(create_residential_form).post(create_residential_property),
+			"/{id}",
+			get(get_property_global)
+				.put(update_property_global)
+				.delete(delete_property_global),
 		)
-		.route(
-			"/commercial/new",
-			get(create_commercial_form).post(create_commercial_property),
-		)
-		.route(
-			"/land/new",
-			get(create_land_form).post(create_land_property),
-		)
-		.route("/{id}/edit", get(property_edit_form).post(update_property))
-		.route("/{id}", axum::routing::delete(delete_property))
-		.route(
-			"/{id}/media",
-			get(property_media_page).post(upload_property_media),
-		)
+		.route("/{id}/media", axum::routing::post(upload_property_media_global))
 		.route(
 			"/{id}/media/reorder",
-			axum::routing::post(reorder_property_media),
+			axum::routing::post(reorder_property_media_global),
 		)
 		.route(
 			"/{id}/media/{mid}",
-			axum::routing::delete(delete_property_media),
+			axum::routing::delete(delete_property_media_global),
 		)
 }
 
-// ---------------------------------------------------------------------------
-// Payloads
-// ---------------------------------------------------------------------------
-
-#[derive(Deserialize)]
-pub struct PropertyAllQuery {
-	#[serde(default, deserialize_with = "crate::utils::form::empty_as_none")]
-	project_id: Option<i32>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	category: Option<String>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	q: Option<String>,
+/// Project-scoped router mounted at `/api/admin/projects/{pid}/properties`
+pub fn project_router() -> Router<AppState> {
+	Router::new()
+		.route("/", get(list_project_properties).post(create_property))
+		.route(
+			"/{id}",
+			get(get_property_project)
+				.put(update_property_project)
+				.delete(delete_property_project),
+		)
+		.route(
+			"/{id}/media",
+			get(get_property_media_project).post(upload_property_media_project),
+		)
+		.route(
+			"/{id}/media/reorder",
+			axum::routing::post(reorder_property_media_project),
+		)
+		.route(
+			"/{id}/media/{mid}",
+			axum::routing::delete(delete_property_media_project),
+		)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct PropertyAllQuery {
+	#[serde(default)]
+	pub project_id: Option<i32>,
+	#[serde(default)]
+	pub category: Option<String>,
+	#[serde(default)]
+	pub q: Option<String>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct PropertyMediaItem {
+	pub id: Uuid,
+	pub media_type: String,
+	pub url: String,
+	pub thumbnail_url: String,
+	pub sequence: i16,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct PropertyGlobalItem {
+	pub id: i32,
+	pub project_id: i32,
+	pub project_name: String,
+	pub unit_number: Option<String>,
+	pub building: Option<String>,
+	pub unit_title: String,
+	pub category: String,
+	pub type_name: String,
+	pub price: f64,
+	pub status: String,
+	pub built_up_area: Option<f64>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct PropertyDetailResponse {
+	pub id: i32,
+	pub project_id: i32,
+	pub property_type_id: i32,
+	pub category: String,
+	pub type_name: String,
+	pub unit_number: Option<String>,
+	pub building: Option<String>,
+	pub floor_number: Option<i32>,
+	pub total_floors: Option<i32>,
+	pub built_up_area: Option<f64>,
+	pub usable_area: Option<f64>,
+	pub description: Option<String>,
+	pub listing_type: String,
+	pub status: String,
+	pub price: f64,
+	pub billing_period: Option<String>,
+	pub bedroom_count: Option<f64>,
+	pub bathroom_count: Option<f64>,
+	pub balcony_count: Option<i16>,
+	pub is_duplex: Option<bool>,
+	pub parking: Option<String>,
+	pub parcel_number: Option<String>,
+	pub zoning: Option<String>,
+	pub approval_status: Option<String>,
+	pub development_status: Option<String>,
+	pub amenities: Vec<i32>,
+	pub media: Vec<PropertyMediaItem>,
+}
+
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct PropertyFormPayload {
 	pub property_type_id: i32,
+	pub category: Option<String>,
 	pub unit_number: Option<String>,
 	pub building: Option<String>,
 	pub floor_number: Option<i32>,
@@ -95,7 +152,7 @@ pub struct PropertyFormPayload {
 	pub bedroom_count: Option<f64>,
 	pub bathroom_count: Option<f64>,
 	pub balcony_count: Option<i16>,
-	pub is_duplex: Option<String>,
+	pub is_duplex: Option<bool>,
 	pub parking: Option<String>,
 	// land
 	pub parcel_number: Option<String>,
@@ -106,136 +163,54 @@ pub struct PropertyFormPayload {
 	pub amenities: Vec<i32>,
 }
 
-fn validate_property_payload(form: &PropertyFormPayload) -> Result<(), PropertyError> {
-	if form.property_type_id <= 0 {
-		return Err(PropertyError::Validation(
-			"Valid property type is required".to_string(),
-		));
+fn validate_property_payload(p: &PropertyFormPayload) -> Result<(), PropertyError> {
+	if p.property_type_id <= 0 {
+		return Err(PropertyError::Validation("Valid property type is required".to_string()));
 	}
-	if !form.price.is_finite() || form.price < 0.0 {
-		return Err(PropertyError::Validation(
-			"Price must be a non-negative number".to_string(),
-		));
+	if p.price < 0.0 {
+		return Err(PropertyError::Validation("Price cannot be negative".to_string()));
 	}
-	if form.price > 100_000_000_000.0 {
-		return Err(PropertyError::Validation(
-			"Price exceeds maximum limit".to_string(),
-		));
-	}
-	if !["sale", "rent", "lease"].contains(&form.listing_type.as_str()) {
-		return Err(PropertyError::Validation(
-			"Invalid listing type".to_string(),
-		));
-	}
-	if !["active", "closed", "sold", "withdrawn"].contains(&form.status.as_str()) {
-		return Err(PropertyError::Validation("Invalid status".to_string()));
-	}
-	if let Some(built) = form.built_up_area {
-		if !built.is_finite() || built < 0.0 || built > 10_000_000.0 {
-			return Err(PropertyError::Validation(
-				"Built up area must be between 0 and 10,000,000 sq ft".to_string(),
-			));
+	if let Some(bua) = p.built_up_area {
+		if bua < 0.0 {
+			return Err(PropertyError::Validation("Built-up area cannot be negative".to_string()));
 		}
 	}
-	if let Some(usable) = form.usable_area {
-		if !usable.is_finite() || usable < 0.0 || usable > 10_000_000.0 {
-			return Err(PropertyError::Validation(
-				"Usable area must be between 0 and 10,000,000 sq ft".to_string(),
-			));
+	if let Some(ua) = p.usable_area {
+		if ua < 0.0 {
+			return Err(PropertyError::Validation("Usable area cannot be negative".to_string()));
 		}
 	}
-	if let Some(floor) = form.floor_number {
-		if floor < -50 || floor > 500 {
-			return Err(PropertyError::Validation(
-				"Floor number must be between -50 and 500".to_string(),
-			));
+	if let Some(bc) = p.bedroom_count {
+		if bc < 0.0 {
+			return Err(PropertyError::Validation("Bedroom count cannot be negative".to_string()));
 		}
 	}
-	if let Some(total) = form.total_floors {
-		if total < 0 || total > 500 {
-			return Err(PropertyError::Validation(
-				"Total floors must be between 0 and 500".to_string(),
-			));
+	if let Some(bc) = p.bathroom_count {
+		if bc < 0.0 {
+			return Err(PropertyError::Validation("Bathroom count cannot be negative".to_string()));
 		}
 	}
-	if let Some(beds) = form.bedroom_count {
-		if !beds.is_finite() || beds < 0.0 || beds > 999.5 {
-			return Err(PropertyError::Validation(
-				"Bedroom count must be between 0 and 999.5".to_string(),
-			));
-		}
-	}
-	if let Some(baths) = form.bathroom_count {
-		if !baths.is_finite() || baths < 0.0 || baths > 999.5 {
-			return Err(PropertyError::Validation(
-				"Bathroom count must be between 0 and 999.5".to_string(),
-			));
-		}
-	}
-	if let Some(balconies) = form.balcony_count {
-		if balconies < 0 || balconies > 999 {
-			return Err(PropertyError::Validation(
-				"Balcony count must be between 0 and 999".to_string(),
-			));
+	if let Some(bc) = p.balcony_count {
+		if bc < 0 {
+			return Err(PropertyError::Validation("Balcony count cannot be negative".to_string()));
 		}
 	}
 	Ok(())
 }
 
-fn format_inr(price: Option<f64>) -> String {
-	match price {
-		Some(p) => {
-			if p >= 10_000_000.0 {
-				format!("₹{:.2} Cr", p / 10_000_000.0)
-			} else if p >= 100_000.0 {
-				format!("₹{:.2} L", p / 100_000.0)
-			} else {
-				format!("₹{:.0}", p)
-			}
-		}
-		None => "Price on Request".to_string(),
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Global Overview Handler
-// ---------------------------------------------------------------------------
-
-async fn all_properties_list(
+async fn list_all_properties(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Query(query): Query<PropertyAllQuery>,
-) -> Result<Html<String>, PropertyError> {
-	struct DbRow {
-		id: i32,
-		project_id: i32,
-		project_name: String,
-		unit_number: Option<String>,
-		building: Option<String>,
-		category: String,
-		type_name: String,
-		price: Option<f64>,
-		status: Option<String>,
-	}
+) -> Result<Json<Vec<PropertyGlobalItem>>, PropertyError> {
+	let q_param = query.q.as_deref().filter(|s| !s.trim().is_empty()).map(|s| format!("%{}%", s.trim()));
+	let cat_param = query.category.as_deref().filter(|s| !s.trim().is_empty());
 
-	let projects_rows = sqlx::query_file!("queries/projects/list_project_options.sql")
-		.fetch_all(&state.model.db)
-		.await?;
-
-	let projects = projects_rows
-		.into_iter()
-		.map(|r| ProjectOptionItem {
-			id: r.id,
-			name: r.name,
-		})
-		.collect();
-
-	let rows = sqlx::query_file_as!(
-		DbRow,
+	let rows = sqlx::query_file!(
 		"queries/properties/list_properties.sql",
 		query.project_id,
-		query.category.as_deref(),
-		query.q.as_ref().map(|q| format!("%{}%", q.trim())),
+		cat_param,
+		q_param.as_deref(),
 	)
 	.fetch_all(&state.model.db)
 	.await?;
@@ -243,76 +218,45 @@ async fn all_properties_list(
 	let properties = rows
 		.into_iter()
 		.map(|r| {
-			let unit_title = match (r.unit_number, r.building) {
+			let unit_title = match (&r.unit_number, &r.building) {
 				(Some(u), Some(b)) => format!("Unit {u}, {b}"),
 				(Some(u), None) => format!("Unit {u}"),
-				(None, Some(b)) => b,
+				(None, Some(b)) => b.clone(),
 				(None, None) => format!("Unit #{}", r.id),
 			};
 			PropertyGlobalItem {
 				id: r.id,
 				project_id: r.project_id,
 				project_name: r.project_name,
+				unit_number: r.unit_number,
+				building: r.building,
 				unit_title,
 				category: r.category,
 				type_name: r.type_name,
-				price_formatted: format_inr(r.price),
-				status: r.status.unwrap_or_else(|| "active".to_string()),
+				price: r.price.unwrap_or(0.0),
+				status: r.status.unwrap_or_else(|| "available".to_string()),
+				built_up_area: None,
 			}
 		})
 		.collect();
 
-	Ok(Html(
-		PropertyAllListTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Properties,
-			properties,
-			projects,
-			selected_project_id: query.project_id,
-			selected_category: query.category,
-			q: query.q.as_deref(),
-		}
-		.render()?,
-	))
+	Ok(Json(properties))
 }
 
-// ---------------------------------------------------------------------------
-// Project-Scoped Property Handlers
-// ---------------------------------------------------------------------------
+async fn list_project_properties(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(pid): Path<i32>,
+	Query(query): Query<PropertyAllQuery>,
+) -> Result<Json<Vec<PropertyGlobalItem>>, PropertyError> {
+	let q_param = query.q.as_deref().filter(|s| !s.trim().is_empty()).map(|s| format!("%{}%", s.trim()));
+	let cat_param = query.category.as_deref().filter(|s| !s.trim().is_empty());
 
-async fn list_properties_by_category(
-	state: &AppState,
-	auth_user: &AuthUser,
-	project_id: i32,
-	category_enum: &str,
-	category_display: &str,
-) -> Result<Html<String>, PropertyError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", project_id)
-		.fetch_one(&state.model.db)
-		.await?;
-
-	struct DbRow {
-		id: i32,
-		unit_number: Option<String>,
-		building: Option<String>,
-		type_name: String,
-		built_up_area: Option<f64>,
-		listing_type: Option<String>,
-		status: Option<String>,
-		price: Option<f64>,
-		media_count: i64,
-		// Subtype fields
-		bedroom_count: Option<f64>,
-		bathroom_count: Option<f64>,
-		parcel_number: Option<String>,
-		zoning: Option<String>,
-	}
-
-	let rows = sqlx::query_file_as!(
-		DbRow,
-		"queries/properties/list_project_properties_page.sql",
-		project_id,
-		category_enum,
+	let rows = sqlx::query_file!(
+		"queries/properties/list_properties.sql",
+		Some(pid),
+		cat_param,
+		q_param.as_deref(),
 	)
 	.fetch_all(&state.model.db)
 	.await?;
@@ -320,166 +264,150 @@ async fn list_properties_by_category(
 	let properties = rows
 		.into_iter()
 		.map(|r| {
-			let details_summary = match category_enum {
-				"RESIDENTIAL" => {
-					let bhk = r
-						.bedroom_count
-						.map(|b| format!("{b} BHK"))
-						.unwrap_or_default();
-					let bath = r
-						.bathroom_count
-						.map(|b| format!("{b} Bath"))
-						.unwrap_or_default();
-					format!("{bhk} {bath}").trim().to_string()
-				}
-				"LAND" => {
-					let parcel = r
-						.parcel_number
-						.map(|p| format!("Parcel {p}"))
-						.unwrap_or_default();
-					let zone = r.zoning.unwrap_or_default();
-					format!("{parcel} ({zone})").trim().to_string()
-				}
-				_ => "Commercial Unit".to_string(),
+			let unit_title = match (&r.unit_number, &r.building) {
+				(Some(u), Some(b)) => format!("Unit {u}, {b}"),
+				(Some(u), None) => format!("Unit {u}"),
+				(None, Some(b)) => b.clone(),
+				(None, None) => format!("Unit #{}", r.id),
 			};
-
-			PropertyListItem {
+			PropertyGlobalItem {
 				id: r.id,
+				project_id: r.project_id,
+				project_name: r.project_name,
 				unit_number: r.unit_number,
 				building: r.building,
+				unit_title,
+				category: r.category,
 				type_name: r.type_name,
-				area_sqft: r.built_up_area,
-				listing_type: r.listing_type.unwrap_or_else(|| "sale".to_string()),
-				status: r.status.unwrap_or_else(|| "active".to_string()),
-				price_formatted: format_inr(r.price),
-				media_count: r.media_count,
-				details_summary,
+				price: r.price.unwrap_or(0.0),
+				status: r.status.unwrap_or_else(|| "available".to_string()),
+				built_up_area: None,
 			}
 		})
 		.collect();
 
-	Ok(Html(
-		PropertyListTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Properties,
-			project_id: project.id,
-			project_name: project.name,
-			category: category_display.to_string(),
-			properties,
+	Ok(Json(properties))
+}
+
+async fn fetch_property_detail(state: &AppState, id: i32, pid_opt: Option<i32>) -> Result<PropertyDetailResponse, PropertyError> {
+	let pid = match pid_opt {
+		Some(p) => p,
+		None => {
+			sqlx::query_scalar::<_, i32>(
+				"SELECT project_id FROM properties WHERE id = $1 AND deleted_at IS NULL",
+			)
+			.bind(id)
+			.fetch_one(&state.model.db)
+			.await?
 		}
-		.render()?,
-	))
-}
+	};
 
-async fn list_residential(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	list_properties_by_category(&state, &auth_user, pid, "RESIDENTIAL", "Residential").await
-}
-
-async fn list_commercial(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	list_properties_by_category(&state, &auth_user, pid, "COMMERCIAL", "Commercial").await
-}
-
-async fn list_land(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	list_properties_by_category(&state, &auth_user, pid, "LAND", "Land").await
-}
-
-// ---------------------------------------------------------------------------
-// Create Forms & Handlers
-// ---------------------------------------------------------------------------
-
-async fn show_create_form(
-	state: &AppState,
-	auth_user: &AuthUser,
-	project_id: i32,
-	category_enum: &str,
-	category_display: &str,
-) -> Result<Html<String>, PropertyError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", project_id)
-		.fetch_one(&state.model.db)
-		.await?;
-
-	let property_types = sqlx::query_file!(
-		"queries/properties/list_active_property_types.sql",
-		category_enum
+	let r = sqlx::query_file!(
+		"queries/properties/get_property_detail.sql",
+		id,
+		pid
 	)
-	.fetch_all(&state.model.db)
-	.await?
-	.into_iter()
-	.map(|r| PropertyTypeOption {
-		id: r.id,
-		name: r.name,
-	})
-	.collect();
+	.fetch_one(&state.model.db)
+	.await?;
 
-	let amenities = sqlx::query_file!("queries/amenities/list_active_amenities.sql")
+	let linked_amenities: Vec<i32> = sqlx::query_file!("queries/properties/get_property_linked_amenity_ids.sql", id)
 		.fetch_all(&state.model.db)
 		.await?
 		.into_iter()
-		.map(|r| AmenityOptionItem {
-			id: r.id,
-			name: r.name,
-			selected: false,
+		.map(|a| a.amenity_id)
+		.collect();
+
+	struct DbMedia {
+		media_id: Uuid,
+		media_type: String,
+		s3_key: String,
+		thumbnail_key: Option<String>,
+		sequence: i16,
+	}
+
+	let media_rows = sqlx::query_file_as!(DbMedia, "queries/properties/get_property_media.sql", id)
+		.fetch_all(&state.model.db)
+		.await?;
+
+	let media = media_rows
+		.into_iter()
+		.map(|m| {
+			let url = CONFIG.asset_url(&m.s3_key);
+			let thumbnail_url = m.thumbnail_key.as_ref().map(|k| CONFIG.asset_url(k)).unwrap_or_else(|| url.clone());
+			PropertyMediaItem {
+				id: m.media_id,
+				media_type: m.media_type,
+				url,
+				thumbnail_url,
+				sequence: m.sequence,
+			}
 		})
 		.collect();
 
-	Ok(Html(
-		PropertyFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Properties,
-			project_id: project.id,
-			project_name: project.name,
-			category: category_display.to_string(),
-			property_types,
-			amenities,
-			edit_property: None,
-		}
-		.render()?,
-	))
+	let parking = r.parking_res.or(r.parking_com);
+
+	Ok(PropertyDetailResponse {
+		id: r.id,
+		project_id: pid,
+		property_type_id: r.property_type_id,
+		category: r.category.clone(),
+		type_name: r.category,
+		unit_number: r.unit_number,
+		building: r.building,
+		floor_number: r.floor_number,
+		total_floors: r.total_floors,
+		built_up_area: r.built_up_area,
+		usable_area: r.usable_area,
+		description: r.description,
+		listing_type: r.listing_type.unwrap_or_else(|| "sale".to_string()),
+		status: r.status.unwrap_or_else(|| "available".to_string()),
+		price: r.price.unwrap_or(0.0),
+		billing_period: r.billing_period,
+		bedroom_count: r.bedroom_count,
+		bathroom_count: r.bathroom_count,
+		balcony_count: r.balcony_count,
+		is_duplex: r.is_duplex,
+		parking,
+		parcel_number: r.parcel_number,
+		zoning: r.zoning,
+		approval_status: r.approval_status,
+		development_status: r.development_status,
+		amenities: linked_amenities,
+		media,
+	})
 }
 
-async fn create_residential_form(
+async fn get_property_global(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	show_create_form(&state, &auth_user, pid, "RESIDENTIAL", "Residential").await
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+) -> Result<Json<PropertyDetailResponse>, PropertyError> {
+	let detail = fetch_property_detail(&state, id, None).await?;
+	Ok(Json(detail))
 }
 
-async fn create_commercial_form(
+async fn get_property_project(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	show_create_form(&state, &auth_user, pid, "COMMERCIAL", "Commercial").await
+	_auth_user: AuthUser,
+	Path((pid, id)): Path<(i32, i32)>,
+) -> Result<Json<PropertyDetailResponse>, PropertyError> {
+	let detail = fetch_property_detail(&state, id, Some(pid)).await?;
+	Ok(Json(detail))
 }
 
-async fn create_land_form(
+async fn create_property(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(pid): Path<i32>,
-) -> Result<Html<String>, PropertyError> {
-	show_create_form(&state, &auth_user, pid, "LAND", "Land").await
-}
-
-async fn insert_property(
-	state: &AppState,
-	project_id: i32,
-	category_enum: &str,
-	form: PropertyFormPayload,
-) -> Result<Redirect, PropertyError> {
+	_auth_user: AuthUser,
+	Path(project_id): Path<i32>,
+	Json(form): Json<PropertyFormPayload>,
+) -> Result<(StatusCode, Json<serde_json::Value>), PropertyError> {
 	validate_property_payload(&form)?;
+
+	// Determine category from property_type if not passed
+	let category_enum = sqlx::query_scalar::<_, String>("SELECT category FROM property_types WHERE id = $1")
+		.bind(form.property_type_id)
+		.fetch_one(&state.model.db)
+		.await?;
 
 	let slug_raw = form
 		.unit_number
@@ -489,7 +417,6 @@ async fn insert_property(
 
 	let mut tx = state.model.db.begin().await?;
 
-	// 1. Insert unified property
 	let row = sqlx::query_file!(
 		"queries/properties/insert_property.sql",
 		project_id,
@@ -508,10 +435,9 @@ async fn insert_property(
 
 	let prop_id = row.id;
 
-	// 2. Insert subtype specific details
-	match category_enum {
+	match category_enum.as_str() {
 		"RESIDENTIAL" => {
-			let is_duplex = form.is_duplex.as_deref() == Some("on");
+			let is_duplex = form.is_duplex.unwrap_or(false);
 			sqlx::query_file!(
 				"queries/properties/insert_residential_details.sql",
 				prop_id,
@@ -548,19 +474,32 @@ async fn insert_property(
 		_ => {}
 	}
 
-	// 3. Insert listing
+	let listing_type = match form.listing_type.trim().to_lowercase().as_str() {
+
+		"rent" => "rent",
+		"lease" => "lease",
+		_ => "sale",
+	};
+	let status = match form.status.trim().to_lowercase().as_str() {
+		"active" | "available" => "active",
+		"sold" => "sold",
+		"rented" | "leased" | "closed" => "closed",
+		"reserved" | "withdrawn" => "withdrawn",
+		_ => "active",
+	};
+
 	sqlx::query_file!(
 		"queries/properties/insert_property_listing.sql",
 		prop_id,
-		form.listing_type,
-		form.status,
+		listing_type,
+		status,
 		form.price,
 		form.billing_period.as_deref(),
 	)
 	.execute(&mut *tx)
 	.await?;
 
-	// 4. Insert amenities (deduplicating duplicate IDs)
+
 	let mut seen = std::collections::HashSet::new();
 	for amenity_id in form.amenities {
 		if seen.insert(amenity_id) {
@@ -576,176 +515,18 @@ async fn insert_property(
 
 	tx.commit().await?;
 
-	let redirect_cat = category_enum.to_lowercase();
-	tracing::info!(property_id = prop_id, project_id, "created property unit");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(prop_id))
 		.await;
-	Ok(Redirect::to(&format!(
-		"/admin/projects/{project_id}/properties/{redirect_cat}"
-	)))
-}
 
-async fn create_residential_property(
-	State(state): State<AppState>,
-	Path(pid): Path<i32>,
-	Form(form): Form<PropertyFormPayload>,
-) -> Result<Redirect, PropertyError> {
-	insert_property(&state, pid, "RESIDENTIAL", form).await
-}
-
-async fn create_commercial_property(
-	State(state): State<AppState>,
-	Path(pid): Path<i32>,
-	Form(form): Form<PropertyFormPayload>,
-) -> Result<Redirect, PropertyError> {
-	insert_property(&state, pid, "COMMERCIAL", form).await
-}
-
-async fn create_land_property(
-	State(state): State<AppState>,
-	Path(pid): Path<i32>,
-	Form(form): Form<PropertyFormPayload>,
-) -> Result<Redirect, PropertyError> {
-	insert_property(&state, pid, "LAND", form).await
-}
-
-// ---------------------------------------------------------------------------
-// Edit & Update
-// ---------------------------------------------------------------------------
-
-async fn property_edit_form(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path((pid, id)): Path<(i32, i32)>,
-) -> Result<Html<String>, PropertyError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", pid)
-		.fetch_one(&state.model.db)
-		.await?;
-
-	struct DbProp {
-		id: i32,
-		property_type_id: i32,
-		category: String,
-		unit_number: Option<String>,
-		building: Option<String>,
-		floor_number: Option<i32>,
-		total_floors: Option<i32>,
-		built_up_area: Option<f64>,
-		usable_area: Option<f64>,
-		description: Option<String>,
-		listing_type: Option<String>,
-		status: Option<String>,
-		price: Option<f64>,
-		billing_period: Option<String>,
-		bedroom_count: Option<f64>,
-		bathroom_count: Option<f64>,
-		balcony_count: Option<i16>,
-		is_duplex: Option<bool>,
-		parking_res: Option<String>,
-		parking_com: Option<String>,
-		parcel_number: Option<String>,
-		zoning: Option<String>,
-		approval_status: Option<String>,
-		development_status: Option<String>,
-	}
-
-	let r = sqlx::query_file_as!(
-		DbProp,
-		"queries/properties/get_property_detail.sql",
-		id,
-		pid
-	)
-	.fetch_one(&state.model.db)
-	.await?;
-
-	let property_types = sqlx::query_file!(
-		"queries/properties/list_active_property_types.sql",
-		r.category
-	)
-	.fetch_all(&state.model.db)
-	.await?
-	.into_iter()
-	.map(|t| PropertyTypeOption {
-		id: t.id,
-		name: t.name,
-	})
-	.collect();
-
-	let linked_amenities: std::collections::HashSet<i32> =
-		sqlx::query_file!("queries/properties/get_property_linked_amenity_ids.sql", id)
-			.fetch_all(&state.model.db)
-			.await?
-			.into_iter()
-			.map(|row| row.amenity_id)
-			.collect();
-
-	let amenities = sqlx::query_file!("queries/amenities/list_active_amenities.sql")
-		.fetch_all(&state.model.db)
-		.await?
-		.into_iter()
-		.map(|a| AmenityOptionItem {
-			selected: linked_amenities.contains(&a.id),
-			id: a.id,
-			name: a.name,
-		})
-		.collect();
-
-	let parking = r.parking_res.or(r.parking_com);
-
-	let edit_property = PropertyEditData {
-		id: r.id,
-		property_type_id: r.property_type_id,
-		unit_number: r.unit_number,
-		building: r.building,
-		floor_number: r.floor_number,
-		total_floors: r.total_floors,
-		built_up_area: r.built_up_area,
-		usable_area: r.usable_area,
-		description: r.description,
-		listing_type: r.listing_type.unwrap_or_else(|| "sale".to_string()),
-		status: r.status.unwrap_or_else(|| "active".to_string()),
-		price: r.price,
-		billing_period: r.billing_period,
-		bedroom_count: r.bedroom_count,
-		bathroom_count: r.bathroom_count,
-		balcony_count: r.balcony_count,
-		is_duplex: r.is_duplex.unwrap_or(false),
-		parking,
-		parcel_number: r.parcel_number,
-		zoning: r.zoning,
-		approval_status: r.approval_status,
-		development_status: r.development_status,
-	};
-
-	let cat_display = match r.category.as_str() {
-		"RESIDENTIAL" => "Residential",
-		"COMMERCIAL" => "Commercial",
-		"LAND" => "Land",
-		_ => "Residential",
-	};
-
-	Ok(Html(
-		PropertyFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Properties,
-			project_id: project.id,
-			project_name: project.name,
-			category: cat_display.to_string(),
-			property_types,
-			amenities,
-			edit_property: Some(edit_property),
-		}
-		.render()?,
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({ "id": prop_id, "project_id": project_id, "slug": slug })),
 	))
 }
 
-async fn update_property(
-	State(state): State<AppState>,
-	Path((pid, id)): Path<(i32, i32)>,
-	Form(form): Form<PropertyFormPayload>,
-) -> Result<Redirect, PropertyError> {
+async fn execute_update_property(state: &AppState, pid: i32, id: i32, form: PropertyFormPayload) -> Result<(), PropertyError> {
 	validate_property_payload(&form)?;
 
 	let mut tx = state.model.db.begin().await?;
@@ -766,11 +547,23 @@ async fn update_property(
 	.execute(&mut *tx)
 	.await?;
 
-	// Update listing
+	let listing_type = match form.listing_type.trim().to_lowercase().as_str() {
+		"rent" => "rent",
+		"lease" => "lease",
+		_ => "sale",
+	};
+	let status = match form.status.trim().to_lowercase().as_str() {
+		"active" | "available" => "active",
+		"sold" => "sold",
+		"rented" | "leased" | "closed" => "closed",
+		"reserved" | "withdrawn" => "withdrawn",
+		_ => "active",
+	};
+
 	sqlx::query_file!(
 		"queries/properties/update_property_listing.sql",
-		form.listing_type,
-		form.status,
+		listing_type,
+		status,
 		form.price,
 		form.billing_period.as_deref(),
 		id,
@@ -778,8 +571,8 @@ async fn update_property(
 	.execute(&mut *tx)
 	.await?;
 
-	// Update subtype details
-	let is_duplex = form.is_duplex.as_deref() == Some("on");
+
+	let is_duplex = form.is_duplex.unwrap_or(false);
 	let _ = sqlx::query_file!(
 		"queries/properties/update_residential_details.sql",
 		form.bedroom_count,
@@ -811,7 +604,6 @@ async fn update_property(
 	.execute(&mut *tx)
 	.await;
 
-	// Sync amenities
 	sqlx::query_file!("queries/properties/delete_property_amenities.sql", id)
 		.execute(&mut *tx)
 		.await?;
@@ -831,25 +623,40 @@ async fn update_property(
 
 	tx.commit().await?;
 
-	tracing::info!(property_id = id, project_id = pid, "updated property");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!(
-		"/admin/projects/{pid}/properties/residential"
-	)))
+
+	Ok(())
 }
 
-// ---------------------------------------------------------------------------
-// Delete Property
-// ---------------------------------------------------------------------------
-
-async fn delete_property(
+async fn update_property_global(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+	Json(form): Json<PropertyFormPayload>,
+) -> Result<Json<serde_json::Value>, PropertyError> {
+	let project_id = sqlx::query_scalar::<_, i32>("SELECT project_id FROM properties WHERE id = $1 AND deleted_at IS NULL")
+		.bind(id)
+		.fetch_one(&state.model.db)
+		.await?;
+
+	execute_update_property(&state, project_id, id, form).await?;
+	Ok(Json(json!({ "success": true, "id": id })))
+}
+
+async fn update_property_project(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path((pid, id)): Path<(i32, i32)>,
-) -> Result<StatusCode, PropertyError> {
-	// 1. Find all media linked to this property and clean up
+	Json(form): Json<PropertyFormPayload>,
+) -> Result<Json<serde_json::Value>, PropertyError> {
+	execute_update_property(&state, pid, id, form).await?;
+	Ok(Json(json!({ "success": true, "id": id })))
+}
+
+async fn execute_delete_property(state: &AppState, pid: i32, id: i32) -> Result<(), PropertyError> {
 	let media_rows = sqlx::query_file!("queries/properties/get_property_media_ids.sql", id)
 		.fetch_all(&state.model.db)
 		.await?;
@@ -862,36 +669,46 @@ async fn delete_property(
 		let _ = crate::media::delete_media(&state.model.db, &state.s3_client, m.media_id).await;
 	}
 
-	// 2. Soft delete property
 	sqlx::query_file!("queries/properties/delete_property.sql", id, pid)
 		.execute(&state.model.db)
 		.await?;
 
-	tracing::info!(property_id = id, project_id = pid, "soft-deleted property");
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(id))
 		.await;
+
+	Ok(())
+}
+
+async fn delete_property_global(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+) -> Result<StatusCode, PropertyError> {
+	let project_id = sqlx::query_scalar::<_, i32>("SELECT project_id FROM properties WHERE id = $1 AND deleted_at IS NULL")
+		.bind(id)
+		.fetch_one(&state.model.db)
+		.await?;
+
+	execute_delete_property(&state, project_id, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
-// ---------------------------------------------------------------------------
-// Property Media Handlers
-// ---------------------------------------------------------------------------
-
-async fn property_media_page(
+async fn delete_property_project(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Path((pid, id)): Path<(i32, i32)>,
-) -> Result<Html<String>, PropertyError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", pid)
-		.fetch_one(&state.model.db)
-		.await?;
+) -> Result<StatusCode, PropertyError> {
+	execute_delete_property(&state, pid, id).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
 
-	let prop = sqlx::query_file!("queries/properties/check_property_exists.sql", id, pid)
-		.fetch_one(&state.model.db)
-		.await?;
-
+async fn get_property_media_project(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path((_pid, id)): Path<(i32, i32)>,
+) -> Result<Json<Vec<PropertyMediaItem>>, PropertyError> {
 	struct DbMedia {
 		media_id: Uuid,
 		media_type: String,
@@ -908,12 +725,8 @@ async fn property_media_page(
 		.into_iter()
 		.map(|r| {
 			let url = CONFIG.asset_url(&r.s3_key);
-			let thumbnail_url = r
-				.thumbnail_key
-				.as_ref()
-				.map(|k| CONFIG.asset_url(k))
-				.unwrap_or_else(|| url.clone());
-			ProjectMediaItem {
+			let thumbnail_url = r.thumbnail_key.as_ref().map(|k| CONFIG.asset_url(k)).unwrap_or_else(|| url.clone());
+			PropertyMediaItem {
 				id: r.media_id,
 				media_type: r.media_type,
 				url,
@@ -923,33 +736,15 @@ async fn property_media_page(
 		})
 		.collect();
 
-	let unit_title = match (prop.unit_number, prop.building) {
-		(Some(u), Some(b)) => format!("Unit {u}, {b}"),
-		(Some(u), None) => format!("Unit {u}"),
-		(None, Some(b)) => b,
-		(None, None) => format!("Unit #{}", prop.id),
-	};
-
-	Ok(Html(
-		PropertyMediaTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Properties,
-			project_id: project.id,
-			project_name: project.name,
-			property_id: prop.id,
-			unit_title,
-			media,
-		}
-		.render()?,
-	))
+	Ok(Json(media))
 }
 
-async fn upload_property_media(
-	State(state): State<AppState>,
-	Path((pid, id)): Path<(i32, i32)>,
+async fn handle_upload_property_media(
+	state: &AppState,
+	pid: i32,
+	id: i32,
 	mut multipart: Multipart,
-) -> Result<Redirect, PropertyError> {
-	// Verify property exists
+) -> Result<(StatusCode, Json<serde_json::Value>), PropertyError> {
 	sqlx::query_file!("queries/properties/check_property_exists.sql", id, pid)
 		.fetch_one(&state.model.db)
 		.await?;
@@ -957,36 +752,49 @@ async fn upload_property_media(
 	let mut uploaded_s3_keys: Vec<String> = Vec::new();
 	let mut uploaded_media_ids: Vec<Uuid> = Vec::new();
 
-	let next_seq_row = sqlx::query_file!(
-		"queries/properties/get_next_property_media_sequence.sql",
-		id
-	)
-	.fetch_one(&state.model.db)
-	.await?;
+	let next_seq_row = sqlx::query_file!("queries/properties/get_next_property_media_sequence.sql", id)
+		.fetch_one(&state.model.db)
+		.await?;
 	let mut current_seq = next_seq_row.seq;
 
-	let mut field_found = false;
+	loop {
+		let field = match multipart.next_field().await {
+			Ok(Some(f)) => f,
+			Ok(None) => break,
+			Err(e) => {
+				return Err(PropertyError::Validation(format!("Upload error: {e}")));
+			}
+		};
 
-	while let Ok(Some(field)) = multipart.next_field().await {
 		let name = field.name().unwrap_or_default().to_string();
-		if !matches!(
-			name.as_str(),
-			"image" | "video" | "media" | "file" | "files" | "files[]"
-		) {
-			continue;
-		}
-
 		let filename = field.file_name().unwrap_or_default().to_string();
 		let content_type = field.content_type().map(|s| s.to_string());
 
-		let bytes = match field.bytes().await {
-			Ok(b) if !b.is_empty() => b,
-			_ => continue,
-		};
+		let bytes = field.bytes().await.map_err(|e| {
+			PropertyError::Validation(format!("Failed to read file payload: {e}"))
+		})?;
 
-		field_found = true;
-		let is_video =
-			crate::media::is_video_upload(&name, content_type.as_deref(), Some(&filename));
+		if bytes.is_empty() {
+			continue;
+		}
+
+		let is_video = crate::media::is_video_upload(&name, content_type.as_deref(), Some(&filename));
+
+		let lower_name = filename.to_lowercase();
+		if lower_name.ends_with(".svg") || content_type.as_deref() == Some("image/svg+xml") {
+			return Err(PropertyError::Validation(
+				"SVG format is not supported for gallery media. Please upload JPG, PNG, or WebP images.".to_string(),
+			));
+		}
+
+		const MAX_IMAGE_BYTES: usize = 5 * 1024 * 1024; // 5 MB limit requested by user
+		if !is_video && bytes.len() > MAX_IMAGE_BYTES {
+			return Err(PropertyError::Validation(format!(
+				"Image '{}' exceeds the 5 MB size limit ({:.2} MB uploaded).",
+				filename,
+				bytes.len() as f64 / 1_048_576.0
+			)));
+		}
 
 		let upload_res: Result<(Uuid, Vec<String>), PropertyError> = if is_video {
 			match crate::media::process_and_upload_video(
@@ -1045,20 +853,12 @@ async fn upload_property_media(
 							.await;
 					}
 					for m_id in &uploaded_media_ids {
-						let _ = sqlx::query_file!(
-							"queries/properties/delete_property_media.sql",
-							id,
-							m_id
-						)
-						.execute(&state.model.db)
-						.await;
-						let _ = sqlx::query!("DELETE FROM media WHERE id = $1", m_id)
+						let _ = sqlx::query_file!("queries/properties/delete_property_media.sql", id, m_id)
 							.execute(&state.model.db)
 							.await;
 					}
-					return Err(PropertyError::from(e));
+					return Err(e.into());
 				}
-
 				current_seq += 1;
 			}
 			Err(e) => {
@@ -1072,11 +872,7 @@ async fn upload_property_media(
 						.await;
 				}
 				for m_id in &uploaded_media_ids {
-					let _ =
-						sqlx::query_file!("queries/properties/delete_property_media.sql", id, m_id)
-							.execute(&state.model.db)
-							.await;
-					let _ = sqlx::query!("DELETE FROM media WHERE id = $1", m_id)
+					let _ = sqlx::query_file!("queries/properties/delete_property_media.sql", id, m_id)
 						.execute(&state.model.db)
 						.await;
 				}
@@ -1085,39 +881,48 @@ async fn upload_property_media(
 		}
 	}
 
-	if !field_found || uploaded_media_ids.is_empty() {
-		return Err(PropertyError::Validation(
-			"No media file provided in upload".to_string(),
-		));
+	if uploaded_media_ids.is_empty() {
+		return Err(PropertyError::Validation("No media file provided in upload".to_string()));
 	}
 
-	tracing::info!(
-		property_id = id,
-		count = uploaded_media_ids.len(),
-		"attached media to property"
-	);
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!(
-		"/admin/projects/{pid}/properties/{id}/media"
-	)))
+
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({ "success": true, "media_ids": uploaded_media_ids })),
+	))
 }
 
-#[derive(serde::Deserialize)]
-pub struct ReorderPropertyMediaPayload {
-	pub order: Vec<Uuid>,
-}
-
-async fn reorder_property_media(
+async fn upload_property_media_global(
 	State(state): State<AppState>,
-	Path((_pid, id)): Path<(i32, i32)>,
-	axum::Json(payload): axum::Json<ReorderPropertyMediaPayload>,
-) -> Result<StatusCode, PropertyError> {
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+	multipart: Multipart,
+) -> Result<(StatusCode, Json<serde_json::Value>), PropertyError> {
+	let project_id = sqlx::query_scalar::<_, i32>("SELECT project_id FROM properties WHERE id = $1 AND deleted_at IS NULL")
+		.bind(id)
+		.fetch_one(&state.model.db)
+		.await?;
+	handle_upload_property_media(&state, project_id, id, multipart).await
+}
+
+async fn upload_property_media_project(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path((pid, id)): Path<(i32, i32)>,
+	multipart: Multipart,
+) -> Result<(StatusCode, Json<serde_json::Value>), PropertyError> {
+	handle_upload_property_media(&state, pid, id, multipart).await
+}
+
+pub use crate::api::admin::projects::ReorderMediaPayload;
+
+async fn handle_reorder_property_media(state: &AppState, id: i32, payload: ReorderMediaPayload) -> Result<Json<serde_json::Value>, PropertyError> {
 	let mut tx = state.model.db.begin().await?;
 
-	// 1. Shift existing sequences to negative
 	sqlx::query_file!(
 		"queries/properties/shift_property_media_sequences_negative.sql",
 		id
@@ -1125,9 +930,8 @@ async fn reorder_property_media(
 	.execute(&mut *tx)
 	.await?;
 
-	// 2. Set new sequences
 	for (idx, mid) in payload.order.into_iter().enumerate() {
-		let seq = (idx + 1) as i16;
+		let seq = idx as i16;
 		sqlx::query_file!(
 			"queries/properties/update_property_media_sequence.sql",
 			id,
@@ -1143,11 +947,49 @@ async fn reorder_property_media(
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(id))
 		.await;
-	Ok(StatusCode::OK)
+
+	Ok(Json(json!({ "success": true })))
 }
 
-async fn delete_property_media(
+async fn reorder_property_media_global(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+	Json(payload): Json<ReorderMediaPayload>,
+) -> Result<Json<serde_json::Value>, PropertyError> {
+	handle_reorder_property_media(&state, id, payload).await
+}
+
+async fn reorder_property_media_project(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path((_pid, id)): Path<(i32, i32)>,
+	Json(payload): Json<ReorderMediaPayload>,
+) -> Result<Json<serde_json::Value>, PropertyError> {
+	handle_reorder_property_media(&state, id, payload).await
+}
+
+async fn delete_property_media_global(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
+	Path((id, mid)): Path<(i32, Uuid)>,
+) -> Result<StatusCode, PropertyError> {
+	sqlx::query_file!("queries/properties/delete_property_media.sql", id, mid)
+		.execute(&state.model.db)
+		.await?;
+
+	crate::media::delete_media(&state.model.db, &state.s3_client, mid).await?;
+	state
+		.page_cache
+		.invalidate(crate::cache::InvalidationEvent::PropertyUpdated(id))
+		.await;
+
+	Ok(StatusCode::NO_CONTENT)
+}
+
+async fn delete_property_media_project(
+	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path((_pid, id, mid)): Path<(i32, i32, Uuid)>,
 ) -> Result<StatusCode, PropertyError> {
 	sqlx::query_file!("queries/properties/delete_property_media.sql", id, mid)

@@ -774,7 +774,7 @@ async fn project_enquire(
 		.map(str::trim)
 		.filter(|m| !m.is_empty());
 
-	sqlx::query_file!(
+	let insert_res = sqlx::query_file!(
 		"queries/projects/insert_project_enquiry.sql",
 		id,
 		name,
@@ -788,6 +788,38 @@ async fn project_enquire(
 		tracing::error!(error = ?e, "db error saving project enquiry");
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
+
+	// Broadcast enquiry notification
+	#[derive(sqlx::FromRow)]
+	struct ProjMeta {
+		name: String,
+		project_owner_id: i32,
+	}
+	if let Ok(Some(proj_meta)) = sqlx::query_as::<_, ProjMeta>(
+		"SELECT name, project_owner_id FROM projects WHERE id = $1",
+	)
+	.bind(id)
+	.fetch_optional(&state.model.db)
+	.await
+	{
+		let notif = crate::EnquiryNotification {
+			id: insert_res.rows_affected() as i32,
+			enquiry_type: "project".to_string(),
+			entity_id: id,
+			entity_name: proj_meta.name,
+			owner_id: proj_meta.project_owner_id,
+			name: name.to_string(),
+			phone: phone.to_string(),
+			email: email.map(|s| s.to_string()),
+			message: message.map(|s| s.to_string()),
+			is_read: false,
+			created_at: time::OffsetDateTime::now_utc()
+				.format(&time::format_description::well_known::Rfc3339)
+				.unwrap_or_else(|_| time::OffsetDateTime::now_utc().to_string()),
+		};
+
+		let _ = state.notification_tx.send(notif);
+	}
 
 	Ok(Redirect::to(&format!(
 		"/projects/{}-{}?enquiry=success",
@@ -1642,7 +1674,7 @@ async fn property_enquire(
 		.map(str::trim)
 		.filter(|m| !m.is_empty());
 
-	sqlx::query_file!(
+	let insert_res = sqlx::query_file!(
 		"queries/properties/insert_property_enquiry.sql",
 		id,
 		name,
@@ -1656,6 +1688,51 @@ async fn property_enquire(
 		tracing::error!(error = ?e, "db error saving property enquiry");
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
+
+	// Broadcast enquiry notification
+	#[derive(sqlx::FromRow)]
+	struct PropMeta {
+		unit_number: Option<String>,
+		building: Option<String>,
+		project_name: String,
+		project_owner_id: i32,
+	}
+	if let Ok(Some(prop_meta)) = sqlx::query_as::<_, PropMeta>(
+		r#"
+		SELECT p.unit_number, p.building, pr.name as project_name, pr.project_owner_id
+		FROM properties p
+		JOIN projects pr ON pr.id = p.project_id
+		WHERE p.id = $1
+		"#,
+	)
+	.bind(id)
+	.fetch_optional(&state.model.db)
+	.await
+	{
+		let entity_name = match (prop_meta.unit_number, prop_meta.building) {
+			(Some(u), Some(b)) => format!("Unit {} ({}), {}", u, b, prop_meta.project_name),
+			(Some(u), None) => format!("Unit {}, {}", u, prop_meta.project_name),
+			_ => format!("Unit in {}", prop_meta.project_name),
+		};
+
+		let notif = crate::EnquiryNotification {
+			id: insert_res.rows_affected() as i32,
+			enquiry_type: "property".to_string(),
+			entity_id: id,
+			entity_name,
+			owner_id: prop_meta.project_owner_id,
+			name: name.to_string(),
+			phone: phone.to_string(),
+			email: email.map(|s| s.to_string()),
+			message: message.map(|s| s.to_string()),
+			is_read: false,
+			created_at: time::OffsetDateTime::now_utc()
+				.format(&time::format_description::well_known::Rfc3339)
+				.unwrap_or_else(|_| time::OffsetDateTime::now_utc().to_string()),
+		};
+
+		let _ = state.notification_tx.send(notif);
+	}
 
 	Ok(Redirect::to(&format!(
 		"/properties/{}-{}?enquiry=success",

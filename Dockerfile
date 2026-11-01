@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install cargo-watch
 
 # Entrypoint: run migrations, then watch for changes.
-CMD sh -c "cargo run --bin migrate && cargo watch -x 'run --bin myplace'"
+CMD sh -c "cargo run --bin migrate && cargo watch -i 'frontend/*' -i 'target/*' -x 'run --bin myplace'"
 
 # =============================================================================
 # Stage 3: chef — install cargo-chef for reliable Docker layer dependency caching

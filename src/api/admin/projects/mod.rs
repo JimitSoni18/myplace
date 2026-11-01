@@ -1,25 +1,18 @@
-use askama::Template;
 use axum::{
-	Extension, Router,
+	Json, Router,
 	extract::{Multipart, Path, Query, State},
 	http::StatusCode,
-	response::{Html, Redirect},
 	routing::get,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
 	AppState,
 	config::CONFIG,
 	session_store::AuthUser,
-	templates::admin::{
-		AdminPage, AmenityOptionItem, LocationOptionItem, OwnerOptionItem, ProjectDetailData,
-		ProjectDetailTemplate, ProjectDocumentItem, ProjectDocumentsTemplate, ProjectEditData,
-		ProjectFormTemplate, ProjectListItem, ProjectMediaItem, ProjectMediaTemplate,
-		ProjectPropertySummary, ProjectTemplate,
-	},
-	utils::{form::Form, markdown::render_markdown, sql::slugify},
+	utils::sql::slugify,
 };
 
 pub mod error;
@@ -27,13 +20,16 @@ use error::ProjectError;
 
 pub fn router() -> Router<AppState> {
 	Router::new()
-		.route("/", get(project_list))
-		.route("/new", get(project_create_form).post(create_project))
-		.route("/{id}", get(project_detail).delete(delete_project))
-		.route("/{id}/edit", get(project_edit_form).post(update_project))
+		.route("/", get(project_list).post(create_project))
+		.route(
+			"/{id}",
+			get(project_detail)
+				.put(update_project)
+				.delete(delete_project),
+		)
 		.route(
 			"/{id}/media",
-			get(project_media_page).post(upload_project_media),
+			get(project_media_list).post(upload_project_media),
 		)
 		.route(
 			"/{id}/media/reorder",
@@ -45,7 +41,7 @@ pub fn router() -> Router<AppState> {
 		)
 		.route(
 			"/{id}/documents",
-			get(project_documents_page).post(upload_project_document),
+			get(project_documents_list).post(upload_project_document),
 		)
 		.route(
 			"/{id}/documents/{did}",
@@ -57,21 +53,84 @@ pub fn router() -> Router<AppState> {
 		)
 }
 
-// ---------------------------------------------------------------------------
-// Query & Form payloads
-// ---------------------------------------------------------------------------
-
-#[derive(Deserialize)]
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectListQuery {
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	q: Option<String>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_as_none")]
-	owner_id: Option<i32>,
-	#[serde(default, deserialize_with = "crate::utils::form::empty_string_as_none")]
-	category: Option<String>,
+	#[serde(default)]
+	pub q: Option<String>,
+	#[serde(default)]
+	pub owner_id: Option<i32>,
+	#[serde(default)]
+	pub category: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct ProjectListItem {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+	pub owner_name: String,
+	pub location_name: String,
+	pub properties_count: i64,
+	pub thumbnail_url: Option<String>,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct ProjectPropertySummary {
+	pub total: i64,
+	pub available: i64,
+	pub residential: i64,
+	pub commercial: i64,
+	pub land: i64,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
+pub struct ProjectMediaItem {
+	pub id: Uuid,
+	pub media_type: String,
+	pub url: String,
+	pub thumbnail_url: String,
+	pub sequence: i16,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct ProjectDocumentItem {
+	pub id: Uuid,
+	pub file_name: String,
+	pub url: String,
+	pub file_size: Option<i64>,
+	pub doc_type: String,
+}
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
+pub struct ProjectDetailData {
+	pub id: i32,
+	pub name: String,
+	pub slug: String,
+	pub category: String,
+	pub owner_id: i32,
+	pub owner_name: String,
+	pub location_id: i32,
+	pub location_name: String,
+	pub description: Option<String>,
+	pub start_date: Option<String>,
+	pub launch_date: Option<String>,
+	pub possession_date: Option<String>,
+	pub amenities: Vec<String>,
+	pub amenity_ids: Vec<i32>,
+	pub property_summary: ProjectPropertySummary,
+	pub media: Vec<ProjectMediaItem>,
+	pub documents: Vec<ProjectDocumentItem>,
+}
+
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectFormPayload {
 	pub name: String,
 	pub category: String,
@@ -99,165 +158,222 @@ fn format_opt_date(d: Option<time::Date>) -> Option<String> {
 	d.and_then(|date| date.format(&fmt).ok())
 }
 
-fn format_bytes(bytes: Option<i64>) -> String {
-	let b = bytes.unwrap_or(0);
-	if b < 1024 {
-		format!("{b} B")
-	} else if b < 1024 * 1024 {
-		format!("{:.1} KB", b as f64 / 1024.0)
-	} else {
-		format!("{:.1} MB", b as f64 / (1024.0 * 1024.0))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Handlers
-// ---------------------------------------------------------------------------
-
 async fn project_list(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Query(query): Query<ProjectListQuery>,
-) -> Result<Html<String>, ProjectError> {
-	struct DbRow {
-		id: i32,
-		name: String,
-		slug: String,
-		category: String,
-		owner_name: String,
-		location: Option<String>,
-		hero_thumb_key: Option<String>,
-		properties_count: i64,
-		media_count: i64,
-	}
+) -> Result<Json<Vec<ProjectListItem>>, ProjectError> {
+	let q_pattern = query.q.as_deref().filter(|s| !s.trim().is_empty()).map(|s| format!("%{}%", s.trim()));
+	let category_filter = query.category.as_deref().filter(|s| !s.trim().is_empty());
 
-	let owners_rows = sqlx::query_file!("queries/project_owners/list_owner_options.sql")
-		.fetch_all(&state.model.db)
-		.await?;
-
-	let owners = owners_rows
-		.into_iter()
-		.map(|r| OwnerOptionItem {
-			id: r.id,
-			name: r.name,
-		})
-		.collect();
-
-	let rows = sqlx::query_file_as!(
-		DbRow,
+	let rows = sqlx::query_file!(
 		"queries/projects/list_projects.sql",
 		query.owner_id,
-		query.category.as_deref(),
-		query.q.as_ref().map(|q| format!("%{}%", q.trim())),
+		category_filter,
+		q_pattern.as_deref(),
 	)
 	.fetch_all(&state.model.db)
 	.await?;
 
-	let projects = rows
+	let items = rows
 		.into_iter()
 		.map(|r| {
-			let hero_thumb_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
+			let thumbnail_url = r.hero_thumb_key.as_ref().map(|k| CONFIG.asset_url(k));
 			ProjectListItem {
 				id: r.id,
 				name: r.name,
 				slug: r.slug,
-				owner_name: r.owner_name,
 				category: r.category,
-				location: r.location.unwrap_or_else(|| "Unspecified".to_string()),
-				hero_thumb_url,
+				owner_name: r.owner_name,
+				location_name: r.location.unwrap_or_else(|| "Unspecified".to_string()),
 				properties_count: r.properties_count,
-				media_count: r.media_count,
+				thumbnail_url,
 			}
 		})
 		.collect();
 
-	Ok(Html(
-		ProjectTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			projects,
-			owners,
-			selected_owner_id: query.owner_id,
-			selected_category: query.category,
-			q: query.q.as_deref(),
-		}
-		.render()?,
-	))
+	Ok(Json(items))
 }
 
-async fn project_create_form(
+async fn project_detail(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-) -> Result<Html<String>, ProjectError> {
-	let owners = sqlx::query_file!("queries/project_owners/list_owner_options.sql")
+	_auth_user: AuthUser,
+	Path(id): Path<i32>,
+) -> Result<Json<ProjectDetailData>, ProjectError> {
+	#[allow(dead_code)]
+	struct DbProject {
+		id: i32,
+		name: String,
+		slug: String,
+		category: String,
+		project_owner_id: i32,
+		owner_name: String,
+		location_id: i32,
+		location_name: Option<String>,
+		description: Option<String>,
+		start_date: Option<time::Date>,
+		launch_date: Option<time::Date>,
+		possession_date: Option<time::Date>,
+		created_at: time::OffsetDateTime,
+	}
+
+	let p = sqlx::query_file_as!(DbProject, "queries/projects/get_project_detail.sql", id)
+		.fetch_one(&state.model.db)
+		.await?;
+
+	struct DbMedia {
+		media_id: Uuid,
+		media_type: String,
+		s3_key: String,
+		thumbnail_key: Option<String>,
+		sequence: i16,
+	}
+
+	let media_rows = sqlx::query_file_as!(DbMedia, "queries/projects/get_project_media.sql", id)
 		.fetch_all(&state.model.db)
-		.await?
+		.await?;
+
+	let media: Vec<ProjectMediaItem> = media_rows
 		.into_iter()
-		.map(|r| OwnerOptionItem {
-			id: r.id,
-			name: r.name,
+		.map(|r| {
+			let url = CONFIG.asset_url(&r.s3_key);
+			let thumbnail_url = r
+				.thumbnail_key
+				.as_ref()
+				.map(|k| CONFIG.asset_url(k))
+				.unwrap_or_else(|| url.clone());
+			ProjectMediaItem {
+				id: r.media_id,
+				media_type: r.media_type,
+				url,
+				thumbnail_url,
+				sequence: r.sequence,
+			}
 		})
 		.collect();
 
-	let locations = sqlx::query_file!("queries/locations/list_location_options.sql")
+	#[allow(dead_code)]
+	struct DbDoc {
+		id: i32,
+		media_id: Uuid,
+		display_name: Option<String>,
+		doc_type: Option<String>,
+		s3_key: String,
+		file_size: Option<i64>,
+	}
+
+	let doc_rows = sqlx::query_file_as!(DbDoc, "queries/projects/get_project_documents.sql", id)
 		.fetch_all(&state.model.db)
-		.await?
+		.await?;
+
+	let documents: Vec<ProjectDocumentItem> = doc_rows
 		.into_iter()
-		.map(|r| LocationOptionItem {
-			id: r.id,
-			address: r.formatted_address,
+		.map(|r| {
+			let url = CONFIG.asset_url(&r.s3_key);
+			let file_name = r
+				.display_name
+				.unwrap_or_else(|| r.s3_key.split('/').last().unwrap_or("document").to_string());
+			ProjectDocumentItem {
+				id: r.media_id,
+				file_name,
+				url,
+				file_size: r.file_size,
+				doc_type: r.doc_type.unwrap_or_else(|| "brochure".to_string()),
+			}
 		})
 		.collect();
 
-	let amenities = sqlx::query_file!("queries/amenities/list_active_amenities.sql")
-		.fetch_all(&state.model.db)
-		.await?
-		.into_iter()
-		.map(|r| AmenityOptionItem {
-			id: r.id,
-			name: r.name,
-			selected: false,
-		})
-		.collect();
+	#[derive(sqlx::FromRow)]
+	struct AmenityRow {
+		id: i32,
+		name: String,
+	}
 
-	Ok(Html(
-		ProjectFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			owners,
-			locations,
-			amenities,
-			edit_project: None,
+	let amenity_rows = sqlx::query_as::<_, AmenityRow>(
+		r#"
+		SELECT a.id, a.name
+		FROM amenities a
+		JOIN project_amenities pa ON pa.amenity_id = a.id
+		WHERE pa.project_id = $1
+		ORDER BY a.name ASC
+		"#,
+	)
+	.bind(id)
+	.fetch_all(&state.model.db)
+	.await
+	.unwrap_or_default();
+
+	let amenities = amenity_rows.iter().map(|a| a.name.clone()).collect();
+	let amenity_ids = amenity_rows.iter().map(|a| a.id).collect();
+
+	let count_rows = sqlx::query_file!(
+		"queries/projects/get_project_property_counts.sql",
+		id
+	)
+	.fetch_all(&state.model.db)
+	.await
+	.unwrap_or_default();
+
+	let mut residential = 0;
+	let mut commercial = 0;
+	let mut land = 0;
+	let mut total = 0;
+	for r in count_rows {
+		let cnt = r.count.unwrap_or(0);
+		total += cnt;
+		match r.category.as_str() {
+			"RESIDENTIAL" => residential += cnt,
+			"COMMERCIAL" => commercial += cnt,
+			"LAND" => land += cnt,
+			_ => {}
 		}
-		.render()?,
-	))
+	}
+	let property_summary = ProjectPropertySummary {
+		total,
+		available: total,
+		residential,
+		commercial,
+		land,
+	};
+
+	Ok(Json(ProjectDetailData {
+		id: p.id,
+		name: p.name,
+		slug: p.slug,
+		category: p.category,
+		owner_id: p.project_owner_id,
+		owner_name: p.owner_name,
+		location_id: p.location_id,
+		location_name: p.location_name.unwrap_or_else(|| "Unspecified".to_string()),
+		description: p.description,
+		start_date: format_opt_date(p.start_date),
+		launch_date: format_opt_date(p.launch_date),
+		possession_date: format_opt_date(p.possession_date),
+		amenities,
+		amenity_ids,
+		property_summary,
+		media,
+		documents,
+	}))
 }
 
 async fn create_project(
 	State(state): State<AppState>,
-	Form(form): Form<ProjectFormPayload>,
-) -> Result<Redirect, ProjectError> {
+	_auth_user: AuthUser,
+	Json(form): Json<ProjectFormPayload>,
+) -> Result<(StatusCode, Json<serde_json::Value>), ProjectError> {
 	let trimmed_name = form.name.trim();
 	if trimmed_name.is_empty() {
-		return Err(ProjectError::Validation(
-			"Project name is required".to_string(),
-		));
+		return Err(ProjectError::Validation("Project name is required".to_string()));
 	}
 	if form.category.trim().is_empty() {
 		return Err(ProjectError::Validation("Category is required".to_string()));
 	}
 	if form.project_owner_id <= 0 {
-		return Err(ProjectError::Validation(
-			"Valid project owner is required".to_string(),
-		));
+		return Err(ProjectError::Validation("Valid project owner is required".to_string()));
 	}
 	if form.location_id <= 0 {
-		return Err(ProjectError::Validation(
-			"Valid location is required".to_string(),
-		));
-	}
-	if form.amenities.iter().any(|&a| a <= 0) {
-		return Err(ProjectError::Validation("Invalid amenity ID".to_string()));
+		return Err(ProjectError::Validation("Valid location is required".to_string()));
 	}
 
 	let slug = slugify(trimmed_name);
@@ -282,13 +398,14 @@ async fn create_project(
 	.fetch_one(&mut *tx)
 	.await?;
 
-	// Link selected amenities (deduplicating duplicate IDs)
+	let new_id = row.id;
+
 	let mut seen = std::collections::HashSet::new();
 	for amenity_id in form.amenities {
 		if seen.insert(amenity_id) {
 			sqlx::query_file!(
 				"queries/projects/insert_project_amenity.sql",
-				row.id,
+				new_id,
 				amenity_id,
 			)
 			.execute(&mut *tx)
@@ -297,283 +414,36 @@ async fn create_project(
 	}
 
 	tx.commit().await?;
-	tracing::info!(project_id = row.id, name = %form.name, "created new project");
-	state
-		.page_cache
-		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(row.id))
-		.await;
+	tracing::info!(project_id = new_id, "created project");
 
-	Ok(Redirect::to(&format!("/admin/projects/{}", row.id)))
-}
-
-async fn project_detail(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(id): Path<i32>,
-) -> Result<Html<String>, ProjectError> {
-	struct DbProject {
-		id: i32,
-		project_owner_id: i32,
-		owner_name: String,
-		location_id: i32,
-		location_name: Option<String>,
-		name: String,
-		slug: String,
-		description: Option<String>,
-		category: String,
-		start_date: Option<time::Date>,
-		launch_date: Option<time::Date>,
-		possession_date: Option<time::Date>,
-		created_at: time::OffsetDateTime,
-	}
-
-	let p = sqlx::query_file_as!(DbProject, "queries/projects/get_project_detail.sql", id)
-		.fetch_one(&state.model.db)
-		.await?;
-
-	// Fetch amenities
-	let amenity_rows = sqlx::query_file!("queries/projects/get_project_amenities.sql", id)
-		.fetch_all(&state.model.db)
-		.await?;
-
-	let amenities = amenity_rows.into_iter().map(|r| r.name).collect();
-
-	// Fetch media gallery
-	struct DbMedia {
-		media_id: Uuid,
-		media_type: String,
-		s3_key: String,
-		thumbnail_key: Option<String>,
-		sequence: i16,
-	}
-
-	let media_rows = sqlx::query_file_as!(DbMedia, "queries/projects/get_project_media.sql", id)
-		.fetch_all(&state.model.db)
-		.await?;
-
-	let media = media_rows
-		.into_iter()
-		.map(|r| {
-			let url = CONFIG.asset_url(&r.s3_key);
-			let thumbnail_url = r
-				.thumbnail_key
-				.as_ref()
-				.map(|k| CONFIG.asset_url(k))
-				.unwrap_or_else(|| url.clone());
-			ProjectMediaItem {
-				id: r.media_id,
-				media_type: r.media_type,
-				url,
-				thumbnail_url,
-				sequence: r.sequence,
-			}
-		})
-		.collect();
-
-	// Fetch documents
-	struct DbDoc {
-		id: i32,
-		media_id: Uuid,
-		display_name: String,
-		doc_type: String,
-		s3_key: String,
-		file_size: Option<i64>,
-	}
-
-	let doc_rows = sqlx::query_file_as!(DbDoc, "queries/projects/get_project_documents.sql", id)
-		.fetch_all(&state.model.db)
-		.await?;
-
-	let documents = doc_rows
-		.into_iter()
-		.map(|r| {
-			let url = CONFIG.asset_url(&r.s3_key);
-			let file_size_formatted = format_bytes(r.file_size);
-			ProjectDocumentItem {
-				id: r.id,
-				media_id: r.media_id,
-				display_name: r.display_name,
-				doc_type: r.doc_type,
-				url,
-				file_size_formatted,
-			}
-		})
-		.collect();
-
-	// Fetch property breakdown
-	struct PropCountRow {
-		category: String,
-		count: Option<i64>,
-	}
-
-	let prop_rows = sqlx::query_file_as!(
-		PropCountRow,
-		"queries/projects/get_project_property_counts.sql",
-		id
-	)
-	.fetch_all(&state.model.db)
-	.await?;
-
-	let mut residential = 0;
-	let mut commercial = 0;
-	let mut land = 0;
-	for r in prop_rows {
-		let cnt = r.count.unwrap_or(0);
-		match r.category.as_str() {
-			"RESIDENTIAL" => residential += cnt,
-			"COMMERCIAL" => commercial += cnt,
-			"LAND" => land += cnt,
-			_ => {}
-		}
-	}
-	let total = residential + commercial + land;
-
-	let description_html = p
-		.description
-		.as_ref()
-		.map(|desc| render_markdown(desc))
-		.unwrap_or_default();
-
-	let date_fmt = time::macros::format_description!("[month repr:short] [day], [year]");
-	let created_at_str = p
-		.created_at
-		.format(&date_fmt)
-		.unwrap_or_else(|_| "Recently".to_string());
-
-	let project_data = ProjectDetailData {
-		id: p.id,
-		owner_id: p.project_owner_id,
-		owner_name: p.owner_name,
-		location_id: p.location_id,
-		location_name: p.location_name.unwrap_or_else(|| "Unspecified".to_string()),
-		name: p.name,
-		slug: p.slug,
-		category: p.category,
-		start_date: format_opt_date(p.start_date),
-		launch_date: format_opt_date(p.launch_date),
-		possession_date: format_opt_date(p.possession_date),
-		created_at: created_at_str,
-	};
-
-	Ok(Html(
-		ProjectDetailTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			project: project_data,
-			description_html,
-			amenities,
-			media,
-			documents,
-			property_summary: ProjectPropertySummary {
-				total,
-				residential,
-				commercial,
-				land,
-			},
-		}
-		.render()?,
-	))
-}
-
-async fn project_edit_form(
-	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
-	Path(id): Path<i32>,
-) -> Result<Html<String>, ProjectError> {
-	let p = sqlx::query_file!("queries/projects/get_project_for_edit.sql", id)
-		.fetch_one(&state.model.db)
-		.await?;
-
-	let owners = sqlx::query_file!("queries/project_owners/list_owner_options.sql")
-		.fetch_all(&state.model.db)
-		.await?
-		.into_iter()
-		.map(|r| OwnerOptionItem {
-			id: r.id,
-			name: r.name,
-		})
-		.collect();
-
-	let locations = sqlx::query_file!("queries/locations/list_location_options.sql")
-		.fetch_all(&state.model.db)
-		.await?
-		.into_iter()
-		.map(|r| LocationOptionItem {
-			id: r.id,
-			address: r.formatted_address,
-		})
-		.collect();
-
-	let linked_amenities: std::collections::HashSet<i32> =
-		sqlx::query_file!("queries/projects/get_project_linked_amenity_ids.sql", id)
-			.fetch_all(&state.model.db)
-			.await?
-			.into_iter()
-			.map(|r| r.amenity_id)
-			.collect();
-
-	let amenities = sqlx::query_file!("queries/amenities/list_active_amenities.sql")
-		.fetch_all(&state.model.db)
-		.await?
-		.into_iter()
-		.map(|r| AmenityOptionItem {
-			selected: linked_amenities.contains(&r.id),
-			id: r.id,
-			name: r.name,
-		})
-		.collect();
-
-	let edit_data = ProjectEditData {
-		id: p.id,
-		owner_id: p.project_owner_id,
-		location_id: p.location_id,
-		name: p.name,
-		description: p.description,
-		category: p.category,
-		start_date: format_opt_date(p.start_date),
-		launch_date: format_opt_date(p.launch_date),
-		possession_date: format_opt_date(p.possession_date),
-	};
-
-	Ok(Html(
-		ProjectFormTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			owners,
-			locations,
-			amenities,
-			edit_project: Some(edit_data),
-		}
-		.render()?,
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({
+			"id": new_id,
+			"name": trimmed_name,
+			"slug": slug,
+		})),
 	))
 }
 
 async fn update_project(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-	Form(form): Form<ProjectFormPayload>,
-) -> Result<Redirect, ProjectError> {
+	Json(form): Json<ProjectFormPayload>,
+) -> Result<Json<serde_json::Value>, ProjectError> {
 	let trimmed_name = form.name.trim();
 	if trimmed_name.is_empty() {
-		return Err(ProjectError::Validation(
-			"Project name is required".to_string(),
-		));
+		return Err(ProjectError::Validation("Project name is required".to_string()));
 	}
 	if form.category.trim().is_empty() {
 		return Err(ProjectError::Validation("Category is required".to_string()));
 	}
 	if form.project_owner_id <= 0 {
-		return Err(ProjectError::Validation(
-			"Valid project owner is required".to_string(),
-		));
+		return Err(ProjectError::Validation("Valid project owner is required".to_string()));
 	}
 	if form.location_id <= 0 {
-		return Err(ProjectError::Validation(
-			"Valid location is required".to_string(),
-		));
-	}
-	if form.amenities.iter().any(|&a| a <= 0) {
-		return Err(ProjectError::Validation("Invalid amenity ID".to_string()));
+		return Err(ProjectError::Validation("Valid location is required".to_string()));
 	}
 
 	let slug = slugify(trimmed_name);
@@ -599,7 +469,6 @@ async fn update_project(
 	.execute(&mut *tx)
 	.await?;
 
-	// Sync amenities (deduplicating duplicate IDs)
 	sqlx::query_file!("queries/projects/delete_project_amenities.sql", id)
 		.execute(&mut *tx)
 		.await?;
@@ -619,16 +488,23 @@ async fn update_project(
 
 	tx.commit().await?;
 	tracing::info!(project_id = id, "updated project");
+
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
 		.await;
 
-	Ok(Redirect::to(&format!("/admin/projects/{id}")))
+	Ok(Json(json!({
+		"success": true,
+		"id": id,
+		"name": trimmed_name,
+		"slug": slug,
+	})))
 }
 
 async fn delete_project(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
 ) -> Result<StatusCode, ProjectError> {
 	sqlx::query_file!("queries/projects/delete_project.sql", id)
@@ -640,15 +516,16 @@ async fn delete_project(
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
 		.await;
+
 	Ok(StatusCode::NO_CONTENT)
 }
 
-async fn project_media_page(
+async fn project_media_list(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Html<String>, ProjectError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", id)
+) -> Result<Json<Vec<ProjectMediaItem>>, ProjectError> {
+	sqlx::query_file!("queries/projects/check_project_exists.sql", id)
 		.fetch_one(&state.model.db)
 		.await?;
 
@@ -683,24 +560,15 @@ async fn project_media_page(
 		})
 		.collect();
 
-	Ok(Html(
-		ProjectMediaTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			project_id: project.id,
-			project_name: project.name,
-			media,
-		}
-		.render()?,
-	))
+	Ok(Json(media))
 }
 
 async fn upload_project_media(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
 	mut multipart: Multipart,
-) -> Result<Redirect, ProjectError> {
-	// Verify project exists
+) -> Result<(StatusCode, Json<serde_json::Value>), ProjectError> {
 	sqlx::query_file!("queries/projects/check_project_exists.sql", id)
 		.fetch_one(&state.model.db)
 		.await?;
@@ -708,35 +576,49 @@ async fn upload_project_media(
 	let mut uploaded_s3_keys: Vec<String> = Vec::new();
 	let mut uploaded_media_ids: Vec<Uuid> = Vec::new();
 
-	// Calculate base sequence
-	let next_seq_row =
-		sqlx::query_file!("queries/projects/get_next_project_media_sequence.sql", id)
-			.fetch_one(&state.model.db)
-			.await?;
+	let next_seq_row = sqlx::query_file!("queries/projects/get_next_project_media_sequence.sql", id)
+		.fetch_one(&state.model.db)
+		.await?;
 	let mut current_seq = next_seq_row.next_seq;
 
-	let mut field_found = false;
+	loop {
+		let field = match multipart.next_field().await {
+			Ok(Some(f)) => f,
+			Ok(None) => break,
+			Err(e) => {
+				return Err(ProjectError::Validation(format!("Upload error: {e}")));
+			}
+		};
 
-	while let Ok(Some(field)) = multipart.next_field().await {
 		let name = field.name().unwrap_or_default().to_string();
-		if !matches!(
-			name.as_str(),
-			"image" | "video" | "media" | "file" | "files" | "files[]"
-		) {
-			continue;
-		}
-
 		let filename = field.file_name().unwrap_or_default().to_string();
 		let content_type = field.content_type().map(|s| s.to_string());
 
-		let bytes = match field.bytes().await {
-			Ok(b) if !b.is_empty() => b,
-			_ => continue,
-		};
+		let bytes = field.bytes().await.map_err(|e| {
+			ProjectError::Validation(format!("Failed to read file payload: {e}"))
+		})?;
 
-		field_found = true;
-		let is_video =
-			crate::media::is_video_upload(&name, content_type.as_deref(), Some(&filename));
+		if bytes.is_empty() {
+			continue;
+		}
+
+		let is_video = crate::media::is_video_upload(&name, content_type.as_deref(), Some(&filename));
+
+		let lower_name = filename.to_lowercase();
+		if lower_name.ends_with(".svg") || content_type.as_deref() == Some("image/svg+xml") {
+			return Err(ProjectError::Validation(
+				"SVG format is not supported for gallery media. Please upload JPG, PNG, or WebP images.".to_string(),
+			));
+		}
+
+		const MAX_IMAGE_BYTES: usize = 5 * 1024 * 1024; // 5 MB limit requested by user
+		if !is_video && bytes.len() > MAX_IMAGE_BYTES {
+			return Err(ProjectError::Validation(format!(
+				"Image '{}' exceeds the 5 MB size limit ({:.2} MB uploaded).",
+				filename,
+				bytes.len() as f64 / 1_048_576.0
+			)));
+		}
 
 		let upload_res: Result<(Uuid, Vec<String>), ProjectError> = if is_video {
 			match crate::media::process_and_upload_video(
@@ -798,17 +680,13 @@ async fn upload_project_media(
 						let _ = sqlx::query_file!(
 							"queries/projects/delete_project_media.sql",
 							id,
-							m_id
+							m_id,
 						)
 						.execute(&state.model.db)
 						.await;
-						let _ = sqlx::query!("DELETE FROM media WHERE id = $1", m_id)
-							.execute(&state.model.db)
-							.await;
 					}
-					return Err(ProjectError::from(e));
+					return Err(e.into());
 				}
-
 				current_seq += 1;
 			}
 			Err(e) => {
@@ -822,50 +700,48 @@ async fn upload_project_media(
 						.await;
 				}
 				for m_id in &uploaded_media_ids {
-					let _ =
-						sqlx::query_file!("queries/projects/delete_project_media.sql", id, m_id)
-							.execute(&state.model.db)
-							.await;
-					let _ = sqlx::query!("DELETE FROM media WHERE id = $1", m_id)
-						.execute(&state.model.db)
-						.await;
+					let _ = sqlx::query_file!(
+						"queries/projects/delete_project_media.sql",
+						id,
+						m_id,
+					)
+					.execute(&state.model.db)
+					.await;
 				}
 				return Err(e);
 			}
 		}
 	}
 
-	if !field_found || uploaded_media_ids.is_empty() {
-		return Err(ProjectError::Validation(
-			"No media file provided in upload".to_string(),
-		));
+	if uploaded_media_ids.is_empty() {
+		return Err(ProjectError::Validation("No media file provided in upload".to_string()));
 	}
 
-	tracing::info!(
-		project_id = id,
-		count = uploaded_media_ids.len(),
-		"attached media to project"
-	);
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
 		.await;
-	Ok(Redirect::to(&format!("/admin/projects/{id}/media")))
+
+	Ok((
+		StatusCode::CREATED,
+		Json(json!({ "success": true, "media_ids": uploaded_media_ids })),
+	))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "admin/")]
 pub struct ReorderMediaPayload {
 	pub order: Vec<Uuid>,
 }
 
 async fn reorder_project_media(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-	axum::Json(payload): axum::Json<ReorderMediaPayload>,
-) -> Result<StatusCode, ProjectError> {
+	Json(payload): Json<ReorderMediaPayload>,
+) -> Result<Json<serde_json::Value>, ProjectError> {
 	let mut tx = state.model.db.begin().await?;
 
-	// 1. Shift existing sequences to negative
 	sqlx::query_file!(
 		"queries/projects/shift_project_media_sequences_negative.sql",
 		id
@@ -873,7 +749,6 @@ async fn reorder_project_media(
 	.execute(&mut *tx)
 	.await?;
 
-	// 2. Set new sequences
 	for (idx, mid) in payload.order.into_iter().enumerate() {
 		let seq = idx as i16;
 		sqlx::query_file!(
@@ -891,11 +766,13 @@ async fn reorder_project_media(
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
 		.await;
-	Ok(StatusCode::OK)
+
+	Ok(Json(json!({ "success": true })))
 }
 
 async fn delete_project_media(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path((id, mid)): Path<(i32, Uuid)>,
 ) -> Result<StatusCode, ProjectError> {
 	sqlx::query_file!("queries/projects/delete_project_media.sql", id, mid)
@@ -911,20 +788,21 @@ async fn delete_project_media(
 	Ok(StatusCode::NO_CONTENT)
 }
 
-async fn project_documents_page(
+async fn project_documents_list(
 	State(state): State<AppState>,
-	Extension(auth_user): Extension<AuthUser>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
-) -> Result<Html<String>, ProjectError> {
-	let project = sqlx::query_file!("queries/projects/check_project_exists.sql", id)
+) -> Result<Json<Vec<ProjectDocumentItem>>, ProjectError> {
+	sqlx::query_file!("queries/projects/check_project_exists.sql", id)
 		.fetch_one(&state.model.db)
 		.await?;
 
+	#[allow(dead_code)]
 	struct DbDoc {
 		id: i32,
 		media_id: Uuid,
-		display_name: String,
-		doc_type: String,
+		display_name: Option<String>,
+		doc_type: Option<String>,
 		s3_key: String,
 		file_size: Option<i64>,
 	}
@@ -937,117 +815,122 @@ async fn project_documents_page(
 		.into_iter()
 		.map(|r| {
 			let url = CONFIG.asset_url(&r.s3_key);
-			let file_size_formatted = format_bytes(r.file_size);
+			let file_name = r
+				.display_name
+				.unwrap_or_else(|| r.s3_key.split('/').last().unwrap_or("document").to_string());
 			ProjectDocumentItem {
-				id: r.id,
-				media_id: r.media_id,
-				display_name: r.display_name,
-				doc_type: r.doc_type,
+				id: r.media_id,
+				file_name,
 				url,
-				file_size_formatted,
+				file_size: r.file_size,
+				doc_type: r.doc_type.unwrap_or_else(|| "brochure".to_string()),
 			}
 		})
 		.collect();
 
-	Ok(Html(
-		ProjectDocumentsTemplate {
-			admin_name: &auth_user.username,
-			page: AdminPage::Projects,
-			project_id: project.id,
-			project_name: project.name,
-			documents,
-		}
-		.render()?,
-	))
+	Ok(Json(documents))
 }
 
 async fn upload_project_document(
 	State(state): State<AppState>,
+	_auth_user: AuthUser,
 	Path(id): Path<i32>,
 	mut multipart: Multipart,
-) -> Result<Redirect, ProjectError> {
-	let mut display_name = String::new();
-	let mut doc_type = String::from("other");
-	let mut file_bytes: Option<Vec<u8>> = None;
-	let mut file_name = String::from("document.pdf");
-	let mut mime_type = String::from("application/pdf");
+) -> Result<(StatusCode, Json<serde_json::Value>), ProjectError> {
+	sqlx::query_file!("queries/projects/check_project_exists.sql", id)
+		.fetch_one(&state.model.db)
+		.await?;
+
+	let mut doc_type = "brochure".to_string();
+	let mut display_name: Option<String> = None;
+	let mut uploaded_file: Option<(String, String, Vec<u8>)> = None;
 
 	while let Ok(Some(field)) = multipart.next_field().await {
-		match field.name() {
-			Some("display_name") => {
-				display_name = field.text().await.unwrap_or_default();
-			}
-			Some("doc_type") => {
-				doc_type = field.text().await.unwrap_or_default();
-			}
-			Some("file") => {
-				if let Some(name) = field.file_name() {
-					file_name = name.to_string();
+		let name = field.name().unwrap_or_default().to_string();
+		if name == "doc_type" {
+			if let Ok(text) = field.text().await {
+				let trimmed = text.trim();
+				if matches!(trimmed, "rera" | "bu_approval" | "brochure" | "other") {
+					doc_type = trimmed.to_string();
 				}
-				if let Some(ct) = field.content_type() {
-					mime_type = ct.to_string();
-				}
-				file_bytes = Some(
-					field
-						.bytes()
-						.await
-						.map_err(|e| ProjectError::Internal(e.to_string()))?
-						.to_vec(),
-				);
 			}
-			_ => {}
+		} else if name == "display_name" {
+			if let Ok(text) = field.text().await {
+				let trimmed = text.trim();
+				if !trimmed.is_empty() {
+					display_name = Some(trimmed.to_string());
+				}
+			}
+		} else {
+			let filename = field.file_name().unwrap_or("document.pdf").to_string();
+			let content_type = field.content_type().unwrap_or("application/pdf").to_string();
+			if let Ok(b) = field.bytes().await {
+				if !b.is_empty() {
+					uploaded_file = Some((filename, content_type, b.to_vec()));
+				}
+			}
 		}
 	}
 
-	let bytes = file_bytes
-		.ok_or_else(|| ProjectError::Validation("No document file attached".to_string()))?;
+	if let Some((filename, content_type, bytes)) = uploaded_file {
+		let doc_res = crate::media::upload_document(
+			&state.model.db,
+			&state.s3_client,
+			&filename,
+			&content_type,
+			bytes,
+		)
+		.await
+		.map_err(ProjectError::Media)?;
 
-	if display_name.trim().is_empty() {
-		display_name = file_name.clone();
+		let final_title = display_name.unwrap_or_else(|| filename.clone());
+
+		sqlx::query_file!(
+			"queries/projects/insert_project_document.sql",
+			id,
+			doc_res.media_id,
+			Some(final_title.as_str()),
+			Some(doc_type.as_str()),
+		)
+		.execute(&state.model.db)
+		.await?;
+
+		state
+			.page_cache
+			.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
+			.await;
+
+		return Ok((
+			StatusCode::CREATED,
+			Json(json!({
+				"id": doc_res.media_id,
+				"file_name": final_title,
+				"url": doc_res.url,
+				"file_size": doc_res.file_size,
+				"doc_type": doc_type,
+			})),
+		));
 	}
 
-	let uploaded = crate::media::upload_document(
-		&state.model.db,
-		&state.s3_client,
-		&file_name,
-		&mime_type,
-		bytes,
-	)
-	.await?;
-
-	sqlx::query_file!(
-		"queries/projects/insert_project_document.sql",
-		id,
-		uploaded.media_id,
-		display_name.trim(),
-		doc_type.trim(),
-	)
-	.execute(&state.model.db)
-	.await?;
-
-	tracing::info!(project_id = id, doc_name = %display_name, "uploaded project document");
-	state
-		.page_cache
-		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
-		.await;
-	Ok(Redirect::to(&format!("/admin/projects/{id}/documents")))
+	Err(ProjectError::Validation("No document file provided".to_string()))
 }
 
 async fn delete_project_document(
 	State(state): State<AppState>,
-	Path((id, did)): Path<(i32, i32)>,
+	_auth_user: AuthUser,
+	Path((id, did)): Path<(i32, Uuid)>,
 ) -> Result<StatusCode, ProjectError> {
-	let row = sqlx::query_file!("queries/projects/delete_project_document.sql", did, id)
+	let res = sqlx::query_file!("queries/projects/delete_project_document.sql", did, id)
 		.fetch_optional(&state.model.db)
 		.await?;
 
-	if let Some(r) = row {
-		crate::media::delete_media(&state.model.db, &state.s3_client, r.media_id).await?;
+	if let Some(doc) = res {
+		crate::media::delete_media(&state.model.db, &state.s3_client, doc.media_id).await?;
 	}
-
 	state
 		.page_cache
 		.invalidate(crate::cache::InvalidationEvent::ProjectUpdated(id))
 		.await;
+
 	Ok(StatusCode::NO_CONTENT)
 }

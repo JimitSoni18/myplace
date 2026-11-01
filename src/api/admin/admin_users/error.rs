@@ -1,4 +1,8 @@
-use axum::{http::StatusCode, response::IntoResponse};
+use axum::{
+	http::StatusCode,
+	response::{IntoResponse, Json},
+};
+use serde_json::json;
 
 #[derive(Debug)]
 pub enum AdminUserError {
@@ -6,7 +10,6 @@ pub enum AdminUserError {
 	BadRequest(String),
 	Forbidden(String),
 	SqlError(sqlx::Error),
-	RenderError(askama::Error),
 	HashingError,
 }
 
@@ -26,20 +29,35 @@ impl From<sqlx::Error> for AdminUserError {
 	}
 }
 
-impl From<askama::Error> for AdminUserError {
-	fn from(e: askama::Error) -> Self {
-		Self::RenderError(e)
-	}
-}
-
 impl IntoResponse for AdminUserError {
 	fn into_response(self) -> axum::response::Response {
 		tracing::error!(error = ?self, "admin user route error");
 		match self {
-			Self::NotFound => (StatusCode::NOT_FOUND, "Admin user not found").into_response(),
-			Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg).into_response(),
-			Self::Forbidden(msg) => (StatusCode::FORBIDDEN, msg).into_response(),
-			_ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+			Self::NotFound => (
+				StatusCode::NOT_FOUND,
+				Json(json!({ "code": "NOT_FOUND", "message": "Admin user not found" })),
+			)
+				.into_response(),
+			Self::BadRequest(msg) => (
+				StatusCode::BAD_REQUEST,
+				Json(json!({ "code": "VALIDATION_ERROR", "message": msg })),
+			)
+				.into_response(),
+			Self::Forbidden(msg) => (
+				StatusCode::FORBIDDEN,
+				Json(json!({ "code": "FORBIDDEN", "message": msg })),
+			)
+				.into_response(),
+			Self::HashingError => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "CRYPTO_ERROR", "message": "Password hashing error" })),
+			)
+				.into_response(),
+			Self::SqlError(_) => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				Json(json!({ "code": "DATABASE_ERROR", "message": "Database query failure" })),
+			)
+				.into_response(),
 		}
 	}
 }

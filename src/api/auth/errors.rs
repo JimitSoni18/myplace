@@ -1,33 +1,42 @@
-use askama::Template;
 use axum::{
 	http::StatusCode,
-	response::{Html, IntoResponse},
+	response::{IntoResponse, Json},
 };
+use serde_json::json;
 
-use crate::templates::auth::LoginTemplate;
-
+#[derive(Debug)]
 pub enum LoginError {
 	InvalidCredentials,
+	AccountInactive,
 	InternalError,
 	BadRequest,
 }
 
 impl IntoResponse for LoginError {
 	fn into_response(self) -> axum::response::Response {
-		match self {
+		let (status, code, message) = match self {
 			Self::InvalidCredentials => (
 				StatusCode::UNAUTHORIZED,
-				Html(
-					LoginTemplate {
-						incorrect_password_error: true,
-					}
-					.render()
-					.unwrap(),
-				),
-			)
-				.into_response(),
-			Self::InternalError => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-			Self::BadRequest => StatusCode::BAD_REQUEST.into_response(),
-		}
+				"INVALID_CREDENTIALS",
+				"Invalid username or password",
+			),
+			Self::AccountInactive => (
+				StatusCode::FORBIDDEN,
+				"ACCOUNT_INACTIVE",
+				"This account has been deactivated",
+			),
+			Self::BadRequest => (
+				StatusCode::BAD_REQUEST,
+				"BAD_REQUEST",
+				"Username and password are required",
+			),
+			Self::InternalError => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				"INTERNAL_ERROR",
+				"An internal server error occurred",
+			),
+		};
+
+		(status, Json(json!({ "code": code, "message": message }))).into_response()
 	}
 }

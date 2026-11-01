@@ -20,9 +20,9 @@ path = "src/bin/seed.rs"
 name = "migrate"
 path = "src/bin/migrate.rs"
 
-[features]
-default = ["route-multiplexing"]
-route-multiplexing = []
+[[bin]]
+name = "gen_types"
+path = "src/bin/gen_types.rs"
 
 [dependencies]
 ammonia = "4"
@@ -34,6 +34,7 @@ axum = { version = "0.8.8", features = ["macros", "multipart"] }
 base64 = "0.22.1"
 blake3 = { version = "1.8.3", features = ["traits-preview"] }
 dotenvy = "0.15.7"
+futures-util = "0.3"
 hmac = "0.12.1"
 image = "0.25.10"
 jsonwebtoken = { version = "10.3.0", features = ["ed25519-dalek"] }
@@ -46,11 +47,13 @@ serde_urlencoded = "0.7"
 sqlx = { version = "0.8.6", features = ["uuid", "postgres", "runtime-tokio", "time", "tls-rustls", "migrate"] }
 time = { version = "0.3.47", features = ["macros", "formatting", "local-offset", "serde"] }
 tokio = { version = "1.49.0", features = ["full"] }
-tower-http = { version = "0.6.8", features = ["fs"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+tower-http = { version = "0.6.8", features = ["fs", "cors"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 uuid = { version = "1.21.0", features = ["v4", "serde", "v7"] }
 webp = "0.3.1"
+ts-rs = { version = "12", features = ["serde-compat", "uuid-impl"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

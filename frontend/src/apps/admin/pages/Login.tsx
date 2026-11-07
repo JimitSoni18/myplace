@@ -15,7 +15,17 @@ export function Login() {
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!username() || !password()) {
+    const form = e.currentTarget as HTMLFormElement;
+    const userVal =
+      username().trim() ||
+      (form.elements.namedItem("username") as HTMLInputElement)?.value?.trim() ||
+      "";
+    const passVal =
+      password() ||
+      (form.elements.namedItem("password") as HTMLInputElement)?.value ||
+      "";
+
+    if (!userVal || !passVal) {
       setError("Please enter both username and password");
       return;
     }
@@ -25,8 +35,8 @@ export function Login() {
 
     try {
       const res = await api.post<LoginResponse>("/api/auth/admin/login", {
-        username: username().trim(),
-        password: password(),
+        username: userVal,
+        password: passVal,
       });
 
       if (res.token) {
@@ -67,24 +77,30 @@ export function Login() {
             <div>
               <Input
                 label="Admin Username"
+                id="admin-username"
+                name="username"
                 type="text"
                 required
                 autocomplete="username"
                 placeholder="e.g. admin"
                 value={username()}
                 onInput={(e) => setUsername(e.currentTarget.value)}
+                onChange={(e) => setUsername(e.currentTarget.value)}
               />
             </div>
 
             <div>
               <Input
                 label="Password"
+                id="admin-password"
+                name="password"
                 type="password"
                 required
                 autocomplete="current-password"
                 placeholder="••••••••••••"
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
+                onChange={(e) => setPassword(e.currentTarget.value)}
               />
             </div>
 

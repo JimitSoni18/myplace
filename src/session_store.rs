@@ -1,7 +1,8 @@
 use std::{collections::BTreeMap, ops::Deref, sync::Mutex};
 
+use time::{Duration, OffsetDateTime};
 use tokio::sync::RwLock;
-use uuid::{ClockSequence, ContextV7, Timestamp, Uuid};
+use uuid::{ClockSequence, ContextV7, Uuid};
 
 use crate::constants::misc::SIX_HOURS_SECONDS;
 
@@ -55,23 +56,20 @@ pub enum UserRole {
 // Session data
 // ---------------------------------------------------------------------------
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AuthUser {
 	pub user_id: i32,
 	pub username: String,
 	pub role: UserRole,
-	pub started_at: Timestamp,
-	pub expires_at: Timestamp,
+	pub started_at: OffsetDateTime,
+	pub expires_at: OffsetDateTime,
 	// TODO: add client platform: ip, browser, location, etc.
 }
 
 impl AuthUser {
 	pub fn new(user_id: i32, username: String, role: UserRole) -> Self {
-		let shared_context = get_shared_context();
-		let started_at = Timestamp::now(shared_context);
-		let (seconds, subsec_nanos) = started_at.to_unix();
-		let expires_at =
-			Timestamp::from_unix(shared_context, seconds + SIX_HOURS_SECONDS, subsec_nanos);
+		let started_at = OffsetDateTime::now_utc();
+		let expires_at = started_at + Duration::seconds(SIX_HOURS_SECONDS as i64);
 
 		Self {
 			user_id,
@@ -82,18 +80,16 @@ impl AuthUser {
 		}
 	}
 
-	pub fn with_creation_timestamp(self, started_at: Timestamp) -> Self {
+	pub fn with_creation_timestamp(self, started_at: OffsetDateTime) -> Self {
 		Self { started_at, ..self }
 	}
 
 	/// Returns `true` if this session has passed its `expires_at` time.
 	pub fn is_expired(&self) -> bool {
-		let (expires_at_secs, _) = self.expires_at.to_unix();
-		let (now_secs, _) = Timestamp::now(get_shared_context()).to_unix();
-		// Expired when the deadline is in the past.
-		expires_at_secs < now_secs
+		OffsetDateTime::now_utc() > self.expires_at
 	}
 }
+
 
 // ---------------------------------------------------------------------------
 // Session ID
@@ -149,9 +145,10 @@ pub struct SessionStore {
 
 impl SessionStore {
 	fn new_session_id() -> SessionId {
-		SessionId(Uuid::new_v7(Timestamp::now(get_shared_context())))
+		SessionId(Uuid::now_v7())
 	}
 }
+
 
 impl SessionStoreTrait for SessionStore {
 	async fn create_session(&self, auth_user: AuthUser) -> SessionId {

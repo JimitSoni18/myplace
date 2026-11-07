@@ -18,6 +18,9 @@ pub fn get_signature(id: &Uuid) -> String {
 
 pub fn verify_cookie(id: &Uuid, sign: &str) -> bool {
 	let mac = create_mac(id);
-	let decoded_sign = STANDARD.decode(sign).unwrap();
+	let Ok(decoded_sign) = STANDARD.decode(sign) else {
+		return false;
+	};
 	mac.verify_slice(&decoded_sign).is_ok()
 }
+

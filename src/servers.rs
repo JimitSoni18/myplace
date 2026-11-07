@@ -52,6 +52,7 @@ pub fn main_router(state: AppState) -> Router {
 						|| clean.starts_with("http://127.0.0.1:")
 						|| clean.ends_with(".github.io")
 						|| clean.ends_with(".pages.dev")
+						|| clean.ends_with(".workers.dev")
 				} else {
 					false
 				}

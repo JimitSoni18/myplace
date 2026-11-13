@@ -1,0 +1,199 @@
+/* ==========================================================================
+   MyPlace - Projects Catalog & Faceted Search CSS
+   Loaded ONLY on /projects
+   ========================================================================== */
+
+.catalog-hero-header {
+	background-color: var(--surface-dark-hero);
+	color: var(--text-hero-primary);
+	padding: 4.5rem 0 5.5rem;
+	border-bottom: 1px solid var(--surface-dark-border);
+	position: relative;
+	overflow: hidden;
+}
+
+.catalog-hero-header::before {
+	content: '';
+	position: absolute;
+	top: -50%;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 900px;
+	height: 500px;
+	background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, transparent 70%);
+	pointer-events: none;
+}
+
+.breadcrumb-trail {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	font-size: 0.82rem;
+	color: var(--text-hero-muted);
+	margin-bottom: 1.25rem;
+}
+
+.breadcrumb-trail a {
+	color: var(--text-hero-muted);
+}
+
+.breadcrumb-trail a:hover {
+	color: #FFFFFF;
+}
+
+/* ==========================================================================
+   Component 5: Faceted Filter Ribbon
+   ========================================================================== */
+.faceted-filter-ribbon {
+	background: #FFFFFF;
+	border: 1px solid var(--border-hairline-light);
+	border-radius: var(--radius-xl);
+	padding: 1.5rem 2rem;
+	margin-top: -2.75rem;
+	margin-bottom: 2rem;
+	box-shadow: var(--shadow-card-elevated);
+	position: relative;
+	z-index: 20;
+}
+
+.filter-ribbon-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+}
+
+.filter-search-box {
+	flex: 1.5;
+	min-width: 260px;
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.filter-search-box input {
+	width: 100%;
+	border: 1px solid var(--border-hairline-light);
+	border-radius: var(--radius-md);
+	padding: 0.75rem 1rem 0.75rem 2.6rem;
+	font-size: 0.92rem;
+	color: var(--text-primary);
+	background: var(--surface-subtle);
+	transition: all var(--duration-fast);
+}
+
+.filter-search-box input:focus {
+	outline: none;
+	background: #FFFFFF;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.filter-search-icon {
+	position: absolute;
+	left: 0.85rem;
+	color: var(--text-muted);
+	pointer-events: none;
+}
+
+.filter-select-pill {
+	border: 1px solid var(--border-hairline-light);
+	border-radius: var(--radius-md);
+	padding: 0.72rem 1rem;
+	font-size: 0.9rem;
+	background: #FFFFFF;
+	color: var(--text-primary);
+	outline: none;
+	cursor: pointer;
+	transition: border-color var(--duration-fast);
+	font-weight: 600;
+}
+
+.filter-select-pill:focus {
+	border-color: var(--primary);
+}
+
+.active-filters-strip {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.65rem;
+	margin-bottom: 2rem;
+	padding: 0.75rem 1.25rem;
+	background: #FFFFFF;
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-hairline-light);
+}
+
+.active-filter-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: var(--primary-glow);
+	color: var(--primary);
+	border: 1px solid rgba(37, 99, 235, 0.2);
+	padding: 0.35rem 0.75rem;
+	border-radius: var(--radius-full);
+	font-size: 0.82rem;
+	font-weight: 700;
+}
+
+.active-filter-chip button,
+.active-filter-chip a {
+	background: none;
+	border: none;
+	color: var(--primary);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	padding: 0;
+}
+
+.clear-all-link {
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: #DC2626;
+	cursor: pointer;
+	margin-left: auto;
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   Mobile Bottom Sheet Filter Drawer
+   ========================================================================== */
+.filter-drawer-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(11, 15, 25, 0.65);
+	backdrop-filter: blur(8px);
+	z-index: 110;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.3s ease;
+}
+
+.filter-drawer-overlay.open {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.filter-drawer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	max-height: 85vh;
+	background: #FFFFFF;
+	border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+	z-index: 115;
+	padding: 1.75rem 1.5rem;
+	transform: translateY(100%);
+	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	overflow-y: auto;
+	box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.filter-drawer.open {
+	transform: translateY(0);
+}

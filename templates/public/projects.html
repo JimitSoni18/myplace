@@ -1,140 +1,47 @@
 {% extends "public/base.html" %}
 
 {% block head_extra %}
-<style>
-	.catalog-hero {
-		background: #0f172a;
-		color: white;
-		padding: 3.5rem 0 4.5rem;
-		border-bottom: 1px solid #1e293b;
-	}
-
-	.catalog-title {
-		font-size: clamp(2.25rem, 4vw, 3rem);
-		font-weight: 800;
-		letter-spacing: -0.025em;
-		margin-bottom: 0.5rem;
-	}
-
-	.catalog-desc {
-		color: #94a3b8;
-		font-size: 1.1rem;
-		max-width: 640px;
-		line-height: 1.6;
-	}
-
-	/* Filter Bar */
-	.catalog-filter-bar {
-		background: white;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-xl);
-		padding: 1.25rem 1.75rem;
-		margin-top: -2.5rem;
-		margin-bottom: 3rem;
-		box-shadow: var(--shadow-lg);
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.25rem;
-		position: relative;
-		z-index: 10;
-	}
-
-	.filter-chip-group {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-	}
-
-	.filter-chip {
-		padding: 0.45rem 1rem;
-		border-radius: var(--radius-full);
-		font-size: 0.88rem;
-		font-weight: 700;
-		color: var(--text-muted);
-		background: var(--bg-subtle);
-		border: 1px solid transparent;
-		transition: all var(--duration-fast);
-		text-decoration: none;
-	}
-
-	.filter-chip:hover {
-		color: var(--primary);
-		background: #eff6ff;
-	}
-
-	.filter-chip.active {
-		background: var(--primary);
-		color: white;
-		box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
-	}
-
-	.filter-search-form {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.75rem;
-	}
-
-	.filter-select {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		padding: 0.55rem 0.85rem;
-		font-size: 0.88rem;
-		background: white;
-		color: var(--text-main);
-		font-family: inherit;
-		outline: none;
-	}
-
-	.filter-search-input {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		padding: 0.55rem 0.85rem;
-		font-size: 0.88rem;
-		min-width: 200px;
-		color: var(--text-main);
-	}
-
-	.filter-search-input:focus {
-		outline: none;
-		border-color: var(--primary);
-	}
-</style>
+<link rel="stylesheet" href="/css/projects.css">
 {% endblock %}
 
 {% block content %}
-<section class="catalog-hero">
+<!-- ==========================================================================
+     Catalog Hero Search Header
+     ========================================================================== -->
+<section class="catalog-hero-header">
 	<div class="container">
-		<nav style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#94a3b8; margin-bottom:1.25rem;">
-			<a href="/" style="color:#94a3b8;">Home</a>
+		<nav class="breadcrumb-trail" aria-label="Breadcrumb">
+			<a href="/">Home</a>
 			<span>&rsaquo;</span>
-			<span style="color: white; font-weight: 600;">Projects</span>
+			<span style="color: #FFFFFF; font-weight: 700;">Projects Directory</span>
 		</nav>
-		<h1 class="catalog-title">Premier Master Developments</h1>
-		<p class="catalog-desc">Explore master-planned communities, high-yield commercial hubs, and verified plotted developments directly from reputable real estate developers.</p>
+		<h1 class="heading-display" style="color: #FFFFFF; margin-bottom: 0.75rem;">
+			Discover Exceptional Real Estate Developments
+		</h1>
+		<p style="color: #94A3B8; font-size: 1.15rem; max-width: 680px; line-height: 1.6;">
+			Explore master-planned communities, signature luxury residences, and verified plotted enclaves directly from reputable developers.
+		</p>
 	</div>
 </section>
 
-<div class="container" style="padding-bottom: 5rem;">
-	<!-- Filter Toolbar -->
-	<div class="catalog-filter-bar">
-		<div class="filter-chip-group">
-			<a href="/projects" class="filter-chip {% if selected_type_id.is_none() %}active{% endif %}">All Types</a>
-			{% for pt in project_types %}
-			<a href="/projects?type_id={{ pt.id }}" class="filter-chip {% if self.is_type_selected(pt.id) %}active{% endif %}">{{ pt.name }}</a>
-			{% endfor %}
-		</div>
+<div class="container" style="padding-bottom: 6rem;">
+	<!-- ==========================================================================
+	     Component 5: Faceted Filter Ribbon (Desktop)
+	     ========================================================================== -->
+	<div class="faceted-filter-ribbon">
+		<form action="/projects" method="get" id="desktop-filter-form" class="filter-ribbon-form">
+			<!-- Search Input -->
+			<div class="filter-search-box">
+				<svg class="filter-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+				<input type="text" name="q" placeholder="Search by project, developer, city, or locality..." value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+			</div>
 
-		<form action="/projects" method="get" class="filter-search-form">
-			{% if let Some(sid) = selected_type_id %}
-			<input type="hidden" name="type_id" value="{{ sid }}">
-			{% endif %}
-
+			<!-- City Filter Dropdown -->
 			{% if !available_cities.is_empty() %}
-			<select name="city" class="filter-select" onchange="this.form.submit()">
+			<select name="city" class="filter-select-pill" onchange="this.form.submit()">
 				<option value="">All Cities</option>
 				{% for c in available_cities %}
 				<option value="{{ c }}" {% if self.is_city_selected(c.as_str()) %}selected{% endif %}>{{ c }}</option>
@@ -142,66 +49,155 @@
 			</select>
 			{% endif %}
 
-			<input type="text" name="q" placeholder="Search projects or locality..." class="filter-search-input" value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
-			
+			<!-- Property Type Dropdown -->
+			{% if !project_types.is_empty() %}
+			<select name="type_id" class="filter-select-pill" onchange="this.form.submit()">
+				<option value="">All Property Types</option>
+				{% for pt in project_types %}
+				<option value="{{ pt.id }}" {% if self.is_type_selected(pt.id) %}selected{% endif %}>{{ pt.name }}</option>
+				{% endfor %}
+			</select>
+			{% endif %}
+
+			<!-- BHK Configuration Dropdown -->
+			<select name="bhk" class="filter-select-pill" onchange="this.form.submit()">
+				<option value="">All Configurations</option>
+				<option value="1" {% if let Some(b) = selected_bhk %}{% if *b == 1.0 %}selected{% endif %}{% endif %}>1 BHK</option>
+				<option value="2" {% if let Some(b) = selected_bhk %}{% if *b == 2.0 %}selected{% endif %}{% endif %}>2 BHK</option>
+				<option value="3" {% if let Some(b) = selected_bhk %}{% if *b == 3.0 %}selected{% endif %}{% endif %}>3 BHK</option>
+				<option value="4" {% if let Some(b) = selected_bhk %}{% if *b >= 4.0 %}selected{% endif %}{% endif %}>4+ BHK / Penthouses</option>
+			</select>
+
+			<!-- Submit & Mobile Trigger Buttons -->
 			<button type="submit" class="btn btn-primary btn-sm">
-				<span>Filter</span>
+				<span>Apply Filters</span>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="11" cy="11" r="8"></circle>
-					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					<polyline points="9 18 15 12 9 6"></polyline>
 				</svg>
+			</button>
+
+			<button type="button" class="btn btn-secondary btn-sm mobile-menu-btn" onclick="toggleFilterDrawer()" style="display: none;" aria-label="Open filter drawer">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="4" y1="21" x2="4" y2="14"></line>
+					<line x1="4" y1="10" x2="4" y2="3"></line>
+					<line x1="12" y1="21" x2="12" y2="12"></line>
+					<line x1="12" y1="8" x2="12" y2="3"></line>
+					<line x1="20" y1="21" x2="20" y2="16"></line>
+					<line x1="20" y1="12" x2="20" y2="3"></line>
+					<line x1="1" y1="14" x2="7" y2="14"></line>
+					<line x1="9" y1="8" x2="15" y2="8"></line>
+					<line x1="17" y1="16" x2="23" y2="16"></line>
+				</svg>
+				<span>Filters</span>
 			</button>
 		</form>
 	</div>
 
-	<!-- Results Header -->
-	<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
-		<div style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted);">
-			Showing <span style="color: var(--text-main); font-weight: 800;">{{ projects.len() }}</span> Verified Developments
-		</div>
-		{% if selected_type_id.is_some() || selected_city.is_some() || search_query.is_some() %}
-		<a href="/projects" class="btn btn-secondary btn-sm" style="color: #dc2626;">
-			<span>Reset All Filters</span>
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-				<line x1="18" y1="6" x2="6" y2="18"></line>
-				<line x1="6" y1="6" x2="18" y2="18"></line>
-			</svg>
-		</a>
+	<!-- Active Filters Strip -->
+	{% if selected_type_id.is_some() || selected_city.is_some() || selected_area.is_some() || selected_bhk.is_some() || search_query.is_some() %}
+	<div class="active-filters-strip">
+		<span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-right: 0.5rem;">Active Filters:</span>
+		
+		{% if let Some(city) = selected_city %}
+		<span class="active-filter-chip">
+			City: {{ city }}
+			<a href="/projects?{% if let Some(t) = selected_type_id %}type_id={{ t }}&{% endif %}{% if let Some(b) = selected_bhk %}bhk={{ b }}&{% endif %}{% if let Some(q) = search_query %}q={{ q }}{% endif %}" title="Remove filter">&times;</a>
+		</span>
 		{% endif %}
+
+		{% if let Some(q) = search_query %}
+		<span class="active-filter-chip">
+			Query: "{{ q }}"
+			<a href="/projects?{% if let Some(c) = selected_city %}city={{ c }}&{% endif %}{% if let Some(t) = selected_type_id %}type_id={{ t }}&{% endif %}{% if let Some(b) = selected_bhk %}bhk={{ b }}{% endif %}" title="Remove filter">&times;</a>
+		</span>
+		{% endif %}
+
+		{% if let Some(b) = selected_bhk %}
+		<span class="active-filter-chip">
+			{{ b }} BHK
+			<a href="/projects?{% if let Some(c) = selected_city %}city={{ c }}&{% endif %}{% if let Some(t) = selected_type_id %}type_id={{ t }}&{% endif %}{% if let Some(q) = search_query %}q={{ q }}{% endif %}" title="Remove filter">&times;</a>
+		</span>
+		{% endif %}
+
+		<a href="/projects" class="clear-all-link">Clear All Filters</a>
+	</div>
+	{% endif %}
+
+	<!-- Result Meta Header -->
+	<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+		<div style="font-size: 1rem; font-weight: 700; color: var(--text-muted);">
+			Showing <span style="color: var(--text-primary); font-weight: 800;">{{ projects.len() }}</span> Exceptional Developments
+			{% if let Some(city) = selected_city %} in <strong style="color: var(--text-primary);">{{ city }}</strong>{% endif %}
+		</div>
+
+		<!-- Interactive Client-side Sort Dropdown -->
+		<div style="display: flex; align-items: center; gap: 0.5rem;">
+			<label for="project-sort-select" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">Sort By:</label>
+			<select id="project-sort-select" class="filter-select-pill" onchange="sortProjectsGrid(this.value)">
+				<option value="featured">Featured Developments</option>
+				<option value="price-asc">Price: Low to High</option>
+				<option value="price-desc">Price: High to Low</option>
+				<option value="name-asc">Project Name: A to Z</option>
+			</select>
+		</div>
 	</div>
 
+	<!-- 3-Column Responsive Project Cards Grid -->
 	{% if projects.is_empty() %}
-	<div style="background: white; border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 4rem 2rem; text-align: center; box-shadow: var(--shadow-sm);">
-		<div style="font-size: 3rem; margin-bottom: 1rem;">🏢</div>
-		<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">No projects match your search criteria</h3>
-		<p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
-			Try clearing your city filter or search query to explore all projects.
+	<div style="background: #FFFFFF; border: 1px solid var(--border-hairline-light); border-radius: var(--radius-xl); padding: 5rem 2rem; text-align: center; box-shadow: var(--shadow-ambient);">
+		<div style="font-size: 3.5rem; margin-bottom: 1rem;">🏢</div>
+		<h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+			No Developments Found Matching Your Criteria
+		</h3>
+		<p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+			Try clearing your city filter or search query to explore our complete portfolio of verified real estate developments.
 		</p>
-		<a href="/projects" class="btn btn-primary btn-sm">Reset All Filters</a>
+		<a href="/projects" class="btn btn-primary">Reset All Filters</a>
 	</div>
 	{% else %}
 	<div class="cards-grid">
 		{% for p in projects %}
-		<article class="entity-card">
+		<article class="entity-card" data-name="{{ p.name }}">
 			<div class="card-media-wrap">
 				{% if let Some(url) = p.hero_thumb_url %}
 				<img src="{{ url }}" alt="{{ p.name }}" loading="lazy">
 				{% else %}
-				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:3rem;">🏢</div>
+				<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94A3B8; font-size:3rem; background:#0B0F19;">🏢</div>
 				{% endif %}
+				
 				<div class="card-top-badges">
-					<span class="badge badge-glass">{{ p.project_type_name }}</span>
+					<span class="badge badge-glass-dark">{{ p.owner_name }}</span>
 					<span class="badge badge-emerald">Verified RERA</span>
 				</div>
+
+				<span class="badge badge-glass-dark card-photo-count">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+						<circle cx="8.5" cy="8.5" r="1.5"></circle>
+						<polyline points="21 15 16 10 5 21"></polyline>
+					</svg>
+					Verified Media
+				</span>
 			</div>
 
 			<div class="card-body">
+				<div class="card-price-row">
+					<div class="card-price-val">
+						{% if let Some(price) = p.min_price_formatted %}
+						{{ price }} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">onwards</span>
+						{% else %}
+						Price on Request
+						{% endif %}
+					</div>
+					<span class="badge badge-primary">{{ p.project_type_name }}</span>
+				</div>
+
 				<h2 class="card-title">
 					<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
 				</h2>
 
 				<div class="card-location">
-					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
 						<circle cx="12" cy="10" r="3"></circle>
 					</svg>
@@ -210,34 +206,37 @@
 
 				<div class="card-specs-row">
 					<div class="spec-pill">
-						<span>Developer:</span>
-						<strong>
-							<a href="/owners/{{ p.owner_slug }}">{{ p.owner_name }}</a>
-						</strong>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="7" height="7"></rect>
+							<rect x="14" y="3" width="7" height="7"></rect>
+							<rect x="14" y="14" width="7" height="7"></rect>
+							<rect x="3" y="14" width="7" height="7"></rect>
+						</svg>
+						<span>{{ p.configurations_count }} Layout Variants</span>
 					</div>
+					{% if let Some(pos) = p.possession_date %}
 					<div class="spec-pill">
-						<span>Layouts:</span>
-						<strong>{{ p.configurations_count }} Variants</strong>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<polyline points="12 6 12 12 16 14"></polyline>
+						</svg>
+						<span>{{ pos }}</span>
 					</div>
+					{% endif %}
 				</div>
 
 				{% if let Some(bhk) = p.bhk_summary %}
-				<div style="font-size: 0.85rem; color: #475569; font-weight: 600; margin-top: -0.25rem;">
-					Config: <span style="color: var(--primary);">{{ bhk }}</span>
+				<div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 1.25rem;">
+					Configurations: <strong style="color: var(--primary);">{{ bhk }}</strong>
 				</div>
 				{% endif %}
 
 				<div class="card-footer">
-					<div>
-						{% if let Some(price) = p.min_price_formatted %}
-						<div style="font-size: 0.78rem; color: var(--text-muted);">Starting From</div>
-						<div class="price-display" style="font-size: 1.15rem;">{{ price }}</div>
-						{% else %}
-						<span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 600;">Price on Request</span>
-						{% endif %}
-					</div>
+					<span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">
+						By <a href="/owners/{{ p.owner_slug }}" style="color: var(--text-primary); text-decoration: underline;">{{ p.owner_name }}</a>
+					</span>
 					<a href="/projects/{{ p.slug }}" class="btn btn-primary btn-sm">
-						<span>Explore</span>
+						<span>Explore Project</span>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<line x1="5" y1="12" x2="19" y2="12"></line>
 							<polyline points="12 5 19 12 12 19"></polyline>
@@ -250,4 +249,63 @@
 	</div>
 	{% endif %}
 </div>
+
+<!-- Mobile Filter Bottom-Sheet Drawer -->
+<div id="filter-drawer-overlay" class="filter-drawer-overlay" onclick="closeFilterDrawer()"></div>
+<div id="filter-drawer" class="filter-drawer">
+	<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-hairline-light);">
+		<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary);">Filter Developments</h3>
+		<button onclick="closeFilterDrawer()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+	</div>
+
+	<form action="/projects" method="get" style="display: flex; flex-direction: column; gap: 1.25rem;">
+		<div>
+			<label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.4rem;">Keywords</label>
+			<input type="text" name="q" placeholder="Locality, builder, project..." class="form-control-input" value="{% if let Some(q) = search_query %}{{ q }}{% endif %}">
+		</div>
+
+		{% if !available_cities.is_empty() %}
+		<div>
+			<label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.4rem;">City</label>
+			<select name="city" class="form-control-input">
+				<option value="">All Cities</option>
+				{% for c in available_cities %}
+				<option value="{{ c }}" {% if self.is_city_selected(c.as_str()) %}selected{% endif %}>{{ c }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		{% endif %}
+
+		{% if !project_types.is_empty() %}
+		<div>
+			<label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.4rem;">Development Type</label>
+			<select name="type_id" class="form-control-input">
+				<option value="">All Types</option>
+				{% for pt in project_types %}
+				<option value="{{ pt.id }}" {% if self.is_type_selected(pt.id) %}selected{% endif %}>{{ pt.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		{% endif %}
+
+		<div>
+			<label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.4rem;">BHK Typology</label>
+			<select name="bhk" class="form-control-input">
+				<option value="">All Configurations</option>
+				<option value="1" {% if let Some(b) = selected_bhk %}{% if *b == 1.0 %}selected{% endif %}{% endif %}>1 BHK</option>
+				<option value="2" {% if let Some(b) = selected_bhk %}{% if *b == 2.0 %}selected{% endif %}{% endif %}>2 BHK</option>
+				<option value="3" {% if let Some(b) = selected_bhk %}{% if *b == 3.0 %}selected{% endif %}{% endif %}>3 BHK</option>
+				<option value="4" {% if let Some(b) = selected_bhk %}{% if *b >= 4.0 %}selected{% endif %}{% endif %}>4+ BHK / Penthouses</option>
+			</select>
+		</div>
+
+		<button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.9rem;">
+			<span>Apply Filters</span>
+		</button>
+	</form>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="/js/projects.js" defer></script>
 {% endblock %}

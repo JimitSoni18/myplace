@@ -1,682 +1,427 @@
 {% extends "public/base.html" %}
 
 {% block head_extra %}
-<style>
-	.proj-hero-section {
-		background: #0f172a;
-		color: white;
-		padding: 2.75rem 0 2.25rem;
-		border-bottom: 1px solid #1e293b;
-	}
-
-	.proj-breadcrumb {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		font-size: 0.85rem;
-		color: #94a3b8;
-		margin-bottom: 1.25rem;
-	}
-
-	.proj-breadcrumb a {
-		color: #94a3b8;
-	}
-
-	.proj-breadcrumb a:hover {
-		color: white;
-	}
-
-	.proj-hero-grid {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 1.75rem;
-	}
-
-	.proj-title-col {
-		flex: 1;
-		min-width: 320px;
-	}
-
-	.proj-stats-col {
-		text-align: right;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.5rem;
-	}
-
-	.proj-title {
-		font-size: clamp(2rem, 4vw, 3rem);
-		font-weight: 800;
-		line-height: 1.18;
-		letter-spacing: -0.025em;
-		margin-bottom: 0.65rem;
-	}
-
-	.proj-loc-row {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-		font-size: 1.05rem;
-		color: #cbd5e1;
-		margin-bottom: 1.25rem;
-	}
-
-	.layout-content-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 380px;
-		gap: 3rem;
-		padding: 3rem 0;
-	}
-
-	.content-panel {
-		background: var(--bg-surface);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-xl);
-		padding: 2.25rem;
-		box-shadow: var(--shadow-sm);
-		margin-bottom: 2.5rem;
-	}
-
-	.content-panel-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 1.5rem;
-		padding-bottom: 1rem;
-		border-bottom: 1px solid var(--border-subtle);
-	}
-
-	.content-panel-title {
-		font-size: 1.4rem;
-		font-weight: 800;
-		color: var(--text-main);
-		letter-spacing: -0.02em;
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-	}
-
-	.prose-body {
-		font-size: 1.02rem;
-		line-height: 1.75;
-		color: #334155;
-	}
-
-	.prose-body p {
-		margin-bottom: 1.2rem;
-	}
-
-	.prose-body ul, .prose-body ol {
-		margin-left: 1.5rem;
-		margin-bottom: 1.2rem;
-	}
-
-	/* Highlight Stats Grid */
-	.metrics-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: 1rem;
-		margin-bottom: 2rem;
-		background: var(--bg-subtle);
-		padding: 1.25rem;
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--border-subtle);
-	}
-
-	.metric-item {
-		text-align: center;
-	}
-
-	.metric-label {
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		font-weight: 700;
-		color: var(--text-muted);
-		letter-spacing: 0.05em;
-		margin-bottom: 0.25rem;
-	}
-
-	.metric-val {
-		font-size: 1.25rem;
-		font-weight: 800;
-		color: var(--text-main);
-	}
-
-	/* Configuration Cards */
-	.config-card {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-lg);
-		padding: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
-		background: var(--bg-surface);
-		transition: all 0.2s ease;
-	}
-
-	.config-card:hover {
-		border-color: #93c5fd;
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
-	}
-
-	.config-card-header {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.config-specs-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-		gap: 0.75rem;
-		padding: 1rem;
-		background: var(--bg-subtle);
-		border-radius: var(--radius-md);
-		border: 1px solid var(--border-subtle);
-	}
-
-	.config-spec-item {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.config-spec-label {
-		font-size: 0.72rem;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		font-weight: 700;
-	}
-
-	.config-spec-val {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	.config-card-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 1rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--border-subtle);
-	}
-
-	/* Specifications Cards */
-	.spec-category-card {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		padding: 1.25rem;
-		background: var(--bg-subtle);
-		margin-bottom: 1rem;
-	}
-
-	.spec-category-title {
-		font-size: 1.05rem;
-		font-weight: 800;
-		color: var(--text-main);
-		margin-bottom: 0.75rem;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.spec-items-list {
-		margin: 0;
-		padding-left: 1.25rem;
-		color: #475569;
-		font-size: 0.95rem;
-		line-height: 1.6;
-	}
-
-	/* Landmarks Grid */
-	.landmarks-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-		gap: 1rem;
-	}
-
-	.landmark-card {
-		padding: 1.15rem;
-		border: 1px solid var(--border-subtle);
-		border-radius: var(--radius-md);
-		background: var(--bg-subtle);
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-
-	.landmark-cat {
-		font-size: 0.72rem;
-		text-transform: uppercase;
-		font-weight: 800;
-		letter-spacing: 0.05em;
-		color: var(--primary);
-	}
-
-	.landmark-name {
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	.landmark-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		font-size: 0.85rem;
-		color: var(--text-muted);
-		margin-top: 0.25rem;
-	}
-
-	/* Floor Plans Layout Grid */
-	.floor-plans-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		gap: 1.25rem;
-	}
-
-	.floor-plan-card {
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-		overflow: hidden;
-		background: var(--bg-surface);
-		transition: all 0.2s ease;
-	}
-
-	.floor-plan-card:hover {
-		box-shadow: var(--shadow-md);
-		transform: translateY(-2px);
-	}
-
-	.floor-plan-img-wrap {
-		aspect-ratio: 4/3;
-		background: #f1f5f9;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-	}
-
-	.floor-plan-img-wrap img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s ease;
-	}
-
-	.floor-plan-card:hover .floor-plan-img-wrap img {
-		transform: scale(1.05);
-	}
-
-	.floor-plan-title {
-		padding: 0.85rem 1rem;
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-main);
-	}
-
-	/* Document Cards */
-	.doc-card {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem 1.25rem;
-		background: var(--bg-subtle);
-		border: 1px solid var(--border-subtle);
-		border-radius: var(--radius-md);
-		transition: all 0.2s ease;
-	}
-
-	.doc-card:hover {
-		background: #eff6ff;
-		border-color: #bfdbfe;
-	}
-
-	@media (max-width: 960px) {
-		.layout-content-grid {
-			grid-template-columns: 1fr;
-			gap: 2rem;
-		}
-		.proj-stats-col {
-			text-align: left;
-			align-items: flex-start;
-		}
-	}
-</style>
+<link rel="stylesheet" href="/css/project-detail.css">
 {% endblock %}
 
 {% block content %}
-<!-- Master Project Hero Section -->
-<section class="proj-hero-section">
-	<div class="container">
-		<nav class="proj-breadcrumb" aria-label="Breadcrumb">
+<!-- ==========================================================================
+     Component 1: Cinematic Hero Banner (Dedicated Luxury Destination Showcase)
+     ========================================================================== -->
+<section class="cinematic-hero">
+	{% if !gallery.is_empty() %}
+	<img src="{{ gallery[0].url }}" alt="{{ project.name }} hero view" class="cinematic-hero-bg" fetchpriority="high">
+	{% else if let Some(og) = og_image %}
+	<img src="{{ og }}" alt="{{ project.name }} hero view" class="cinematic-hero-bg" fetchpriority="high">
+	{% else %}
+	<div class="cinematic-hero-bg" style="background: radial-gradient(circle at 60% 30%, #1e3a8a 0%, #0b0f19 80%);"></div>
+	{% endif %}
+
+	<div class="cinematic-hero-scrim"></div>
+
+	<div class="container cinematic-hero-content">
+		<!-- Floating Breadcrumb Chip Trail -->
+		<nav class="breadcrumb-trail" aria-label="Breadcrumb">
 			<a href="/">Home</a>
 			<span>&rsaquo;</span>
-			<a href="/projects">Projects</a>
+			<a href="/projects?city={{ project.city }}">{{ project.city }}</a>
 			<span>&rsaquo;</span>
-			<span style="color: white; font-weight: 600;">{{ project.name }}</span>
+			<a href="/projects?city={{ project.city }}&area={{ project.area }}">{{ project.area }}</a>
+			<span>&rsaquo;</span>
+			<span style="color: #FFFFFF; font-weight: 700;">{{ project.name }}</span>
 		</nav>
 
-		<div class="proj-hero-grid">
-			<div class="proj-title-col">
-				<div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.85rem;">
-					{% if let Some(rera) = project.rera_number %}
-					<span class="badge badge-emerald" title="RERA Verified: {{ rera }}">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-							<polyline points="20 6 9 17 4 12"></polyline>
-						</svg>
-						RERA: {{ rera }}
-					</span>
+		<!-- Floating Status Badges & RERA Seal -->
+		<div class="hero-badges-row">
+			{% if let Some(rera) = project.rera_number %}
+			<span class="badge badge-gold" title="Official RERA: {{ rera }}">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+				</svg>
+				RERA: {{ rera }}
+			</span>
+			{% else %}
+			<span class="badge badge-gold">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+				</svg>
+				Verified Development
+			</span>
+			{% endif %}
+
+			<span class="badge badge-glass-dark">{{ project.project_type_name }}</span>
+
+			{% if let Some(pos) = project.possession_date %}
+			<span class="badge badge-emerald">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"></circle>
+					<polyline points="12 6 12 12 16 14"></polyline>
+				</svg>
+				Possession: {{ pos }}
+			</span>
+			{% else %}
+			<span class="badge badge-primary">Under Construction</span>
+			{% endif %}
+		</div>
+
+		<!-- Main Project Title & Developer Tag -->
+		<h1 class="hero-main-heading">
+			{{ project.name }}
+			<span style="display:block; font-size:clamp(1.2rem, 2.5vw, 1.75rem); font-weight:600; color:#94A3B8; margin-top:0.4rem; letter-spacing:-0.01em;">
+				By <a href="/owners/{{ owner.slug }}" style="color:#60A5FA; text-decoration:underline;">{{ owner.name }}</a>
+			</span>
+		</h1>
+
+		<!-- Locality & Enclave Line -->
+		<div class="hero-locality-row">
+			<span style="display:inline-flex; align-items:center; gap:0.4rem;">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+					<circle cx="12" cy="10" r="3"></circle>
+				</svg>
+				{{ project.formatted_address }}
+			</span>
+			{% if let Some(area) = project.total_land_area %}
+			<span style="color: rgba(255,255,255,0.4);">&bull;</span>
+			<span>{{ area }} sq.ft. Master Development</span>
+			{% endif %}
+		</div>
+
+		<!-- Starting Price & Quick Actions Cluster -->
+		<div class="hero-price-dock">
+			<div class="hero-price-block">
+				<span class="hero-price-label">Starting Price</span>
+				<div class="hero-price-val">
+					{% if let Some(first_cfg) = configurations.first() %}
+					{{ first_cfg.price_formatted }} <span style="font-size:1.1rem; font-weight:600; color:#94A3B8;">onwards*</span>
 					{% else %}
-					<span class="badge badge-emerald">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-							<polyline points="20 6 9 17 4 12"></polyline>
-						</svg>
-						Verified Development
-					</span>
+					Price on Request
 					{% endif %}
-					<span class="badge badge-primary">{{ project.project_type_name }}</span>
-					{% if let Some(pos) = project.possession_date %}
-					<span class="badge badge-amber">Possession: {{ pos }}</span>
-					{% endif %}
-				</div>
-
-				<h1 class="proj-title">{{ project.name }}</h1>
-
-				<div class="proj-loc-row">
-					<span style="display: inline-flex; align-items: center; gap: 0.35rem;">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-							<circle cx="12" cy="10" r="3"></circle>
-						</svg>
-						{{ project.area }}, {{ project.city }}, {{ project.state_or_province }}
-					</span>
-					<span style="color: #475569;">&bull;</span>
-					<span>By Developer: <a href="/owners/{{ owner.slug }}" style="color: #60a5fa; text-decoration: underline; font-weight: 600;">{{ owner.name }}</a></span>
 				</div>
 			</div>
 
-			<div class="proj-stats-col">
-				<div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-lg); padding: 1rem 1.5rem; text-align: center;">
-					<div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 700;">Configurations</div>
-					<div style="font-size: 2rem; font-weight: 800; color: #60a5fa;">{{ configurations.len() }} Plans</div>
-					<div style="font-size: 0.8rem; color: #cbd5e1;">Available for Booking</div>
-				</div>
+			<div class="hero-action-buttons">
+				{% if !gallery.is_empty() %}
+				<button class="btn btn-frosted-dark" onclick="mediaGallery.open(0)">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+						<circle cx="8.5" cy="8.5" r="1.5"></circle>
+						<polyline points="21 15 16 10 5 21"></polyline>
+					</svg>
+					<span>View {{ gallery.len() }} Photos</span>
+				</button>
+				{% endif %}
+
+				<a href="#configurations" class="btn btn-frosted-dark">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="7" height="7"></rect>
+						<rect x="14" y="3" width="7" height="7"></rect>
+						<rect x="14" y="14" width="7" height="7"></rect>
+						<rect x="3" y="14" width="7" height="7"></rect>
+					</svg>
+					<span>Units & Plans</span>
+				</a>
+
+				<a href="#enquiry" class="btn btn-primary">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+						<line x1="16" y1="2" x2="16" y2="6"></line>
+						<line x1="8" y1="2" x2="8" y2="6"></line>
+						<line x1="3" y1="10" x2="21" y2="10"></line>
+					</svg>
+					<span>Schedule Site Visit</span>
+				</a>
 			</div>
 		</div>
 	</div>
 </section>
 
-<div class="container">
-	<div class="layout-content-grid">
-		<!-- Main Content Column -->
-		<div>
-			<!-- Interactive Media Carousel & Lightbox -->
+<!-- ==========================================================================
+     Component 3: Sticky Anchor Sub-Navigation
+     ========================================================================== -->
+<nav class="sticky-sub-nav" aria-label="Project Sub Navigation">
+	<div class="container">
+		<div class="sub-nav-track">
+			<a href="#overview" class="sub-nav-pill active">Overview</a>
 			{% if !gallery.is_empty() %}
-			<div class="gallery-showcase" v-scope="createGallery({{ gallery.len() }})" v-init="mounted()">
-				<div class="carousel-main-stage">
-					{% for (idx, item) in gallery.iter().enumerate() %}
-					<div class="carousel-active-media" v-show="currentIndex === {{ idx }}">
-						{% if item.media_type == "video" %}
-						<video controls preload="metadata" poster="{{ item.thumbnail_url }}" style="width:100%; height:100%; object-fit:cover;">
-							<source src="{{ item.url }}" type="video/mp4">
-						</video>
-						{% else %}
-						<img src="{{ item.url }}" alt="{{ project.name }} visual {{ idx + 1 }}" {% if idx == 0 %}fetchpriority="high"{% else %}loading="lazy"{% endif %} @click="openLightbox()">
-						{% endif %}
-					</div>
-					{% endfor %}
+			<a href="#gallery" class="sub-nav-pill">Gallery ({{ gallery.len() }})</a>
+			{% endif %}
+			<a href="#configurations" class="sub-nav-pill">Units & Plans ({{ configurations.len() }})</a>
+			{% if !floor_plans.is_empty() %}
+			<a href="#floor-plans" class="sub-nav-pill">Master Plans ({{ floor_plans.len() }})</a>
+			{% endif %}
+			{% if !amenities.is_empty() %}
+			<a href="#amenities" class="sub-nav-pill">Amenities ({{ amenities.len() }})</a>
+			{% endif %}
+			{% if !specifications.is_empty() %}
+			<a href="#specifications" class="sub-nav-pill">Specifications</a>
+			{% endif %}
+			{% if !landmarks.is_empty() %}
+			<a href="#landmarks" class="sub-nav-pill">Connectivity ({{ landmarks.len() }})</a>
+			{% endif %}
+			{% if !documents.is_empty() %}
+			<a href="#documents" class="sub-nav-pill">Documents</a>
+			{% endif %}
+			<a href="#developer" class="sub-nav-pill">About Developer</a>
+		</div>
+	</div>
+</nav>
 
-					<!-- Carousel Controls -->
-					<div class="carousel-overlay-controls">
-						<button class="carousel-nav-btn" @click="prev()" aria-label="Previous image">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="15 18 9 12 15 6"></polyline>
-							</svg>
-						</button>
-						<button class="carousel-nav-btn" @click="next()" aria-label="Next image">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="9 18 15 12 9 6"></polyline>
-							</svg>
-						</button>
-					</div>
+<!-- ==========================================================================
+     Main Showcase Grid: Content Column (68%) & Sticky Lead Sidebar (32%)
+     ========================================================================== -->
+<div class="container">
+	<div class="layout-showcase-grid">
+		<!-- Left Main Content Column -->
+		<div class="showcase-main-col">
 
-					<button class="carousel-fullscreen-btn" @click="openLightbox()" aria-label="View Fullscreen">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-						</svg>
-					</button>
+			<!-- 1. Key Project Stats Bar -->
+			<div class="stats-strip-grid">
+				{% if let Some(towers) = project.towers_count %}
+				<div class="stats-strip-item">
+					<span class="stats-strip-label">Towers</span>
+					<span class="stats-strip-val">{{ towers }} High-Rises</span>
+				</div>
+				{% endif %}
+				{% if let Some(floors) = project.floors_count %}
+				<div class="stats-strip-item">
+					<span class="stats-strip-label">Floors</span>
+					<span class="stats-strip-val">{{ floors }} Storeys</span>
+				</div>
+				{% endif %}
+				{% if let Some(area) = project.total_land_area %}
+				<div class="stats-strip-item">
+					<span class="stats-strip-label">Land Enclave</span>
+					<span class="stats-strip-val">{{ area }} sq.ft</span>
+				</div>
+				{% endif %}
+				{% if let Some(units) = project.units_count %}
+				<div class="stats-strip-item">
+					<span class="stats-strip-label">Total Units</span>
+					<span class="stats-strip-val">{{ units }} Residences</span>
+				</div>
+				{% endif %}
+				{% if let Some(pos) = project.possession_date %}
+				<div class="stats-strip-item">
+					<span class="stats-strip-label">Target Possession</span>
+					<span class="stats-strip-val">{{ pos }}</span>
+				</div>
+				{% endif %}
+			</div>
 
-					<div class="carousel-counter-badge">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<!-- 2. Bento-Grid Media Gallery -->
+			{% if !gallery.is_empty() %}
+			<section id="gallery" class="content-panel" style="padding: 1.5rem;">
+				<div class="content-panel-header" style="margin-bottom: 1.25rem;">
+					<h2 class="content-panel-title">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
 							<circle cx="8.5" cy="8.5" r="1.5"></circle>
 							<polyline points="21 15 16 10 5 21"></polyline>
 						</svg>
-						<span>Media <strong v-text="currentIndex + 1">1</strong> of {{ gallery.len() }}</span>
-					</div>
-				</div>
-
-				<!-- Thumbnail Scroller -->
-				<div class="carousel-thumbnails-scroller">
-					{% for (idx, item) in gallery.iter().enumerate() %}
-					<div class="carousel-thumb-item" data-index="{{ idx }}" :class="{ active: currentIndex === {{ idx }} }" @click="selectIndex({{ idx }})">
-						<img src="{{ item.thumbnail_url }}" alt="Thumbnail {{ idx + 1 }}" loading="lazy">
-					</div>
-					{% endfor %}
-				</div>
-
-				<!-- Fullscreen Lightbox Modal -->
-				<div class="lightbox-modal" v-if="lightboxOpen" @click.self="closeLightbox()">
-					<button class="lightbox-close-btn" @click="closeLightbox()" aria-label="Close Lightbox">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-							<line x1="18" y1="6" x2="6" y2="18"></line>
-							<line x1="6" y1="6" x2="18" y2="18"></line>
+						Curated Visual Gallery
+					</h2>
+					<button class="btn btn-secondary btn-sm" onclick="mediaGallery.open(0)">
+						<span>View Fullscreen Gallery</span>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
 						</svg>
 					</button>
-					<div class="lightbox-content-box">
-						{% for (idx, item) in gallery.iter().enumerate() %}
-						<div v-show="currentIndex === {{ idx }}">
-							{% if item.media_type == "video" %}
-							<video controls autoplay style="max-height:85vh; max-width:90vw;">
-								<source src="{{ item.url }}" type="video/mp4">
-							</video>
-							{% else %}
-							<img src="{{ item.url }}" alt="Fullscreen Media {{ idx + 1 }}">
-							{% endif %}
-						</div>
-						{% endfor %}
-					</div>
 				</div>
-			</div>
+
+				<div class="bento-media-gallery">
+					<!-- Tile 1: Featured Hero Tile -->
+					<div class="bento-tile bento-tile-featured" onclick="mediaGallery.open(0)">
+						{% if gallery[0].media_type == "video" %}
+						<video poster="{{ gallery[0].thumbnail_url }}" muted playsinline>
+							<source src="{{ gallery[0].url }}" type="video/mp4">
+						</video>
+						{% else %}
+						<img src="{{ gallery[0].url }}" alt="{{ project.name }} visual 1" loading="lazy">
+						{% endif %}
+						<span class="badge badge-glass-dark" style="position: absolute; top: 12px; left: 12px;">Featured View</span>
+					</div>
+
+					<!-- Tile 2 -->
+					{% if gallery.len() > 1 %}
+					<div class="bento-tile" onclick="mediaGallery.open(1)">
+						<img src="{{ gallery[1].thumbnail_url }}" alt="{{ project.name }} visual 2" loading="lazy">
+					</div>
+					{% endif %}
+
+					<!-- Tile 3 -->
+					{% if gallery.len() > 2 %}
+					<div class="bento-tile" onclick="mediaGallery.open(2)">
+						<img src="{{ gallery[2].thumbnail_url }}" alt="{{ project.name }} visual 3" loading="lazy">
+					</div>
+					{% endif %}
+
+					<!-- Tile 4 -->
+					{% if gallery.len() > 3 %}
+					<div class="bento-tile" onclick="mediaGallery.open(3)">
+						<img src="{{ gallery[3].thumbnail_url }}" alt="{{ project.name }} visual 4" loading="lazy">
+					</div>
+					{% endif %}
+
+					<!-- Tile 5 / More Overlay Trigger -->
+					{% if gallery.len() > 4 %}
+					<div class="bento-tile" onclick="mediaGallery.open(4)">
+						<img src="{{ gallery[4].thumbnail_url }}" alt="{{ project.name }} visual 5" loading="lazy">
+						{% if gallery.len() > 5 %}
+						<div class="bento-more-overlay">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+								<circle cx="8.5" cy="8.5" r="1.5"></circle>
+								<polyline points="21 15 16 10 5 21"></polyline>
+							</svg>
+							<span>+{{ gallery.len() - 4 }} More Photos</span>
+						</div>
+						{% endif %}
+					</div>
+					{% endif %}
+				</div>
+			</section>
 			{% endif %}
 
-			<!-- Quick Anchor Tabs Navigation -->
-			<nav class="quick-tabs-nav">
-				<a href="#overview" class="quick-tab-link active">Overview</a>
-				<a href="#configurations" class="quick-tab-link">Configurations ({{ configurations.len() }})</a>
-				{% if !floor_plans.is_empty() %}
-				<a href="#floor-plans" class="quick-tab-link">Master Plans ({{ floor_plans.len() }})</a>
-				{% endif %}
-				{% if !amenities.is_empty() %}
-				<a href="#amenities" class="quick-tab-link">Amenities</a>
-				{% endif %}
-				{% if !specifications.is_empty() %}
-				<a href="#specifications" class="quick-tab-link">Specifications</a>
-				{% endif %}
-				{% if !landmarks.is_empty() %}
-				<a href="#landmarks" class="quick-tab-link">Connectivity</a>
-				{% endif %}
-				{% if !documents.is_empty() %}
-				<a href="#documents" class="quick-tab-link">Documents</a>
-				{% endif %}
-				<a href="#developer" class="quick-tab-link">Developer</a>
-			</nav>
-
-			<!-- Overview & Highlights -->
+			<!-- Overview & Editorial Narrative -->
 			<section id="overview" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10"></circle>
 							<line x1="12" y1="16" x2="12" y2="12"></line>
 							<line x1="12" y1="8" x2="12.01" y2="8"></line>
 						</svg>
-						Project Highlights & Overview
+						Architectural Vision & Overview
 					</h2>
-					<span class="badge badge-emerald">{{ project.project_type_name }}</span>
+					<span class="badge badge-emerald">Verified Development</span>
 				</div>
 
-				<!-- Project Scale Metrics Bar -->
-				<div class="metrics-grid">
-					{% if let Some(area) = project.total_land_area %}
-					<div class="metric-item">
-						<div class="metric-label">Land Area</div>
-						<div class="metric-val">{{ area }} sq.ft</div>
-					</div>
-					{% endif %}
-					{% if let Some(towers) = project.towers_count %}
-					<div class="metric-item">
-						<div class="metric-label">Towers</div>
-						<div class="metric-val">{{ towers }}</div>
-					</div>
-					{% endif %}
-					{% if let Some(floors) = project.floors_count %}
-					<div class="metric-item">
-						<div class="metric-label">Floors</div>
-						<div class="metric-val">{{ floors }}</div>
-					</div>
-					{% endif %}
-					{% if let Some(units) = project.units_count %}
-					<div class="metric-item">
-						<div class="metric-label">Total Units</div>
-						<div class="metric-val">{{ units }}</div>
-					</div>
-					{% endif %}
-					{% if let Some(pos) = project.possession_date %}
-					<div class="metric-item">
-						<div class="metric-label">Possession</div>
-						<div class="metric-val">{{ pos }}</div>
-					</div>
-					{% endif %}
-				</div>
-
-				<div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: var(--radius-md); font-size: 0.95rem; display: flex; flex-direction: column; gap: 0.4rem;">
-					<div><strong>Location:</strong> {{ project.formatted_address }}</div>
+				<div style="background: var(--surface-subtle); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 2rem; font-size: 0.95rem; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 0.5rem;">
+					<div><strong>Official Address:</strong> {{ project.formatted_address }}</div>
 					{% if let Some(rera) = project.rera_number %}
 					<div><strong>RERA Registration:</strong> {{ rera }} {% if let Some(auth) = project.rera_authority %}({{ auth }}){% endif %}</div>
 					{% endif %}
 				</div>
 
 				{% if description_html.is_empty() %}
-				<p style="color: var(--text-muted); font-size: 1rem;">Official master-plan details and specifications are accessible via the sales dossier.</p>
+				<p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.7;">
+					An exclusive sanctuary designed to redefine contemporary luxury. Detailed master-plan narratives, interior finishing dossiers, and architectural blueprints are available directly via the verified sales desk.
+				</p>
 				{% else %}
-				<div class="prose-body">
+				<div class="prose-editorial">
 					{{ description_html|safe }}
 				</div>
 				{% endif %}
 			</section>
 
-			<!-- Configurations / Typologies Section -->
+			<!-- 3. Typologies & Floor Plans (Interactive Tabs & Cards) -->
 			<section id="configurations" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<rect x="3" y="3" width="7" height="7"></rect>
 							<rect x="14" y="3" width="7" height="7"></rect>
 							<rect x="14" y="14" width="7" height="7"></rect>
 							<rect x="3" y="14" width="7" height="7"></rect>
 						</svg>
-						Configurations & Floor Plans ({{ configurations.len() }})
+						Typologies & Floor Plans ({{ configurations.len() }})
 					</h2>
+					<span class="badge badge-primary">Direct Pricing</span>
+				</div>
+
+				<!-- BHK Filter Tabs -->
+				<div class="typology-filter-tabs">
+					<button class="typology-tab-btn active" data-filter="all" onclick="filterTypologies('all')">All Plans</button>
+					<button class="typology-tab-btn" data-filter="1" onclick="filterTypologies('1')">1 BHK</button>
+					<button class="typology-tab-btn" data-filter="2" onclick="filterTypologies('2')">2 BHK</button>
+					<button class="typology-tab-btn" data-filter="3" onclick="filterTypologies('3')">3 BHK</button>
+					<button class="typology-tab-btn" data-filter="4" onclick="filterTypologies('4')">4+ BHK / Penthouses</button>
 				</div>
 
 				{% if configurations.is_empty() %}
-				<div style="background: var(--bg-subtle); border-radius: var(--radius-md); padding: 2.5rem; text-align: center;">
-					<h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Configurations Coming Soon</h3>
-					<p style="color: var(--text-muted); margin-bottom: 1.25rem;">Upcoming floor plans and pricing options are being updated. Connect with sales desk for early access.</p>
-					<a href="#enquiry" class="btn btn-primary btn-sm">Enquire for Typologies</a>
+				<div style="background: var(--surface-subtle); border-radius: var(--radius-lg); padding: 3rem; text-align: center;">
+					<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Typologies Available on Request</h3>
+					<p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+						Upcoming layout drawings and early-bird investor pricing are being updated by the project desk.
+					</p>
+					<a href="#enquiry" class="btn btn-primary btn-sm">Request Typology Dossier</a>
 				</div>
 				{% else %}
-				<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+				<div class="typology-cards-list">
 					{% for cfg in configurations %}
-					<div class="config-card">
-						<div class="config-card-header">
+					<div class="typology-card" data-bhk="{% if let Some(b) = cfg.bhk %}{% if *b >= 4.0 %}4{% else %}{{ *b as i64 }}{% endif %}{% else %}other{% endif %}">
+						<div class="typology-card-header">
 							<div>
-								<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem;">{{ cfg.name }}</h3>
-								<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;">
+								<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">{{ cfg.name }}</h3>
+								<div style="display: flex; align-items: center; gap: 0.5rem;">
 									{% if let Some(bhk) = cfg.bhk %}
 									<span class="badge badge-primary">{{ bhk }} BHK</span>
 									{% endif %}
 									{% if cfg.price_on_request %}
-									<span class="badge badge-amber">Price on Request</span>
+									<span class="badge badge-gold">Price on Request</span>
 									{% endif %}
 								</div>
 							</div>
 							<div style="text-align: right;">
-								<div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Pricing</div>
-								<div style="font-size: 1.4rem; font-weight: 800; color: var(--primary);">{{ cfg.price_formatted }}</div>
+								<span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); display: block;">Starting Price</span>
+								<span style="font-family:'Plus Jakarta Sans', monospace; font-size: 1.45rem; font-weight: 800; color: var(--primary);">{{ cfg.price_formatted }}</span>
 							</div>
 						</div>
 
-						<!-- Area Metrics -->
-						<div class="config-specs-grid">
+						<!-- Dimensions Metrics Grid -->
+						<div class="typology-specs-pills">
 							{% if let Some(carpet) = cfg.carpet_area %}
-							<div class="config-spec-item">
-								<span class="config-spec-label">Carpet Area</span>
-								<span class="config-spec-val">{{ carpet }} sq.ft</span>
+							<div class="typology-spec-item">
+								<span class="typology-spec-label">Carpet Area</span>
+								<span class="typology-spec-val">{{ carpet }} sq.ft</span>
 							</div>
 							{% endif %}
 							{% if let Some(built) = cfg.built_up_area %}
-							<div class="config-spec-item">
-								<span class="config-spec-label">Built-up Area</span>
-								<span class="config-spec-val">{{ built }} sq.ft</span>
+							<div class="typology-spec-item">
+								<span class="typology-spec-label">Built-up Area</span>
+								<span class="typology-spec-val">{{ built }} sq.ft</span>
 							</div>
 							{% endif %}
 							{% if let Some(super_built) = cfg.super_built_up_area %}
-							<div class="config-spec-item">
-								<span class="config-spec-label">Super Built-up</span>
-								<span class="config-spec-val">{{ super_built }} sq.ft</span>
+							<div class="typology-spec-item">
+								<span class="typology-spec-label">Super Built-up</span>
+								<span class="typology-spec-val">{{ super_built }} sq.ft</span>
 							</div>
 							{% endif %}
 						</div>
 
-						<!-- Floor Plan Preview Image if available -->
+						<!-- Interactive Floor Plan Preview Box -->
 						{% if let Some(fp_url) = cfg.floor_plan_url %}
-						<div style="background: #f8fafc; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
-							<div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Unit Layout / Floor Plan</div>
-							<a href="{{ fp_url }}" target="_blank" rel="noopener" style="display: inline-block;">
-								<img src="{% if let Some(t) = cfg.floor_plan_thumb_url %}{{ t }}{% else %}{{ fp_url }}{% endif %}" alt="{{ cfg.name }} Floor Plan" style="max-height: 220px; max-width: 100%; object-fit: contain; border-radius: var(--radius-sm);">
-							</a>
-							<div style="margin-top: 0.5rem;">
-								<a href="{{ fp_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="font-size: 0.78rem;">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-									</svg>
-									<span>View Full Layout</span>
-								</a>
+						<div class="typology-fp-preview">
+							<div style="display: flex; align-items: center; gap: 1rem;">
+								<img src="{% if let Some(t) = cfg.floor_plan_thumb_url %}{{ t }}{% else %}{{ fp_url }}{% endif %}" alt="{{ cfg.name }} Layout" class="typology-fp-thumb" onclick="openFloorPlanModal('{{ fp_url }}', '{{ cfg.name }} Floor Plan')">
+								<div>
+									<div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Architectural Floor Plan</div>
+									<div style="font-size: 0.82rem; color: var(--text-muted);">High-resolution master dimension layout</div>
+								</div>
 							</div>
+							<button type="button" class="btn btn-secondary btn-sm" onclick="openFloorPlanModal('{{ fp_url }}', '{{ cfg.name }} Floor Plan')">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<circle cx="11" cy="11" r="8"></circle>
+									<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+									<line x1="11" y1="8" x2="11" y2="14"></line>
+									<line x1="8" y1="11" x2="14" y2="11"></line>
+								</svg>
+								<span>Expand Layout</span>
+							</button>
 						</div>
 						{% endif %}
 
-						<div class="config-card-footer">
-							<span style="font-size: 0.85rem; color: var(--text-muted);">Exact configuration specifications available on request</span>
-							<a href="#enquiry" class="btn btn-primary btn-sm" onclick="selectConfigOption({{ cfg.id }})">
-								<span>Enquire For This Plan</span>
+						<div class="typology-card-footer">
+							<span style="font-size: 0.82rem; color: var(--text-muted);">All dimensions verified by developer master filing</span>
+							<button type="button" class="btn btn-primary btn-sm" onclick="selectConfigOption({{ cfg.id }})">
+								<span>Enquire on this Configuration</span>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-									<polyline points="9 18 15 12 9 6"></polyline>
+									<line x1="5" y1="12" x2="19" y2="12"></line>
+									<polyline points="12 5 19 12 12 19"></polyline>
 								</svg>
-							</a>
+							</button>
 						</div>
 					</div>
 					{% endfor %}
@@ -684,12 +429,12 @@
 				{% endif %}
 			</section>
 
-			<!-- Master Site & Layout Plans -->
+			<!-- Master Layout & Site Plans -->
 			{% if !floor_plans.is_empty() %}
 			<section id="floor-plans" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
 							<line x1="8" y1="2" x2="8" y2="18"></line>
 							<line x1="16" y1="6" x2="16" y2="22"></line>
@@ -698,39 +443,45 @@
 					</h2>
 				</div>
 
-				<div class="floor-plans-grid">
+				<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem;">
 					{% for fp in floor_plans %}
-					<div class="floor-plan-card">
-						<a href="{{ fp.url }}" target="_blank" rel="noopener">
-							<div class="floor-plan-img-wrap">
-								<img src="{{ fp.thumbnail_url }}" alt="{{ fp.title }}" loading="lazy">
-							</div>
-							<div class="floor-plan-title">{{ fp.title }}</div>
-						</a>
+					<div class="entity-card" style="cursor: pointer;" onclick="openFloorPlanModal('{{ fp.url }}', '{{ fp.title }}')">
+						<div class="card-media-wrap" style="aspect-ratio: 4/3; background: #f8fafc;">
+							<img src="{{ fp.thumbnail_url }}" alt="{{ fp.title }}" style="object-fit: contain; padding: 1rem;" loading="lazy">
+						</div>
+						<div style="padding: 1rem 1.25rem; font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+							<span>{{ fp.title }}</span>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+							</svg>
+						</div>
 					</div>
 					{% endfor %}
 				</div>
 			</section>
 			{% endif %}
 
-			<!-- Project Amenities -->
+			<!-- 4. Clubhouse & Signature Amenities -->
 			{% if !amenities.is_empty() %}
 			<section id="amenities" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
 						</svg>
-						Development Amenities & Infrastructure ({{ amenities.len() }})
+						Clubhouse & Signature Amenities ({{ amenities.len() }})
 					</h2>
+					<span class="badge badge-emerald">Ultra-Luxury</span>
 				</div>
 
-				<div class="amenity-chip-grid">
+				<div class="amenities-curated-grid">
 					{% for a in amenities %}
-					<div class="amenity-chip">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-							<polyline points="20 6 9 17 4 12"></polyline>
-						</svg>
+					<div class="amenity-card">
+						<div class="amenity-icon-box">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12"></polyline>
+							</svg>
+						</div>
 						<span>{{ a }}</span>
 					</div>
 					{% endfor %}
@@ -738,65 +489,96 @@
 			</section>
 			{% endif %}
 
-			<!-- Technical Specifications -->
+			<!-- 5. Specifications & Finishes (Interactive Accordion) -->
 			{% if !specifications.is_empty() %}
 			<section id="specifications" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 							<polyline points="14 2 14 8 20 8"></polyline>
 							<line x1="16" y1="13" x2="8" y2="13"></line>
 							<line x1="16" y1="17" x2="8" y2="17"></line>
 						</svg>
-						Technical Specifications
+						Specifications & Architectural Finishes
 					</h2>
 				</div>
 
-				<div>
-					{% for spec in specifications %}
-					<div class="spec-category-card">
-						<div class="spec-category-title">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="9 18 15 12 9 6"></polyline>
+				<div class="spec-accordion">
+					{% for (idx, spec) in specifications.iter().enumerate() %}
+					<div class="spec-accordion-item {% if idx == 0 %}active{% endif %}">
+						<button type="button" class="spec-accordion-header" onclick="toggleSpecAccordion(this)">
+							<span style="display:flex; align-items:center; gap:0.65rem;">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="9 18 15 12 9 6"></polyline>
+								</svg>
+								{{ spec.category }}
+							</span>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="spec-accordion-icon">
+								<polyline points="6 9 12 15 18 9"></polyline>
 							</svg>
-							{{ spec.category }}
+						</button>
+						<div class="spec-accordion-body">
+							<ul class="spec-list">
+								{% for item in spec.items %}
+								<li>
+									<span class="spec-list-dot">&bull;</span>
+									<span>{{ item }}</span>
+								</li>
+								{% endfor %}
+							</ul>
 						</div>
-						<ul class="spec-items-list">
-							{% for item in spec.items %}
-							<li>{{ item }}</li>
-							{% endfor %}
-						</ul>
 					</div>
 					{% endfor %}
 				</div>
 			</section>
 			{% endif %}
 
-			<!-- Landmarks & Connectivity -->
+			<!-- 6. Strategic Connectivity & Landmarks -->
 			{% if !landmarks.is_empty() %}
 			<section id="landmarks" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10"></circle>
 							<polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
 						</svg>
-						Connectivity & Nearby Landmarks ({{ landmarks.len() }})
+						Strategic Connectivity & Landmarks ({{ landmarks.len() }})
 					</h2>
+				</div>
+
+				<!-- Connectivity Category Tabs -->
+				<div class="connectivity-filter-tabs">
+					<button class="connectivity-tab-btn active" data-filter="all" onclick="filterConnectivity('all')">All Locations</button>
+					<button class="connectivity-tab-btn" data-filter="transit" onclick="filterConnectivity('transit')">Transit & Metro</button>
+					<button class="connectivity-tab-btn" data-filter="education" onclick="filterConnectivity('education')">Schools & Universities</button>
+					<button class="connectivity-tab-btn" data-filter="healthcare" onclick="filterConnectivity('healthcare')">Hospitals</button>
+					<button class="connectivity-tab-btn" data-filter="business" onclick="filterConnectivity('business')">Business Hubs</button>
 				</div>
 
 				<div class="landmarks-grid">
 					{% for lm in landmarks %}
-					<div class="landmark-card">
-						<div class="landmark-cat">{{ lm.category }}</div>
+					<div class="landmark-card" data-category="{{ lm.category | lower }}">
+						<span class="landmark-cat-badge">{{ lm.category }}</span>
 						<div class="landmark-name">{{ lm.name }}</div>
-						<div class="landmark-meta">
+						<div class="landmark-chips-row">
 							{% if let Some(dist) = lm.distance %}
-							<span>📍 {{ dist }}</span>
+							<span class="landmark-chip">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+									<circle cx="12" cy="10" r="3"></circle>
+								</svg>
+								{{ dist }}
+							</span>
 							{% endif %}
 							{% if let Some(dur) = lm.duration %}
-							<span>⏱️ {{ dur }}</span>
+							<span class="landmark-chip">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+									<circle cx="12" cy="12" r="10"></circle>
+									<polyline points="12 6 12 12 16 14"></polyline>
+								</svg>
+								{{ dur }}
+							</span>
 							{% endif %}
 						</div>
 					</div>
@@ -805,39 +587,38 @@
 			</section>
 			{% endif %}
 
-			<!-- Official Documents & Approvals Vault -->
+			<!-- Official Documents Vault -->
 			{% if !documents.is_empty() %}
 			<section id="documents" class="content-panel">
 				<div class="content-panel-header">
 					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 							<polyline points="14 2 14 8 20 8"></polyline>
 							<line x1="16" y1="13" x2="8" y2="13"></line>
 							<line x1="16" y1="17" x2="8" y2="17"></line>
-							<polyline points="10 9 9 9 8 9"></polyline>
 						</svg>
-						Compliance & Official Documents Vault
+						Official Documentation & Approvals Vault
 					</h2>
 					<span class="badge badge-emerald">Verified Legal Docs</span>
 				</div>
 
-				<div style="display: flex; flex-direction: column; gap: 0.85rem;">
+				<div style="display: flex; flex-direction: column; gap: 1rem;">
 					{% for doc in documents %}
-					<div class="doc-card">
-						<div style="display: flex; align-items: center; gap: 0.85rem;">
-							<div style="width: 38px; height: 38px; border-radius: var(--radius-sm); background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">
+					<div style="display: flex; align-items: center; justify-content: space-between; padding: 1.15rem 1.4rem; background: var(--surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 1rem;">
+						<div style="display: flex; align-items: center; gap: 1rem;">
+							<div style="width: 42px; height: 42px; border-radius: var(--radius-sm); background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem;">
 								PDF
 							</div>
 							<div>
-								<div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">{{ doc.display_name }}</div>
-								<div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
-									Type: {{ doc.doc_type }} &bull; Size: {{ doc.file_size_formatted }}
+								<div style="font-weight: 800; color: var(--text-primary); font-size: 1rem;">{{ doc.display_name }}</div>
+								<div style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">
+									{{ doc.doc_type }} &bull; {{ doc.file_size_formatted }}
 								</div>
 							</div>
 						</div>
 						<a href="{{ doc.url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-							<span>Download</span>
+							<span>Download Document</span>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 								<polyline points="7 10 12 15 17 10"></polyline>
@@ -850,58 +631,70 @@
 			</section>
 			{% endif %}
 
-			<!-- Developer Profile Showcase Card -->
-			<section id="developer" class="content-panel" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
-				<div class="content-panel-header">
-					<h2 class="content-panel-title">
-						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<!-- 7. Builder Heritage Card -->
+			<section id="developer" class="content-panel" style="background: linear-gradient(135deg, #0B0F19 0%, #131B2E 100%); color: #FFFFFF;">
+				<div class="content-panel-header" style="border-bottom-color: rgba(255,255,255,0.1);">
+					<h2 class="content-panel-title" style="color: #FFFFFF;">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
 							<circle cx="12" cy="7" r="4"></circle>
 						</svg>
-						About the Developer: {{ owner.name }}
+						Developer Heritage: {{ owner.name }}
 					</h2>
+					<span class="badge badge-gold">Verified Builder</span>
 				</div>
 
-				<div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+				<div style="display: flex; align-items: center; gap: 1.75rem; margin-bottom: 1.75rem; flex-wrap: wrap;">
 					{% if let Some(img) = owner.image_url %}
-					<img src="{{ img }}" alt="{{ owner.name }}" style="width: 72px; height: 72px; border-radius: var(--radius-full); object-fit: cover; border: 2px solid var(--border);">
+					<div style="width: 80px; height: 80px; border-radius: var(--radius-lg); background: white; padding: 4px; border: 2px solid rgba(255,255,255,0.2); overflow: hidden; flex-shrink: 0;">
+						<img src="{{ img }}" alt="{{ owner.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: calc(var(--radius-lg) - 4px);">
+					</div>
 					{% else %}
-					<div style="width: 72px; height: 72px; border-radius: var(--radius-full); background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+					<div style="width: 80px; height: 80px; border-radius: var(--radius-lg); background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; flex-shrink: 0;">
 						🏛️
 					</div>
 					{% endif %}
 					<div>
-						<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">{{ owner.name }}</h3>
-						<div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
-							Verified Real Estate Builder & Developer Partner
-						</div>
+						<h3 style="font-size: 1.45rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">{{ owner.name }}</h3>
+						<p style="font-size: 0.92rem; color: #94A3B8; margin-top: 0.25rem;">
+							Authoritative real estate developer creating verified luxury landmarks and master-planned destinations.
+						</p>
 					</div>
 				</div>
 
-				<a href="/owners/{{ owner.slug }}" class="btn btn-secondary btn-sm">
-					<span>View Full Developer Portfolio & Projects</span>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<a href="/owners/{{ owner.slug }}" class="btn btn-frosted-dark">
+					<span>Explore Full Developer Profile & Portfolio</span>
+					<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 						<line x1="5" y1="12" x2="19" y2="12"></line>
 						<polyline points="12 5 19 12 12 19"></polyline>
 					</svg>
 				</a>
 			</section>
+
 		</div>
 
-		<!-- Right Column: Sticky Project Enquiry Card -->
-		<div>
-			<div class="sticky-conversion-card" id="enquiry">
-				<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-					<div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
-					<span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #059669;">Verified Sales Desk</span>
-				</div>
+		<!-- Right Column: Sticky Lead Capture Card (32%) -->
+		<div class="showcase-sidebar-col">
+			<div class="sticky-lead-card" id="enquiry">
+				<div class="lead-card-header">
+					<div class="lead-live-badge">
+						<div class="lead-live-dot"></div>
+						<span>Official Sales Desk</span>
+					</div>
+					<h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 0.4rem;">
+						Request Project Dossier
+					</h3>
+					<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+						Receive verified unit availability, high-res floor plans, and schedule a private escorted viewing with {{ owner.name }}.
+					</p>
 
-				<h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem; letter-spacing: -0.02em;">
-					Request Project Dossier
-				</h3>
-				<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
-					Connect directly with the verified project sales office for unit pricing, layout floor plans, and official brochure.
-				</p>
+					<div class="lead-developer-seal">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+						</svg>
+						<span style="font-weight: 700; color: var(--text-primary); font-size: 0.85rem;">Direct Developer Representative Desk</span>
+					</div>
+				</div>
 
 				{% if enquiry_success %}
 				<div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 1rem; border-radius: var(--radius-md); font-size: 0.92rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem;">
@@ -910,7 +703,7 @@
 						<polyline points="22 4 12 14.01 9 11.01"></polyline>
 					</svg>
 					<div>
-						<strong>Enquiry Received!</strong> A representative from the {{ project.name }} desk will reach out with the dossier.
+						<strong>Enquiry Received!</strong> An official representative from {{ owner.name }} will reach out with the complete dossier.
 					</div>
 				</div>
 				{% endif %}
@@ -923,23 +716,23 @@
 
 				<form action="/projects/{{ project.id }}/enquire" method="post">
 					<div style="margin-bottom: 1.15rem;">
-						<label for="name" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Full Name *</label>
-						<input type="text" id="name" name="name" required placeholder="e.g. Priyanshu Dave" class="form-control-input">
+						<label for="name" style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-primary); margin-bottom:0.4rem;">Full Name *</label>
+						<input type="text" id="name" name="name" required placeholder="e.g. Vikram Malhotra" class="form-control-input">
 					</div>
 
 					<div style="margin-bottom: 1.15rem;">
-						<label for="phone" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Phone Number *</label>
+						<label for="phone" style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-primary); margin-bottom:0.4rem;">Phone Number *</label>
 						<input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210" class="form-control-input">
 					</div>
 
 					<div style="margin-bottom: 1.15rem;">
-						<label for="email" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Email Address</label>
-						<input type="email" id="email" name="email" placeholder="priyanshu@example.com" class="form-control-input">
+						<label for="email" style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-primary); margin-bottom:0.4rem;">Email Address</label>
+						<input type="email" id="email" name="email" placeholder="vikram@example.com" class="form-control-input">
 					</div>
 
 					{% if !configurations.is_empty() %}
 					<div style="margin-bottom: 1.15rem;">
-						<label for="configuration_id" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Interested Typology</label>
+						<label for="configuration_id" style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-primary); margin-bottom:0.4rem;">Interested Typology</label>
 						<select id="configuration_id" name="configuration_id" class="form-control-input">
 							<option value="">General Project Enquiry</option>
 							{% for cfg in configurations %}
@@ -950,24 +743,32 @@
 					{% endif %}
 
 					<div style="margin-bottom: 1.5rem;">
-						<label for="message" style="display:block; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-main); margin-bottom:0.4rem;">Message / Inquiry</label>
-						<textarea id="message" name="message" rows="3" placeholder="I am interested in pricing and availability..." class="form-control-input"></textarea>
+						<label for="message" style="display:block; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-primary); margin-bottom:0.4rem;">Message / Requirements</label>
+						<textarea id="message" name="message" rows="3" placeholder="I would like to receive the floor plans and schedule a site visit..." class="form-control-input"></textarea>
 					</div>
 
-					<button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
-						<span>Download Brochure & Contact</span>
+					<button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.95rem; font-size: 1rem;">
+						<span>Request Guaranteed Callback</span>
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<line x1="5" y1="12" x2="19" y2="12"></line>
 							<polyline points="12 5 19 12 12 19"></polyline>
 						</svg>
 					</button>
 
-					<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+					<!-- Direct WhatsApp Inquiry -->
+					<a href="https://api.whatsapp.com/send?text=Hello%2C%20I%20am%20interested%20in%20learning%20more%20about%20{{ project.name }}." target="_blank" rel="noopener" class="btn btn-whatsapp" style="width: 100%; margin-top: 0.75rem; padding: 0.85rem;">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+						</svg>
+						<span>Direct WhatsApp Inquiry</span>
+					</a>
+
+					<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-muted);">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
 							<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
 						</svg>
-						<span>Direct verified builder enquiry &bull; Zero spam</span>
+						<span>No spam. 100% verified developer contact.</span>
 					</div>
 				</form>
 			</div>
@@ -975,26 +776,70 @@
 	</div>
 </div>
 
-<script>
-function selectConfigOption(configId) {
-	const sel = document.getElementById('configuration_id');
-	if (sel) {
-		sel.value = configId;
-	}
-}
-</script>
-
-<!-- Mobile Quick Action Bar -->
-<div class="mobile-action-bar">
+<!-- ==========================================================================
+     Persistent Mobile Bottom Dock
+     ========================================================================== -->
+<div class="mobile-bottom-dock">
 	<div>
-		<div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Development</div>
-		<div style="font-size:1.1rem; font-weight:800; color:var(--primary); line-height:1.1;">{{ project.name }}</div>
+		<div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Starting From</div>
+		<div style="font-size:1.15rem; font-weight:800; color:var(--primary); line-height:1.1;">
+			{% if let Some(first_cfg) = configurations.first() %}
+			{{ first_cfg.price_formatted }}
+			{% else %}
+			Price on Request
+			{% endif %}
+		</div>
 	</div>
-	<a href="#enquiry" class="btn btn-primary btn-sm">
-		<span>Get Brochure</span>
-		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-			<polyline points="6 9 12 15 18 9"></polyline>
-		</svg>
-	</a>
+	<div style="display: flex; gap: 0.5rem;">
+		<a href="https://api.whatsapp.com/send?text=Hello%20{{ owner.name }}%2C%20I%20am%20inquiring%20about%20{{ project.name }}." target="_blank" rel="noopener" class="btn btn-whatsapp btn-sm">
+			<span>WhatsApp</span>
+		</a>
+		<a href="#enquiry" class="btn btn-primary btn-sm">
+			<span>Book Visit</span>
+		</a>
+	</div>
 </div>
+
+<!-- Fullscreen Media Gallery Lightbox Modal -->
+<div id="gallery-lightbox-modal" class="lightbox-modal" style="display: none;" onclick="if(event.target === this) mediaGallery.close()">
+	<button class="lightbox-close-btn" onclick="mediaGallery.close()" aria-label="Close Lightbox">
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<line x1="18" y1="6" x2="6" y2="18"></line>
+			<line x1="6" y1="6" x2="18" y2="18"></line>
+		</svg>
+	</button>
+	<button class="lightbox-nav-btn prev" onclick="mediaGallery.prev()" aria-label="Previous Photo">
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<polyline points="15 18 9 12 15 6"></polyline>
+		</svg>
+	</button>
+	<button class="lightbox-nav-btn next" onclick="mediaGallery.next()" aria-label="Next Photo">
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<polyline points="9 18 15 12 9 6"></polyline>
+		</svg>
+	</button>
+
+	<div class="lightbox-content-box">
+		<div id="lightbox-active-stage"></div>
+		<div id="lightbox-counter-display" style="position: absolute; bottom: -3rem; color: #FFFFFF; font-weight: 700; font-size: 0.95rem;"></div>
+	</div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="/js/project-detail.js" defer></script>
+<script>
+// Initialize Media Gallery Items for Lightbox
+document.addEventListener('DOMContentLoaded', () => {
+	const items = [
+		{% for item in gallery %}
+		{ url: "{{ item.url }}", thumb: "{{ item.thumbnail_url }}", type: "{{ item.media_type }}" },
+		{% endfor %}
+	];
+	if (typeof mediaGallery !== 'undefined') {
+		mediaGallery.init(items);
+	}
+});
+</script>
 {% endblock %}

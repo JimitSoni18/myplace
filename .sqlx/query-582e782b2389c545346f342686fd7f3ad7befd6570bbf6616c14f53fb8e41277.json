@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\tINSERT INTO projects (\n\t\t\t\t\tproject_owner_id, project_type_id, name, slug, description,\n\t\t\t\t\tformatted_address, city, area, state_or_province, postal_code,\n\t\t\t\t\tlatitude, longitude, rera_number, rera_authority,\n\t\t\t\t\ttotal_land_area, towers_count, floors_count, units_count\n\t\t\t\t)\n\t\t\t\tVALUES (\n\t\t\t\t\t$1, $2, 'Prestige Falcon City', 'prestige-falcon-city',\n\t\t\t\t\t'Prestige Falcon City is a state-of-the-art master planned community offering premium living spaces, lush landscaping, and lifestyle amenities.',\n\t\t\t\t\t'Kanakapura Road, Anjanadri Layout, Konanakunte, Bengaluru, Karnataka 560062',\n\t\t\t\t\t'Bengaluru', 'Kanakapura Road', 'Karnataka', '560062',\n\t\t\t\t\t12.8797000, 77.5528000, 'PRM/KA/RERA/1251/310/PR/170915/000256',\n\t\t\t\t\t'Karnataka Real Estate Regulatory Authority (K-RERA)',\n\t\t\t\t\t217800.0, 7, 31, 2520\n\t\t\t\t)\n\t\t\t\tRETURNING id\n\t\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "582e782b2389c545346f342686fd7f3ad7befd6570bbf6616c14f53fb8e41277"
+}

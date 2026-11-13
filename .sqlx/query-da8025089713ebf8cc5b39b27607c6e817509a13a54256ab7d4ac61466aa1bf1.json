@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    p.id, p.name, p.slug,\n    pt.name as project_type_name,\n    p.city, p.area, p.formatted_address,\n    COUNT(DISTINCT pc.id) as \"configurations_count!: i64\"\nFROM projects p\n    JOIN project_types pt ON pt.id = p.project_type_id\n    LEFT JOIN project_configurations pc ON pc.project_id = p.id AND pc.is_active = TRUE\nWHERE p.project_owner_id = $1 AND p.deleted_at IS NULL\nGROUP BY p.id, pt.name\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "project_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "area",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "configurations_count!: i64",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "da8025089713ebf8cc5b39b27607c6e817509a13a54256ab7d4ac61466aa1bf1"
+}

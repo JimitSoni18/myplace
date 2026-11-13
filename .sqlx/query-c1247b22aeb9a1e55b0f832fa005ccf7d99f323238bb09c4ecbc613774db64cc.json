@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\tINSERT INTO projects (project_owner_id, project_type_id, name, slug, formatted_address, city, area, state_or_province)\n\t\tVALUES ($1, $2, 'Initial Test Project Name', 'initial-test-project-name', 'Test Address', 'Mumbai', 'Andheri', 'Maharashtra')\n\t\tRETURNING id, slug\n\t\t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c1247b22aeb9a1e55b0f832fa005ccf7d99f323238bb09c4ecbc613774db64cc"
+}

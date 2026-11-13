@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_configurations\n\t\t SET name = $3, bhk = $4, carpet_area = $5, built_up_area = $6, super_built_up_area = $7,\n\t\t     price = $8, price_on_request = $9, floor_plan_media_id = $10, sequence = $11, is_active = $12\n\t\t WHERE id = $1 AND project_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Text",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Uuid",
+        "Int2",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f565ef3f3e270b91b8c5aeb28c83834f69d52ace426da0457800529b69d1fcaa"
+}

@@ -1,1 +1,1 @@
-INSERT INTO amenities (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING;
+INSERT INTO amenities (name) VALUES ($1) ON CONFLICT (name) DO NOTHING;

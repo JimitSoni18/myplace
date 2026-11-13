@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\tINSERT INTO project_specifications (project_id, category, items, sequence)\n\t\t\t\tVALUES\n\t\t\t\t($1, 'Structure', ARRAY['RCC framed earthquake-resistant structure with solid concrete block masonry.'], 1),\n\t\t\t\t($1, 'Flooring', ARRAY['Vitrified tiles in living, dining, and corridors', 'Laminated wooden flooring in master bedroom', 'Anti-skid ceramic tiles in balconies and utility areas'], 2),\n\t\t\t\t($1, 'Kitchen', ARRAY['Engineered granite counter platform with stainless steel sink', 'Provision for water purifier and exhaust fan', 'Glazed ceramic tiles up to 2 feet above platform'], 3),\n\t\t\t\t($1, 'Doors & Windows', ARRAY['Main door with teakwood frame and polished designer shutter', 'UPVC/Powder-coated aluminum sliding windows with mosquito mesh'], 4),\n\t\t\t\t($1, 'Electrical', ARRAY['Concealed copper wiring with modular switches (Schneider/Legrand)', 'TV and telephone points in living room and bedrooms', '100% DG power backup for common areas'], 5)\n\t\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "74455a5fd55656b9fcd0d57fc3f65f0ac44f7e01d6c0dc39c4b2f362497a383c"
+}

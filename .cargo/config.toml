@@ -1,3 +1,6 @@
+[build]
+target-dir = "target"
+
 [env]
 TS_RS_EXPORT_DIR = { value = "frontend/src/shared/api/generated", relative = true }
 TS_RS_LARGE_INT = "number"

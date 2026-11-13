@@ -7,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::{AppState, session_store::AuthUser, utils::sql::slugify};
+use crate::{AppState, session_store::AuthUser};
 
 pub fn router() -> Router<AppState> {
 	Router::new()
@@ -21,7 +21,6 @@ pub fn router() -> Router<AppState> {
 pub struct AmenityItem {
 	pub id: i32,
 	pub name: String,
-	pub slug: String,
 	pub is_active: bool,
 	pub projects_count: i64,
 }
@@ -39,7 +38,6 @@ async fn list_amenities(
 	struct DbRow {
 		id: i32,
 		name: String,
-		slug: String,
 		is_active: bool,
 		projects_count: i64,
 	}
@@ -60,7 +58,6 @@ async fn list_amenities(
 		.map(|r| AmenityItem {
 			id: r.id,
 			name: r.name,
-			slug: r.slug,
 			is_active: r.is_active,
 			projects_count: r.projects_count,
 		})
@@ -82,9 +79,7 @@ async fn create_amenity(
 		));
 	}
 
-	let slug = slugify(trimmed);
-
-	sqlx::query_file!("queries/amenities/create_amenity.sql", trimmed, slug)
+	sqlx::query_file!("queries/amenities/create_amenity.sql", trimmed)
 		.execute(&state.model.db)
 		.await
 		.map_err(|e| {
@@ -95,10 +90,16 @@ async fn create_amenity(
 			)
 		})?;
 
-	tracing::info!(name = trimmed, slug = %slug, "created amenity");
+	// Fetch the amenity ID (existing or newly inserted)
+	let row = sqlx::query_scalar!("SELECT id FROM amenities WHERE name = $1", trimmed)
+		.fetch_optional(&state.model.db)
+		.await
+		.unwrap_or(None);
+
+	tracing::info!(name = trimmed, "created or ensured amenity");
 	Ok((
 		StatusCode::CREATED,
-		Json(json!({ "success": true, "name": trimmed, "slug": slug })),
+		Json(json!({ "success": true, "name": trimmed, "id": row })),
 	))
 }
 

@@ -1,6 +1,6 @@
 import { createSignal, onMount, For, Show } from "solid-js";
 import { A, useSearchParams } from "@solidjs/router";
-import { Building2, Plus, MapPin, ExternalLink } from "lucide-solid";
+import { Building2, Plus, MapPin, ShieldCheck, Layers } from "lucide-solid";
 import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
 import { Select } from "@/shared/components/Select";
@@ -17,7 +17,7 @@ export function ProjectsList() {
   const [meta, setMeta] = createSignal<MetaOptionsResponse | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [search, setSearch] = createSignal("");
-  const [selectedCategory, setSelectedCategory] = createSignal("");
+  const [selectedType, setSelectedType] = createSignal("");
   const [selectedOwner, setSelectedOwner] = createSignal("");
 
   const debouncedFetchProjects = debounce(() => {
@@ -29,11 +29,25 @@ export function ProjectsList() {
   const [submitting, setSubmitting] = createSignal(false);
   const [formError, setFormError] = createSignal<string | null>(null);
 
+  // Form fields
   const [formName, setFormName] = createSignal("");
   const [formOwnerId, setFormOwnerId] = createSignal<number | "">("");
-  const [formLocationId, setFormLocationId] = createSignal<number | "">("");
-  const [formCategory, setFormCategory] = createSignal<"RESIDENTIAL" | "COMMERCIAL" | "LAND">("RESIDENTIAL");
+  const [formProjectTypeId, setFormProjectTypeId] = createSignal<number | "">("");
+  const [formFormattedAddress, setFormFormattedAddress] = createSignal("");
+  const [formCity, setFormCity] = createSignal("");
+  const [formArea, setFormArea] = createSignal("");
+  const [formState, setFormState] = createSignal("");
+  const [formPostalCode, setFormPostalCode] = createSignal("");
+  const [formLatitude, setFormLatitude] = createSignal<number | "">("");
+  const [formLongitude, setFormLongitude] = createSignal<number | "">("");
+  const [formReraNumber, setFormReraNumber] = createSignal("");
+  const [formReraAuthority, setFormReraAuthority] = createSignal("");
+  const [formTotalLandArea, setFormTotalLandArea] = createSignal<number | "">("");
+  const [formTowersCount, setFormTowersCount] = createSignal<number | "">("");
+  const [formFloorsCount, setFormFloorsCount] = createSignal<number | "">("");
+  const [formUnitsCount, setFormUnitsCount] = createSignal<number | "">("");
   const [formDesc, setFormDesc] = createSignal("");
+  const [formStartDate, setFormStartDate] = createSignal("");
   const [formLaunchDate, setFormLaunchDate] = createSignal("");
   const [formPossessionDate, setFormPossessionDate] = createSignal("");
   const [formAmenityIds, setFormAmenityIds] = createSignal<number[]>([]);
@@ -43,7 +57,7 @@ export function ProjectsList() {
     try {
       const q = new URLSearchParams();
       if (search().trim()) q.set("q", search().trim());
-      if (selectedCategory()) q.set("category", selectedCategory());
+      if (selectedType()) q.set("project_type_id", selectedType());
       if (selectedOwner()) q.set("owner_id", selectedOwner());
 
       const res = await api.get<ProjectListItem[]>(`/api/admin/projects?${q.toString()}`);
@@ -71,8 +85,12 @@ export function ProjectsList() {
 
   const handleCreateProject = async (e: Event) => {
     e.preventDefault();
-    if (!formName().trim() || !formOwnerId() || !formLocationId()) {
-      setFormError("Please fill in project name, owner, and location.");
+    if (!formName().trim() || !formOwnerId() || !formProjectTypeId()) {
+      setFormError("Please fill in project name, developer, and project type.");
+      return;
+    }
+    if (!formCity().trim() || !formArea().trim()) {
+      setFormError("Please provide both city and area for the embedded location.");
       return;
     }
 
@@ -83,12 +101,25 @@ export function ProjectsList() {
       await api.post("/api/admin/projects", {
         name: formName().trim(),
         project_owner_id: Number(formOwnerId()),
-        location_id: Number(formLocationId()),
-        category: formCategory(),
-        description: formDesc() ? formDesc().trim() : undefined,
-        launch_date: formLaunchDate() || undefined,
-        possession_date: formPossessionDate() || undefined,
-        amenity_ids: formAmenityIds(),
+        project_type_id: Number(formProjectTypeId()),
+        description: formDesc().trim() || null,
+        formatted_address: formFormattedAddress().trim() || `${formArea().trim()}, ${formCity().trim()}`,
+        city: formCity().trim(),
+        area: formArea().trim(),
+        state_or_province: formState().trim() || "Gujarat",
+        postal_code: formPostalCode().trim() || null,
+        latitude: formLatitude() !== "" ? Number(formLatitude()) : null,
+        longitude: formLongitude() !== "" ? Number(formLongitude()) : null,
+        rera_number: formReraNumber().trim() || null,
+        rera_authority: formReraAuthority().trim() || null,
+        total_land_area: formTotalLandArea() !== "" ? Number(formTotalLandArea()) : null,
+        towers_count: formTowersCount() !== "" ? Number(formTowersCount()) : null,
+        floors_count: formFloorsCount() !== "" ? Number(formFloorsCount()) : null,
+        units_count: formUnitsCount() !== "" ? Number(formUnitsCount()) : null,
+        start_date: formStartDate() || null,
+        launch_date: formLaunchDate() || null,
+        possession_date: formPossessionDate() || null,
+        amenities: formAmenityIds(),
       });
 
       setModalOpen(false);
@@ -104,9 +135,22 @@ export function ProjectsList() {
   const resetForm = () => {
     setFormName("");
     setFormOwnerId("");
-    setFormLocationId("");
-    setFormCategory("RESIDENTIAL");
+    setFormProjectTypeId("");
+    setFormFormattedAddress("");
+    setFormCity("");
+    setFormArea("");
+    setFormState("");
+    setFormPostalCode("");
+    setFormLatitude("");
+    setFormLongitude("");
+    setFormReraNumber("");
+    setFormReraAuthority("");
+    setFormTotalLandArea("");
+    setFormTowersCount("");
+    setFormFloorsCount("");
+    setFormUnitsCount("");
     setFormDesc("");
+    setFormStartDate("");
     setFormLaunchDate("");
     setFormPossessionDate("");
     setFormAmenityIds([]);
@@ -123,12 +167,23 @@ export function ProjectsList() {
 
   return (
     <div class="space-y-6">
+      {/* Datalist registries for Creatable inputs */}
+      <datalist id="cities-datalist">
+        <For each={meta()?.cities}>{(c) => <option value={c} />}</For>
+      </datalist>
+      <datalist id="areas-datalist">
+        <For each={meta()?.areas}>{(a) => <option value={a} />}</For>
+      </datalist>
+      <datalist id="states-datalist">
+        <For each={meta()?.states}>{(s) => <option value={s} />}</For>
+      </datalist>
+
       {/* Header */}
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Projects Directory</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-white">Master Projects</h1>
           <p class="text-xs text-slate-400 mt-1">
-            Manage real estate developments, towers, master plans, and unit allocations
+            Manage real estate developments, towers, floor plans, specifications, and connectivity
           </p>
         </div>
 
@@ -141,7 +196,7 @@ export function ProjectsList() {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="relative">
           <Input
-            placeholder="Search projects..."
+            placeholder="Search projects, locality..."
             value={search()}
             onInput={(e) => {
               setSearch(e.currentTarget.value);
@@ -151,16 +206,14 @@ export function ProjectsList() {
         </div>
 
         <Select
-          value={selectedCategory()}
+          value={selectedType()}
           onChange={(e) => {
-            setSelectedCategory(e.currentTarget.value);
+            setSelectedType(e.currentTarget.value);
             fetchProjects();
           }}
           options={[
-            { value: "", label: "All Categories" },
-            { value: "RESIDENTIAL", label: "Residential" },
-            { value: "COMMERCIAL", label: "Commercial" },
-            { value: "LAND", label: "Plots & Land" },
+            { value: "", label: "All Project Types" },
+            ...(meta()?.project_types.map((t) => ({ value: t.id, label: t.name })) || []),
           ]}
         />
 
@@ -171,7 +224,7 @@ export function ProjectsList() {
             fetchProjects();
           }}
           options={[
-            { value: "", label: "All Project Owners" },
+            { value: "", label: "All Developers / Owners" },
             ...(meta()?.owners.map((o) => ({ value: o.id, label: o.name })) || []),
           ]}
         />
@@ -196,18 +249,15 @@ export function ProjectsList() {
                     <span class="text-xs font-mono uppercase tracking-wider">No Media</span>
                   </div>
                 )}
-                <div class="absolute top-3 left-3">
-                  <Badge
-                    variant={
-                      proj.category === "RESIDENTIAL"
-                        ? "residential"
-                        : proj.category === "COMMERCIAL"
-                        ? "commercial"
-                        : "land"
-                    }
-                  >
-                    {proj.category}
+                <div class="absolute top-3 left-3 flex gap-2">
+                  <Badge variant="default">
+                    {proj.project_type_name}
                   </Badge>
+                  {proj.rera_number && (
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 backdrop-blur-sm">
+                      <ShieldCheck class="w-3 h-3" /> RERA
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -219,22 +269,26 @@ export function ProjectsList() {
                   </h3>
                   <p class="text-xs font-medium text-slate-400 mt-0.5">by {proj.owner_name}</p>
 
-                  <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-3">
+                  <div class="flex items-center gap-1 text-xs text-slate-400 mt-3">
                     <MapPin class="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span class="truncate">{proj.location_name}</span>
+                    <span class="truncate">{proj.area}, {proj.city}</span>
                   </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-850">
-                  <span class="text-xs text-slate-400">
-                    <strong class="text-slate-100 font-mono text-sm">{proj.properties_count}</strong> units listed
-                  </span>
+                <div class="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                  <div class="text-xs text-slate-400 flex items-center gap-1.5 font-medium">
+                    <Layers class="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{proj.configurations_count} Configurations</span>
+                  </div>
 
-                  <A href={`/projects/${proj.id}`}>
-                    <Button variant="secondary" size="sm">
-                      Manage <ExternalLink class="w-3 h-3 ml-1" />
-                    </Button>
-                  </A>
+                  <div class="flex items-center gap-2">
+                    <A
+                      href={`/projects/${proj.id}`}
+                      class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      Manage &rarr;
+                    </A>
+                  </div>
                 </div>
               </div>
             </div>
@@ -242,11 +296,16 @@ export function ProjectsList() {
         </For>
       </div>
 
-      <Show when={projects().length === 0 && !loading()}>
-        <div class="text-center py-16 bg-slate-900/40 border border-slate-800 rounded-2xl">
-          <Building2 class="w-10 h-10 mx-auto text-slate-600 mb-2" />
-          <p class="text-sm font-medium text-slate-300">No projects found</p>
-          <p class="text-xs text-slate-500 mt-1">Try clearing filters or create a new development project.</p>
+      <Show when={!loading() && projects().length === 0}>
+        <div class="p-12 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/40">
+          <Building2 class="w-10 h-10 text-slate-600 mx-auto mb-3" />
+          <h3 class="text-sm font-semibold text-slate-300">No projects found</h3>
+          <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            Try adjusting your search criteria or add your first master development project.
+          </p>
+          <Button class="mt-4" onClick={() => setModalOpen(true)}>
+            <Plus class="w-4 h-4" /> Create Project
+          </Button>
         </div>
       </Show>
 
@@ -254,9 +313,7 @@ export function ProjectsList() {
       <Modal
         isOpen={modalOpen()}
         onClose={() => setModalOpen(false)}
-        title="Register New Development Project"
-        description="Add a new master development or commercial complex to the platform."
-        maxWidth="2xl"
+        title="Create Master Development Project"
         footer={
           <>
             <Button variant="ghost" onClick={() => setModalOpen(false)}>
@@ -268,61 +325,185 @@ export function ProjectsList() {
           </>
         }
       >
-        <form onSubmit={handleCreateProject} class="space-y-4">
+        <form onSubmit={handleCreateProject} class="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
           {formError() && (
             <div class="p-3 bg-rose-950/60 border border-rose-800 rounded-lg text-xs text-rose-300">
               {formError()}
             </div>
           )}
 
-          <Input
-            label="Project Name"
-            required
-            placeholder="e.g. Skyline Heights Residencies"
-            value={formName()}
-            onInput={(e) => setFormName(e.currentTarget.value)}
-          />
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label="Project Owner / Developer"
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Project Title"
               required
-              placeholder="Select developer"
-              value={formOwnerId()}
-              onChange={(e) => setFormOwnerId(Number(e.currentTarget.value))}
-              options={meta()?.owners.map((o) => ({ value: o.id, label: o.name })) || []}
+              placeholder="e.g. Prestige Eden Park"
+              value={formName()}
+              onInput={(e) => setFormName(e.currentTarget.value)}
             />
 
             <Select
-              label="Location"
+              label="Developer / Owner"
               required
-              placeholder="Select location"
-              value={formLocationId()}
-              onChange={(e) => setFormLocationId(Number(e.currentTarget.value))}
-              options={meta()?.locations.map((l) => ({ value: l.id, label: l.formatted_address })) || []}
+              value={formOwnerId()}
+              onChange={(e) => setFormOwnerId(Number(e.currentTarget.value))}
+              options={[
+                { value: "", label: "Select Developer..." },
+                ...(meta()?.owners.map((o) => ({ value: o.id, label: o.name })) || []),
+              ]}
             />
           </div>
 
-          <Select
-            label="Development Category"
-            required
-            value={formCategory()}
-            onChange={(e) => setFormCategory(e.currentTarget.value as any)}
-            options={[
-              { value: "RESIDENTIAL", label: "Residential (Villas, Apartments, Condos)" },
-              { value: "COMMERCIAL", label: "Commercial (Offices, Retail, Workspaces)" },
-              { value: "LAND", label: "Land & Plots (Residential / Commercial Plots)" },
-            ]}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Project Type"
+              required
+              value={formProjectTypeId()}
+              onChange={(e) => setFormProjectTypeId(Number(e.currentTarget.value))}
+              options={[
+                { value: "", label: "Select Project Type..." },
+                ...(meta()?.project_types.map((t) => ({ value: t.id, label: t.name })) || []),
+              ]}
+            />
+
+            <Input
+              label="Total Land Area (sq ft)"
+              type="number"
+              placeholder="e.g. 150000"
+              value={formTotalLandArea() !== "" ? String(formTotalLandArea()) : ""}
+              onInput={(e) => setFormTotalLandArea(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+          </div>
+
+          {/* Embedded Location Header */}
+          <div class="pt-2 border-t border-slate-800">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <MapPin class="w-3.5 h-3.5 text-indigo-400" /> Embedded Location
+            </h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">City *</label>
+              <input
+                list="cities-datalist"
+                required
+                class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Ahmedabad"
+                value={formCity()}
+                onInput={(e) => setFormCity(e.currentTarget.value)}
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Area / Locality *</label>
+              <input
+                list="areas-datalist"
+                required
+                class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Bodakdev"
+                value={formArea()}
+                onInput={(e) => setFormArea(e.currentTarget.value)}
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">State</label>
+              <input
+                list="states-datalist"
+                class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Gujarat"
+                value={formState()}
+                onInput={(e) => setFormState(e.currentTarget.value)}
+              />
+            </div>
+          </div>
+
+          <Input
+            label="Full Formatted Address"
+            placeholder="e.g. Off Sindhu Bhavan Road, Bodakdev, Ahmedabad - 380054"
+            value={formFormattedAddress()}
+            onInput={(e) => setFormFormattedAddress(e.currentTarget.value)}
           />
 
-          <Textarea
-            label="Project Description"
-            placeholder="Overview of the development, architecture highlights, landmark connectivity..."
-            value={formDesc()}
-            onInput={(e) => setFormDesc(e.currentTarget.value)}
-          />
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              label="Postal Code"
+              placeholder="e.g. 380054"
+              value={formPostalCode()}
+              onInput={(e) => setFormPostalCode(e.currentTarget.value)}
+            />
+            <Input
+              label="Latitude (GPS)"
+              type="number"
+              step="0.000001"
+              placeholder="e.g. 23.0338"
+              value={formLatitude() !== "" ? String(formLatitude()) : ""}
+              onInput={(e) => setFormLatitude(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+            <Input
+              label="Longitude (GPS)"
+              type="number"
+              step="0.000001"
+              placeholder="e.g. 72.5850"
+              value={formLongitude() !== "" ? String(formLongitude()) : ""}
+              onInput={(e) => setFormLongitude(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+          </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Scale & Regulatory */}
+          <div class="pt-2 border-t border-slate-800">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <ShieldCheck class="w-3.5 h-3.5 text-indigo-400" /> RERA & Scale
+            </h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input
+              label="RERA Registration Number"
+              placeholder="e.g. PR/GJ/AHMEDABAD/..."
+              value={formReraNumber()}
+              onInput={(e) => setFormReraNumber(e.currentTarget.value)}
+            />
+            <Input
+              label="RERA Authority"
+              placeholder="e.g. Gujarat RERA (GujRERA)"
+              value={formReraAuthority()}
+              onInput={(e) => setFormReraAuthority(e.currentTarget.value)}
+            />
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <Input
+              label="Towers"
+              type="number"
+              placeholder="e.g. 4"
+              value={formTowersCount() !== "" ? String(formTowersCount()) : ""}
+              onInput={(e) => setFormTowersCount(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+            <Input
+              label="Floors"
+              type="number"
+              placeholder="e.g. 22"
+              value={formFloorsCount() !== "" ? String(formFloorsCount()) : ""}
+              onInput={(e) => setFormFloorsCount(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+            <Input
+              label="Units"
+              type="number"
+              placeholder="e.g. 180"
+              value={formUnitsCount() !== "" ? String(formUnitsCount()) : ""}
+              onInput={(e) => setFormUnitsCount(e.currentTarget.value ? Number(e.currentTarget.value) : "")}
+            />
+          </div>
+
+          {/* Dates */}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input
+              label="Start Date"
+              type="date"
+              value={formStartDate()}
+              onInput={(e) => setFormStartDate(e.currentTarget.value)}
+            />
             <Input
               label="Launch Date"
               type="date"
@@ -337,20 +518,28 @@ export function ProjectsList() {
             />
           </div>
 
-          {/* Amenities Multi-Check */}
+          <Textarea
+            label="Project Description (Markdown supported)"
+            rows={3}
+            placeholder="Describe master plan architectural highlights, landscape spaces, luxury finishes..."
+            value={formDesc()}
+            onInput={(e) => setFormDesc(e.currentTarget.value)}
+          />
+
+          {/* Amenities Multi-select */}
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-2">
-              Project Amenities
+              Select Amenities
             </label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-lg">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-800 rounded-xl bg-slate-950">
               <For each={meta()?.amenities}>
                 {(amenity) => (
-                  <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer p-1 hover:bg-slate-900 rounded">
+                  <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-900 cursor-pointer text-xs text-slate-300 transition-colors">
                     <input
                       type="checkbox"
                       checked={formAmenityIds().includes(amenity.id)}
                       onChange={() => toggleAmenity(amenity.id)}
-                      class="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500/20"
+                      class="rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
                     />
                     <span class="truncate">{amenity.name}</span>
                   </label>

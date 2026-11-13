@@ -1,6 +1,6 @@
 import { createSignal, onMount, For } from "solid-js";
 import { A } from "@solidjs/router";
-import { Building2, Home, MapPin, ArrowRight, Layers, TrendingUp } from "lucide-solid";
+import { Building2, MapPin, ArrowRight, Layers } from "lucide-solid";
 import { Button } from "@/shared/components/Button";
 import { Badge } from "@/shared/components/Badge";
 import { api } from "@/shared/api/client";
@@ -41,7 +41,7 @@ export function Dashboard() {
       )}
 
       {/* Metrics */}
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
           <div class="flex items-center justify-between text-slate-400 mb-2">
             <span class="text-xs font-medium">My Projects</span>
@@ -54,31 +54,11 @@ export function Dashboard() {
 
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
           <div class="flex items-center justify-between text-slate-400 mb-2">
-            <span class="text-xs font-medium">Total Units</span>
-            <Home class="w-4 h-4 text-teal-400" />
+            <span class="text-xs font-medium">Total Typologies</span>
+            <Layers class="w-4 h-4 text-teal-400" />
           </div>
           <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_properties || 0}
-          </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-          <div class="flex items-center justify-between text-slate-400 mb-2">
-            <span class="text-xs font-medium">Residential</span>
-            <Layers class="w-4 h-4 text-blue-400" />
-          </div>
-          <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_residential || 0}
-          </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-          <div class="flex items-center justify-between text-slate-400 mb-2">
-            <span class="text-xs font-medium">Commercial</span>
-            <TrendingUp class="w-4 h-4 text-purple-400" />
-          </div>
-          <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_commercial || 0}
+            {loading() ? "..." : data()?.stats.total_configurations || 0}
           </div>
         </div>
       </div>
@@ -99,18 +79,18 @@ export function Dashboard() {
                 <div>
                   <div class="flex items-center justify-between gap-2 mb-2">
                     <h3 class="text-base font-bold text-white truncate">{proj.name}</h3>
-                    <Badge variant="default">{proj.category}</Badge>
+                    <Badge variant="default">{proj.project_type_name}</Badge>
                   </div>
 
                   <div class="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
                     <MapPin class="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span class="truncate">{proj.location}</span>
+                    <span class="truncate">{proj.area ? `${proj.area}, ${proj.city}` : proj.city || proj.formatted_address}</span>
                   </div>
                 </div>
 
                 <div class="flex items-center justify-between pt-4 border-t border-slate-850">
                   <span class="text-xs text-slate-400 font-mono">
-                    <strong class="text-white text-sm">{proj.properties_count}</strong> units
+                    <strong class="text-white text-sm">{proj.configurations_count}</strong> typologies
                   </span>
                   <A href={`/projects/${proj.id}`}>
                     <Button variant="secondary" size="sm">

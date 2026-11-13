@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT state_or_province\nFROM projects\nWHERE state_or_province != '' AND deleted_at IS NULL\nORDER BY state_or_province ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "state_or_province",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "dc093a161e37ab1cffcf4a1bcc784818d5807a5714a20a83803dfc9e42ca9dd7"
+}

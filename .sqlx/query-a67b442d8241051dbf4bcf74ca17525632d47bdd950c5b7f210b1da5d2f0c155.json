@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO projects (id, project_owner_id, project_type_id, name, slug, formatted_address, city, area, state_or_province) OVERRIDING SYSTEM VALUE VALUES ($1, $2, $3, 'Shard Test Project', 'shard-test-project', 'Test Address', 'Mumbai', 'Andheri', 'Maharashtra')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a67b442d8241051dbf4bcf74ca17525632d47bdd950c5b7f210b1da5d2f0c155"
+}

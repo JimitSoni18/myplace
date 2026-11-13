@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pd.media_id AS id, pd.display_name, pd.doc_type, m.s3_key, m.file_size\nFROM project_documents pd\nJOIN media m ON m.id = pd.media_id\nWHERE pd.project_id = $1\nORDER BY pd.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "doc_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "s3_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "file_size",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "e300fbdcdf096e87aacd4f4bb26ce3dd6c844c61372302cf5f3d94150c3357ee"
+}

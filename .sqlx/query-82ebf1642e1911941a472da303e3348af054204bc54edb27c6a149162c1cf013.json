@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    id,\n    project_id,\n    category,\n    name,\n    distance,\n    duration,\n    latitude::FLOAT8 AS \"latitude?\",\n    longitude::FLOAT8 AS \"longitude?\",\n    source,\n    sequence\nFROM project_landmarks\nWHERE project_id = $1\nORDER BY sequence ASC, id ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "distance",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "duration",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "latitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "longitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "sequence",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "82ebf1642e1911941a472da303e3348af054204bc54edb27c6a149162c1cf013"
+}

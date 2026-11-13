@@ -2,11 +2,9 @@ import { createSignal, onMount, Show, For } from "solid-js";
 import { A } from "@solidjs/router";
 import {
   Building2,
-  Home,
   Users,
   Layers,
   ArrowRight,
-  TrendingUp,
   MapPin,
   Plus,
 } from "lucide-solid";
@@ -47,13 +45,8 @@ export function Dashboard() {
 
         <div class="flex items-center gap-2">
           <A href="/projects">
-            <Button variant="secondary" size="sm">
-              View All Projects
-            </Button>
-          </A>
-          <A href="/properties">
             <Button size="sm">
-              <Plus class="w-3.5 h-3.5" /> Add New Unit
+              <Plus class="w-3.5 h-3.5" /> Manage Projects
             </Button>
           </A>
         </div>
@@ -66,65 +59,41 @@ export function Dashboard() {
       )}
 
       {/* Metrics Cards Grid */}
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Total Owners */}
-        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
-          <div class="flex items-center justify-between text-slate-400 mb-3">
-            <span class="text-xs font-medium">Project Owners</span>
-            <Users class="w-4 h-4 text-indigo-400" />
-          </div>
-          <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_owners || 0}
-          </div>
-          <div class="text-[11px] text-slate-500 mt-1">Registered partners</div>
-        </div>
-
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Total Projects */}
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
           <div class="flex items-center justify-between text-slate-400 mb-3">
-            <span class="text-xs font-medium">Total Projects</span>
+            <span class="text-xs font-medium">Total Master Projects</span>
             <Building2 class="w-4 h-4 text-indigo-400" />
           </div>
           <div class="text-2xl font-bold text-white font-mono">
             {loading() ? "..." : data()?.stats.total_projects || 0}
           </div>
-          <div class="text-[11px] text-slate-500 mt-1">Active developments</div>
+          <div class="text-[11px] text-slate-500 mt-1">Active developments registered</div>
         </div>
 
-        {/* Total Properties */}
+        {/* Total Developers */}
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
           <div class="flex items-center justify-between text-slate-400 mb-3">
-            <span class="text-xs font-medium">Total Units</span>
-            <Home class="w-4 h-4 text-emerald-400" />
+            <span class="text-xs font-medium">Developers & Owners</span>
+            <Users class="w-4 h-4 text-indigo-400" />
           </div>
           <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_properties || 0}
+            {loading() ? "..." : data()?.stats.total_owners || 0}
           </div>
-          <div class="text-[11px] text-slate-500 mt-1">Listed inventory</div>
+          <div class="text-[11px] text-slate-500 mt-1">Verified partner builders</div>
         </div>
 
-        {/* Residential */}
+        {/* Total Configurations */}
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
           <div class="flex items-center justify-between text-slate-400 mb-3">
-            <span class="text-xs font-medium">Residential</span>
-            <Layers class="w-4 h-4 text-blue-400" />
+            <span class="text-xs font-medium">Total Configurations</span>
+            <Layers class="w-4 h-4 text-emerald-400" />
           </div>
           <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_residential || 0}
+            {loading() ? "..." : data()?.stats.total_configurations || 0}
           </div>
-          <div class="text-[11px] text-slate-500 mt-1">Villas, flats & duplex</div>
-        </div>
-
-        {/* Commercial */}
-        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm col-span-2 lg:col-span-1">
-          <div class="flex items-center justify-between text-slate-400 mb-3">
-            <span class="text-xs font-medium">Commercial</span>
-            <TrendingUp class="w-4 h-4 text-purple-400" />
-          </div>
-          <div class="text-2xl font-bold text-white font-mono">
-            {loading() ? "..." : data()?.stats.total_commercial || 0}
-          </div>
-          <div class="text-[11px] text-slate-500 mt-1">Offices & retail space</div>
+          <div class="text-[11px] text-slate-500 mt-1">Active unit typologies & floor plans</div>
         </div>
       </div>
 
@@ -150,8 +119,8 @@ export function Dashboard() {
                 <th class="px-6 py-3">Project</th>
                 <th class="px-6 py-3">Owner / Partner</th>
                 <th class="px-6 py-3">Location</th>
-                <th class="px-6 py-3">Category</th>
-                <th class="px-6 py-3 text-right">Inventory</th>
+                <th class="px-6 py-3">Project Type</th>
+                <th class="px-6 py-3 text-right">Configurations</th>
                 <th class="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
@@ -178,25 +147,16 @@ export function Dashboard() {
                       <td class="px-6 py-4 text-slate-400">
                         <span class="inline-flex items-center gap-1">
                           <MapPin class="w-3 h-3 text-slate-500" />
-                          {proj.location}
+                          {proj.area}, {proj.city}
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <Badge
-                          variant={
-                            proj.category === "RESIDENTIAL"
-                              ? "residential"
-                              : proj.category === "COMMERCIAL"
-                              ? "commercial"
-                              : "land"
-                          }
-                        >
-                          {proj.category}
+                        <Badge variant="default">
+                          {proj.project_type_name}
                         </Badge>
                       </td>
                       <td class="px-6 py-4 text-right font-mono text-slate-300">
-                        <span class="text-emerald-400 font-semibold">{proj.available_properties}</span> /{" "}
-                        {proj.total_properties}
+                        <span class="text-indigo-400 font-semibold">{proj.configurations_count}</span> plans
                       </td>
                       <td class="px-6 py-4 text-right">
                         <A

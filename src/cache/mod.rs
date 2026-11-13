@@ -5,7 +5,6 @@ use tracing::info;
 pub enum InvalidationEvent {
 	ProjectUpdated(i32),
 	OwnerUpdated(i32),
-	PropertyUpdated(i32),
 	All,
 }
 
@@ -33,8 +32,12 @@ impl PageCache {
 		self.cache.get(key).await
 	}
 
-	pub async fn insert(&self, key: String, html: String) {
-		self.cache.insert(key, html).await;
+	pub async fn insert(&self, key: impl Into<String>, html: impl Into<String>) {
+		self.cache.insert(key.into(), html.into()).await;
+	}
+
+	pub async fn remove(&self, key: &str) {
+		self.cache.invalidate(key).await;
 	}
 
 	pub async fn invalidate_key(&self, key: &str) {
@@ -54,11 +57,13 @@ impl PageCache {
 					.ok();
 
 				if let Some(db) = &self.db {
-					crate::sitemap::update_entity_shard(
+					let _ = crate::sitemap::build_entity_sitemap_shard(
 						db,
-						self,
+						&crate::config::CONFIG.public_site_origin,
+						&crate::config::CONFIG,
 						crate::sitemap::SitemapEntity::Projects,
 						id,
+						self,
 					)
 					.await;
 				}
@@ -73,32 +78,13 @@ impl PageCache {
 					.ok();
 
 				if let Some(db) = &self.db {
-					crate::sitemap::update_entity_shard(
+					let _ = crate::sitemap::build_entity_sitemap_shard(
 						db,
-						self,
+						&crate::config::CONFIG.public_site_origin,
+						&crate::config::CONFIG,
 						crate::sitemap::SitemapEntity::Owners,
 						id,
-					)
-					.await;
-				}
-			}
-			InvalidationEvent::PropertyUpdated(id) => {
-				info!(property_id = id, "invalidating property cache entries");
-				self.cache.invalidate("/").await;
-				self.cache.invalidate("/properties").await;
-				self.cache.invalidate("/sitemap.xml").await;
-				self.cache
-					.invalidate_entries_if(|k, _| {
-						k.starts_with("/properties") || k.starts_with("/projects")
-					})
-					.ok();
-
-				if let Some(db) = &self.db {
-					crate::sitemap::update_entity_shard(
-						db,
 						self,
-						crate::sitemap::SitemapEntity::Properties,
-						id,
 					)
 					.await;
 				}

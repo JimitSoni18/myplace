@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (COALESCE(MAX(sequence), 0) + 1)::SMALLINT AS \"seq!: i16\" FROM project_media WHERE project_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "seq!: i16",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fc71ab4eeda515bef9ef8499ee0ae9c6a1014dbbcb82a69b57887d7a79dbf6b3"
+}

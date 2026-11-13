@@ -123,7 +123,7 @@ export function AdminUsers() {
         isOpen={modalOpen()}
         onClose={() => setModalOpen(false)}
         title="Register Administrative Staff"
-        description="Grants full management rights over projects, properties, and partner owners."
+        description="Grants full management rights over projects, configurations, and partner owners."
         footer={
           <>
             <Button variant="ghost" onClick={() => setModalOpen(false)}>

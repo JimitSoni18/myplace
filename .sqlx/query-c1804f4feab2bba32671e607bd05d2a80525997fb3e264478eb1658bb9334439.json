@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT area\nFROM projects\nWHERE area != ''\n  AND deleted_at IS NULL\n  AND ($1::TEXT IS NULL OR city = $1)\nORDER BY area ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "area",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c1804f4feab2bba32671e607bd05d2a80525997fb3e264478eb1658bb9334439"
+}

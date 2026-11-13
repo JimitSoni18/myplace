@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (COALESCE(MAX(sequence), 0) + 1)::SMALLINT AS \"seq!: i16\" FROM project_floor_plans WHERE project_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "seq!: i16",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "035308f2ecb7922a3df009f2e9b16492d29fe842ee72112bdf690384a3626ba9"
+}

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects\nSET project_owner_id = $2,\n    project_type_id = $3,\n    name = $4,\n    slug = $5,\n    description = $6,\n    formatted_address = $7,\n    city = $8,\n    area = $9,\n    state_or_province = $10,\n    postal_code = $11,\n    latitude = $12,\n    longitude = $13,\n    rera_number = $14,\n    rera_authority = $15,\n    total_land_area = $16,\n    towers_count = $17,\n    floors_count = $18,\n    units_count = $19,\n    start_date = $20,\n    launch_date = $21,\n    possession_date = $22,\n    updated_at = NOW()\nWHERE id = $1 AND deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Text",
+        "Text",
+        "Float8",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Date",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "731bbfe7f31ebc08454376b25cef07bae63e9cf2c231bc1132eebd85f731c5cb"
+}

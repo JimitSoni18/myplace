@@ -33,17 +33,21 @@ export function ProjectsList() {
 
   const filteredProjects = () => {
     return projects().filter((p) => {
+      const loc = `${p.area || ""} ${p.city || ""} ${p.formatted_address || ""}`.toLowerCase();
       const matchesSearch =
         p.name.toLowerCase().includes(debouncedSearchQuery().toLowerCase()) ||
-        p.location.toLowerCase().includes(debouncedSearchQuery().toLowerCase());
+        loc.includes(debouncedSearchQuery().toLowerCase());
       const matchesCategory =
         categoryFilter() === "ALL" ||
-        p.category.toUpperCase() === categoryFilter().toUpperCase();
+        p.project_type_name.toUpperCase() === categoryFilter().toUpperCase();
       return matchesSearch && matchesCategory;
     });
   };
 
-  const categories = ["ALL", "RESIDENTIAL", "COMMERCIAL", "LAND"];
+  const categories = () => {
+    const types = Array.from(new Set(projects().map((p) => p.project_type_name))).filter(Boolean);
+    return ["ALL", ...types];
+  };
 
   return (
     <div class="space-y-6">
@@ -66,7 +70,7 @@ export function ProjectsList() {
       <div class="flex flex-col sm:flex-row items-center gap-3">
         <div class="relative w-full sm:w-80">
           <Input
-            placeholder="Search projects by name or location..."
+            placeholder="Search projects by name, city, or area..."
             value={searchQuery()}
             onInput={(e) => {
               setSearchQuery(e.currentTarget.value);
@@ -75,17 +79,17 @@ export function ProjectsList() {
           />
         </div>
         <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          <For each={categories}>
+          <For each={categories()}>
             {(cat) => (
               <button
                 onClick={() => setCategoryFilter(cat)}
                 class={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                  categoryFilter() === cat
+                  categoryFilter().toUpperCase() === cat.toUpperCase()
                     ? "bg-emerald-600 text-white font-semibold"
                     : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                {cat === "ALL" ? "All Categories" : cat.charAt(0) + cat.slice(1).toLowerCase()}
+                {cat === "ALL" ? "All Types" : cat}
               </button>
             )}
           </For>
@@ -127,7 +131,7 @@ export function ProjectsList() {
                       />
                     </Show>
                     <div class="absolute top-3 right-3">
-                      <Badge variant="default">{proj.category}</Badge>
+                      <Badge variant="default">{proj.project_type_name}</Badge>
                     </div>
                   </div>
 
@@ -137,7 +141,7 @@ export function ProjectsList() {
                     </h3>
                     <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-2">
                       <MapPin class="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span class="truncate">{proj.location}</span>
+                      <span class="truncate">{proj.area ? `${proj.area}, ${proj.city}` : proj.city || proj.formatted_address}</span>
                     </div>
                   </div>
                 </div>
@@ -146,7 +150,7 @@ export function ProjectsList() {
                   <div class="flex items-center gap-1 text-xs text-slate-400">
                     <Layers class="w-3.5 h-3.5 text-slate-500" />
                     <span>
-                      <strong class="text-white font-mono">{proj.properties_count}</strong> units listed
+                      <strong class="text-white font-mono">{proj.configurations_count}</strong> typologies
                     </span>
                   </div>
                   <A href={`/projects/${proj.id}`}>

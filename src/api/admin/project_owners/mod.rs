@@ -66,9 +66,11 @@ pub struct OwnerProjectSummary {
 	pub id: i32,
 	pub name: String,
 	pub slug: String,
-	pub category: String,
-	pub location: String,
-	pub properties_count: i64,
+	pub project_type_name: String,
+	pub city: String,
+	pub area: String,
+	pub formatted_address: String,
+	pub configurations_count: i64,
 }
 
 #[derive(Serialize, ts_rs::TS)]
@@ -238,9 +240,11 @@ async fn project_owner_detail(
 		id: i32,
 		name: String,
 		slug: String,
-		category: String,
-		location: Option<String>,
-		properties_count: i64,
+		project_type_name: String,
+		city: String,
+		area: String,
+		formatted_address: String,
+		configurations_count: i64,
 	}
 
 	let project_rows = sqlx::query_file_as!(
@@ -278,9 +282,11 @@ async fn project_owner_detail(
 				id: p.id,
 				name: p.name,
 				slug: p.slug,
-				category: p.category,
-				location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
-				properties_count: p.properties_count,
+				project_type_name: p.project_type_name,
+				city: p.city,
+				area: p.area,
+				formatted_address: p.formatted_address,
+				configurations_count: p.configurations_count,
 			})
 			.collect(),
 	}))
@@ -652,9 +658,11 @@ async fn project_owner_projects(
 		id: i32,
 		name: String,
 		slug: String,
-		category: String,
-		location: Option<String>,
-		properties_count: i64,
+		project_type_name: String,
+		city: String,
+		area: String,
+		formatted_address: String,
+		configurations_count: i64,
 	}
 
 	let project_rows = sqlx::query_file_as!(
@@ -673,9 +681,11 @@ async fn project_owner_projects(
 				id: p.id,
 				name: p.name,
 				slug: p.slug,
-				category: p.category,
-				location: p.location.unwrap_or_else(|| "Unspecified".to_string()),
-				properties_count: p.properties_count,
+				project_type_name: p.project_type_name,
+				city: p.city,
+				area: p.area,
+				formatted_address: p.formatted_address,
+				configurations_count: p.configurations_count,
 			})
 			.collect(),
 	))

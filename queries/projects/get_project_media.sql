@@ -1,4 +1,4 @@
-SELECT pm.media_id, m.media_type, m.s3_key, m.thumbnail_key, pm.sequence
+SELECT pm.media_id AS id, m.media_type, m.s3_key, m.thumbnail_key, pm.sequence
 FROM project_media pm
 JOIN media m ON m.id = pm.media_id
 WHERE pm.project_id = $1

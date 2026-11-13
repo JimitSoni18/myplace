@@ -47,6 +47,8 @@ pub fn normalize_db_url(url: &str) -> String {
 		&& !s.contains("127.0.0.1")
 		&& !s.contains("@db:")
 		&& !s.contains("@db/")
+		&& !s.contains("%2F")
+		&& !s.contains("/pgdata")
 	{
 		if s.contains('?') {
 			s.push_str("&sslmode=require");

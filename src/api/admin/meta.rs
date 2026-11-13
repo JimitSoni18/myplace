@@ -16,26 +16,13 @@ pub struct LookupItem {
 
 #[derive(Serialize, ts_rs::TS)]
 #[ts(export, export_to = "admin/")]
-pub struct LocationLookupItem {
-	pub id: i32,
-	pub formatted_address: String,
-}
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export, export_to = "admin/")]
-pub struct PropertyTypeLookupItem {
-	pub id: i32,
-	pub name: String,
-	pub category: String,
-}
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export, export_to = "admin/")]
 pub struct MetaOptionsResponse {
 	pub owners: Vec<LookupItem>,
-	pub locations: Vec<LocationLookupItem>,
+	pub project_types: Vec<LookupItem>,
 	pub amenities: Vec<LookupItem>,
-	pub property_types: Vec<PropertyTypeLookupItem>,
+	pub cities: Vec<String>,
+	pub areas: Vec<String>,
+	pub states: Vec<String>,
 }
 
 async fn get_meta_options(
@@ -45,11 +32,12 @@ async fn get_meta_options(
 	let db = &state.model.db;
 
 	#[derive(sqlx::FromRow)]
-	struct OwnerRow {
+	struct IdNameRow {
 		id: i32,
 		name: String,
 	}
-	let owners = sqlx::query_as::<_, OwnerRow>(
+
+	let owners = sqlx::query_as::<_, IdNameRow>(
 		"SELECT id, name FROM project_owners WHERE deleted_at IS NULL ORDER BY name ASC",
 	)
 	.fetch_all(db)
@@ -59,28 +47,18 @@ async fn get_meta_options(
 	.map(|o| LookupItem { id: o.id, name: o.name })
 	.collect();
 
-	#[derive(sqlx::FromRow)]
-	struct LocRow {
-		id: i32,
-		formatted_address: String,
-	}
-	let locations = sqlx::query_as::<_, LocRow>(
-		"SELECT id, formatted_address FROM locations WHERE deleted_at IS NULL ORDER BY formatted_address ASC",
+	let project_types = sqlx::query_as::<_, IdNameRow>(
+		"SELECT id, name FROM project_types WHERE is_active = TRUE ORDER BY id ASC",
 	)
 	.fetch_all(db)
 	.await
 	.unwrap_or_default()
 	.into_iter()
-	.map(|l| LocationLookupItem { id: l.id, formatted_address: l.formatted_address })
+	.map(|pt| LookupItem { id: pt.id, name: pt.name })
 	.collect();
 
-	#[derive(sqlx::FromRow)]
-	struct AmenityRow {
-		id: i32,
-		name: String,
-	}
-	let amenities = sqlx::query_as::<_, AmenityRow>(
-		"SELECT id, name FROM amenities WHERE is_active = true ORDER BY name ASC",
+	let amenities = sqlx::query_as::<_, IdNameRow>(
+		"SELECT id, name FROM amenities WHERE is_active = TRUE ORDER BY name ASC",
 	)
 	.fetch_all(db)
 	.await
@@ -90,25 +68,46 @@ async fn get_meta_options(
 	.collect();
 
 	#[derive(sqlx::FromRow)]
-	struct PropTypeRow {
-		id: i32,
-		name: String,
-		category: String,
+	struct TextRow {
+		val: String,
 	}
-	let property_types = sqlx::query_as::<_, PropTypeRow>(
-		"SELECT id, name, category FROM property_types ORDER BY category, name ASC",
+
+	let cities = sqlx::query_as::<_, TextRow>(
+		"SELECT DISTINCT city AS val FROM projects WHERE city != '' AND deleted_at IS NULL ORDER BY city ASC",
 	)
 	.fetch_all(db)
 	.await
 	.unwrap_or_default()
 	.into_iter()
-	.map(|pt| PropertyTypeLookupItem { id: pt.id, name: pt.name, category: pt.category })
+	.map(|r| r.val)
+	.collect();
+
+	let areas = sqlx::query_as::<_, TextRow>(
+		"SELECT DISTINCT area AS val FROM projects WHERE area != '' AND deleted_at IS NULL ORDER BY area ASC",
+	)
+	.fetch_all(db)
+	.await
+	.unwrap_or_default()
+	.into_iter()
+	.map(|r| r.val)
+	.collect();
+
+	let states = sqlx::query_as::<_, TextRow>(
+		"SELECT DISTINCT state_or_province AS val FROM projects WHERE state_or_province != '' AND deleted_at IS NULL ORDER BY state_or_province ASC",
+	)
+	.fetch_all(db)
+	.await
+	.unwrap_or_default()
+	.into_iter()
+	.map(|r| r.val)
 	.collect();
 
 	Json(MetaOptionsResponse {
 		owners,
-		locations,
+		project_types,
 		amenities,
-		property_types,
+		cities,
+		areas,
+		states,
 	})
 }

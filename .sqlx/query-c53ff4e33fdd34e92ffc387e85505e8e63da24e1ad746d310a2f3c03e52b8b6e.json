@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects SET name = 'Updated Test Project Name 2026', slug = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c53ff4e33fdd34e92ffc387e85505e8e63da24e1ad746d310a2f3c03e52b8b6e"
+}

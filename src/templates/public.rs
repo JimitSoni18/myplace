@@ -1,37 +1,23 @@
 use askama::Template;
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct PublicProjectCard {
 	pub id: i32,
 	pub name: String,
 	pub slug: String,
-	pub category: String,
-	pub location_name: String,
+	pub project_type_name: String,
+	pub city: String,
+	pub area: String,
+	pub formatted_address: String,
 	pub hero_thumb_url: Option<String>,
-	pub property_count: i64,
+	pub configurations_count: i64,
 	pub possession_date: Option<String>,
 	pub owner_id: i32,
 	pub owner_name: String,
 	pub owner_slug: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct PublicPropertyCard {
-	pub id: i32,
-	pub slug: String,
-	pub title: String,
-	pub category: String,
-	pub property_type_name: String,
-	pub price_formatted: String,
-	pub listing_type: String,
-	pub built_up_area: Option<f64>,
-	pub bedroom_count: Option<f64>,
-	pub bathroom_count: Option<f64>,
-	pub hero_thumb_url: Option<String>,
-	pub project_id: i32,
-	pub project_name: String,
-	pub project_slug: String,
-	pub location_name: String,
+	pub min_price_formatted: Option<String>,
+	pub bhk_summary: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -46,7 +32,6 @@ pub struct PublicOwnerCard {
 #[derive(Clone, Debug)]
 pub struct CategoryStat {
 	pub name: &'static str,
-	pub slug: &'static str,
 	pub count: i64,
 	pub icon: &'static str,
 }
@@ -87,51 +72,70 @@ pub struct PublicOwnerDetail {
 }
 
 #[derive(Clone, Debug)]
-pub struct PublicProjectSummary {
-	pub id: i32,
-	pub name: String,
-	pub slug: String,
-	pub category: String,
-	pub location_name: String,
-}
-
-#[derive(Clone, Debug)]
 pub struct PublicProjectDetail {
 	pub id: i32,
 	pub name: String,
 	pub slug: String,
-	pub category: String,
-	pub location_name: String,
+	pub project_type_name: String,
+	pub formatted_address: String,
+	pub city: String,
+	pub area: String,
+	pub state_or_province: String,
+	pub postal_code: Option<String>,
+	pub latitude: Option<f64>,
+	pub longitude: Option<f64>,
+	pub rera_number: Option<String>,
+	pub rera_authority: Option<String>,
+	pub total_land_area: Option<f64>,
+	pub towers_count: Option<i32>,
+	pub floors_count: Option<i32>,
+	pub units_count: Option<i32>,
 	pub start_date: Option<String>,
 	pub launch_date: Option<String>,
 	pub possession_date: Option<String>,
 }
 
 #[derive(Clone, Debug)]
-pub struct PublicPropertyDetail {
+pub struct PublicConfigurationItem {
 	pub id: i32,
-	pub slug: String,
-	pub unit_number: Option<String>,
-	pub building: Option<String>,
-	pub floor_number: Option<i32>,
-	pub total_floors: Option<i32>,
+	pub name: String,
+	pub bhk: Option<f64>,
+	pub carpet_area: Option<f64>,
 	pub built_up_area: Option<f64>,
-	pub usable_area: Option<f64>,
-	pub category: String,
-	pub property_type_name: String,
+	pub super_built_up_area: Option<f64>,
+	pub price: Option<f64>,
 	pub price_formatted: String,
-	pub listing_type: String,
-	pub billing_period: Option<String>,
-	// Subtype specific:
-	pub bedroom_count: Option<f64>,
-	pub bathroom_count: Option<f64>,
-	pub balcony_count: Option<i16>,
-	pub is_duplex: bool,
-	pub parking: Option<String>,
-	pub parcel_number: Option<String>,
-	pub zoning: Option<String>,
-	pub approval_status: Option<String>,
-	pub development_status: Option<String>,
+	pub price_on_request: bool,
+	pub floor_plan_url: Option<String>,
+	pub floor_plan_thumb_url: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicFloorPlanItem {
+	pub id: Uuid,
+	pub title: String,
+	pub url: String,
+	pub thumbnail_url: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicSpecificationItem {
+	pub category: String,
+	pub items: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicLandmarkItem {
+	pub category: String,
+	pub name: String,
+	pub distance: Option<String>,
+	pub duration: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicTypeOption {
+	pub id: i32,
+	pub name: String,
 }
 
 #[derive(Clone, Debug)]
@@ -150,9 +154,10 @@ pub struct HomeTemplate<'a> {
 	pub canonical_url: &'a str,
 	pub og_image: Option<&'a str>,
 	pub featured_projects: Vec<PublicProjectCard>,
-	pub featured_properties: Vec<PublicPropertyCard>,
 	pub featured_owners: Vec<PublicOwnerCard>,
 	pub categories_stats: Vec<CategoryStat>,
+	pub available_cities: Vec<String>,
+	pub project_types: Vec<PublicTypeOption>,
 }
 
 #[derive(Template)]
@@ -162,9 +167,25 @@ pub struct ProjectsListTemplate<'a> {
 	pub meta_description: &'a str,
 	pub canonical_url: &'a str,
 	pub og_image: Option<&'a str>,
-	pub category_filter: Option<&'a str>,
-	pub search_query: Option<&'a str>,
 	pub projects: Vec<PublicProjectCard>,
+	pub project_types: Vec<PublicTypeOption>,
+	pub selected_type_id: Option<i32>,
+	pub selected_city: Option<&'a str>,
+	pub selected_area: Option<&'a str>,
+	pub selected_bhk: Option<f64>,
+	pub search_query: Option<&'a str>,
+	pub available_cities: Vec<String>,
+	pub available_areas: Vec<String>,
+}
+
+impl<'a> ProjectsListTemplate<'a> {
+	pub fn is_type_selected(&self, id: &i32) -> bool {
+		self.selected_type_id.as_ref() == Some(id)
+	}
+
+	pub fn is_city_selected(&self, city: &str) -> bool {
+		self.selected_city == Some(city)
+	}
 }
 
 #[derive(Template)]
@@ -173,13 +194,16 @@ pub struct ProjectDetailTemplate<'a> {
 	pub meta_title: &'a str,
 	pub meta_description: &'a str,
 	pub canonical_url: &'a str,
-	pub og_image: Option<&'a str>,
+	pub og_image: Option<String>,
 	pub project: PublicProjectDetail,
 	pub owner: PublicOwnerSummary,
 	pub description_html: String,
 	pub gallery: Vec<PublicMediaItem>,
 	pub documents: Vec<PublicDocumentItem>,
-	pub properties: Vec<PublicPropertyCard>,
+	pub configurations: Vec<PublicConfigurationItem>,
+	pub floor_plans: Vec<PublicFloorPlanItem>,
+	pub specifications: Vec<PublicSpecificationItem>,
+	pub landmarks: Vec<PublicLandmarkItem>,
 	pub amenities: Vec<String>,
 	pub enquiry_success: bool,
 	pub enquiry_error: Option<String>,
@@ -197,178 +221,10 @@ pub struct OwnerDetailTemplate<'a> {
 	pub projects: Vec<PublicProjectCard>,
 }
 
-#[derive(Clone, Debug)]
-pub struct PublicPropertyTypeOption {
-	pub id: i32,
-	pub name: String,
-	pub slug: String,
-	pub category: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct ActiveFilterBadge {
-	pub label: String,
-	pub remove_url: String,
-}
-
 #[derive(Template)]
-#[template(path = "public/properties.html")]
-pub struct PropertiesListTemplate<'a> {
-	pub meta_title: &'a str,
-	pub meta_description: &'a str,
-	pub canonical_url: &'a str,
-	pub og_image: Option<&'a str>,
-	pub category_filter: Option<&'a str>,
-	pub listing_type_filter: Option<&'a str>,
-	pub search_query: Option<&'a str>,
-	pub properties: Vec<PublicPropertyCard>,
-	pub property_types: Vec<PublicPropertyTypeOption>,
-	pub selected_property_types: Vec<String>,
-	pub selected_bhks: Vec<String>,
-	pub min_price: Option<f64>,
-	pub max_price: Option<f64>,
-	pub active_badges: Vec<ActiveFilterBadge>,
-	pub has_active_filters: bool,
-}
-
-pub fn build_properties_filter_url(
-	category: Option<&str>,
-	listing_type: Option<&str>,
-	q: Option<&str>,
-	bhks: &[String],
-	prop_types: &[String],
-	min_price: Option<f64>,
-	max_price: Option<f64>,
-) -> String {
-	let mut pairs: Vec<(&str, String)> = Vec::new();
-	if let Some(cat) = category.filter(|s| !s.trim().is_empty()) {
-		pairs.push(("category", cat.to_string()));
-	}
-	if let Some(lt) = listing_type.filter(|s| !s.trim().is_empty()) {
-		pairs.push(("listing_type", lt.to_string()));
-	}
-	if let Some(query) = q.filter(|s| !s.trim().is_empty()) {
-		pairs.push(("q", query.to_string()));
-	}
-	for b in bhks {
-		pairs.push(("bhk", b.to_string()));
-	}
-	for pt in prop_types {
-		pairs.push(("prop_type", pt.to_string()));
-	}
-	if let Some(min) = min_price {
-		pairs.push(("min_price", min.to_string()));
-	}
-	if let Some(max) = max_price {
-		pairs.push(("max_price", max.to_string()));
-	}
-
-	if pairs.is_empty() {
-		"/properties".to_string()
-	} else {
-		let query = serde_urlencoded::to_string(&pairs).unwrap_or_default();
-		format!("/properties?{query}")
-	}
-}
-
-impl<'a> PropertiesListTemplate<'a> {
-	pub fn is_bhk_selected(&self, val: &str) -> bool {
-		self.selected_bhks.iter().any(|b| b == val)
-	}
-
-	pub fn is_type_selected(&self, slug: &str) -> bool {
-		self.selected_property_types.iter().any(|s| s == slug)
-	}
-
-	pub fn is_budget_preset(&self, min: Option<f64>, max: Option<f64>) -> bool {
-		self.min_price == min && self.max_price == max
-	}
-
-	pub fn is_category(&self, cat: &str) -> bool {
-		self.category_filter == Some(cat)
-	}
-
-	pub fn is_listing_type(&self, lt: &str) -> bool {
-		self.listing_type_filter == Some(lt)
-	}
-
-	pub fn is_rental(&self) -> bool {
-		self.listing_type_filter == Some("rent") || self.listing_type_filter == Some("lease")
-	}
-
-	pub fn show_bhk_filter(&self) -> bool {
-		match self.category_filter {
-			Some("COMMERCIAL") | Some("LAND") => false,
-			_ => true,
-		}
-	}
-
-	pub fn has_budget_filter(&self) -> bool {
-		self.min_price.is_some() || self.max_price.is_some()
-	}
-
-	pub fn selected_types_count(&self) -> usize {
-		self.selected_property_types.len()
-	}
-
-	pub fn is_type_in_active_category(&self, pt_category: &str) -> bool {
-		match self.category_filter {
-			Some(cat) => cat == pt_category,
-			None => true,
-		}
-	}
-
-	pub fn category_url(&self, new_cat: Option<&str>) -> String {
-		let bhks = if new_cat == Some("COMMERCIAL") || new_cat == Some("LAND") {
-			Vec::new()
-		} else {
-			self.selected_bhks.clone()
-		};
-
-		let prop_types: Vec<String> = match new_cat {
-			Some(cat) => self
-				.selected_property_types
-				.iter()
-				.filter(|slug| {
-					self.property_types
-						.iter()
-						.any(|pt| &pt.slug == *slug && pt.category == cat)
-				})
-				.cloned()
-				.collect(),
-			None => self.selected_property_types.clone(),
-		};
-
-		build_properties_filter_url(
-			new_cat,
-			self.listing_type_filter,
-			self.search_query,
-			&bhks,
-			&prop_types,
-			self.min_price,
-			self.max_price,
-		)
-	}
-}
-
-
-
-
-#[derive(Template)]
-#[template(path = "public/property-detail.html")]
-pub struct PropertyDetailTemplate<'a> {
-	pub meta_title: &'a str,
-	pub meta_description: &'a str,
-	pub canonical_url: &'a str,
-	pub og_image: Option<&'a str>,
-	pub property: PublicPropertyDetail,
-	pub project: PublicProjectSummary,
-	pub owner: PublicOwnerSummary,
-	pub description_html: String,
-	pub gallery: Vec<PublicMediaItem>,
-	pub amenities: Vec<String>,
-	pub enquiry_success: bool,
-	pub enquiry_error: Option<String>,
+#[template(path = "public/sitemap.xml")]
+pub struct SitemapTemplate {
+	pub urls: Vec<SitemapUrl>,
 }
 
 #[derive(Clone, Debug)]
@@ -381,10 +237,4 @@ pub struct SitemapIndexItem {
 #[template(path = "public/sitemap_index.xml")]
 pub struct SitemapIndexTemplate {
 	pub sitemaps: Vec<SitemapIndexItem>,
-}
-
-#[derive(Template)]
-#[template(path = "public/sitemap.xml")]
-pub struct SitemapTemplate {
-	pub urls: Vec<SitemapUrl>,
 }

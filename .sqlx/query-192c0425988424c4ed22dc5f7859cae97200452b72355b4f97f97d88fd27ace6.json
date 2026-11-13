@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO amenities (name) VALUES ($1) ON CONFLICT (name) DO NOTHING;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "192c0425988424c4ed22dc5f7859cae97200452b72355b4f97f97d88fd27ace6"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE project_configurations SET floor_plan_media_id = $1 WHERE id = $2 AND project_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fcf2e1910c56601659e646298ddc1d09068722737940e8a2d0c7c82f24c87fe4"
+}

@@ -1,0 +1,172 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.project_owner_id, po.name AS owner_name,\n\tp.project_type_id, pt.name AS project_type_name,\n\tp.name, p.slug, p.description,\n\tp.formatted_address, p.city, p.area, p.state_or_province, p.postal_code,\n\tp.latitude::FLOAT8 AS \"latitude?\", p.longitude::FLOAT8 AS \"longitude?\",\n\tp.rera_number, p.rera_authority,\n\tp.total_land_area::FLOAT8 AS \"total_land_area?\", p.towers_count, p.floors_count, p.units_count,\n\tp.start_date, p.launch_date, p.possession_date, p.created_at, p.updated_at\nFROM projects p\n\tJOIN project_owners po ON po.id = p.project_owner_id\n\tJOIN project_types pt ON pt.id = p.project_type_id\nWHERE p.id = $1 AND p.deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "project_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "project_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "area",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "state_or_province",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "postal_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "latitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 14,
+        "name": "longitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 15,
+        "name": "rera_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "rera_authority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "total_land_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 18,
+        "name": "towers_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 19,
+        "name": "floors_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
+        "name": "units_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 21,
+        "name": "start_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 22,
+        "name": "launch_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 23,
+        "name": "possession_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 24,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 25,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "87f996dba47506f0377046f69cc4cbc97c5fb200f50989bf6c08fc3d4b67aa50"
+}

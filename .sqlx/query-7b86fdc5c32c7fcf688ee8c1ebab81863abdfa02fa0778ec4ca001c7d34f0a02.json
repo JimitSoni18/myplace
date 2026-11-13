@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\tINSERT INTO project_landmarks (project_id, category, name, distance, duration, source, sequence)\n\t\t\t\tVALUES\n\t\t\t\t($1, 'Connectivity', 'Konanakunte Cross Metro Station', '300 meters', '3 mins walk', 'manual', 1),\n\t\t\t\t($1, 'Shopping', 'Forum South Bengaluru Mall', '500 meters', '5 mins walk', 'manual', 2),\n\t\t\t\t($1, 'Healthcare', 'Aster RV Hospital', '4.2 km', '10 mins drive', 'manual', 3),\n\t\t\t\t($1, 'Education', 'Delhi Public School South', '3.5 km', '8 mins drive', 'manual', 4),\n\t\t\t\t($1, 'Connectivity', 'NICE Ring Road Junction', '2.8 km', '6 mins drive', 'manual', 5)\n\t\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7b86fdc5c32c7fcf688ee8c1ebab81863abdfa02fa0778ec4ca001c7d34f0a02"
+}

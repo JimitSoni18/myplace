@@ -63,7 +63,6 @@ async fn test_sitemap_index_and_shards() {
 	assert!(body.contains("<urlset"));
 	assert!(body.contains(&format!("{}/", CONFIG.public_site_origin)));
 	assert!(body.contains(&format!("{}/projects", CONFIG.public_site_origin)));
-	assert!(body.contains(&format!("{}/properties", CONFIG.public_site_origin)));
 
 	// 3. GET /sitemaps/projects-1-1000.xml returns urlset
 	let response = app
@@ -135,23 +134,23 @@ async fn test_sitemap_shard_creation_update_and_removal() {
 		.unwrap();
 	assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
-	// Fetch an existing owner and location to link
+	// Fetch an existing owner and project type to link
 	let owner = sqlx::query!("SELECT id FROM project_owners LIMIT 1")
 		.fetch_one(&state.model.db)
 		.await
 		.unwrap();
-	let location = sqlx::query!("SELECT id FROM locations LIMIT 1")
+	let p_type = sqlx::query!("SELECT id FROM project_types LIMIT 1")
 		.fetch_one(&state.model.db)
 		.await
 		.unwrap();
 
 	// 1. CREATE: Insert test project with test_id
 	sqlx::query!(
-		"INSERT INTO projects (id, project_owner_id, location_id, name, slug, category) \
-		 OVERRIDING SYSTEM VALUE VALUES ($1, $2, $3, 'Shard Test Project', 'shard-test-project', 'Residential')",
+		"INSERT INTO projects (id, project_owner_id, project_type_id, name, slug, formatted_address, city, area, state_or_province) \
+		 OVERRIDING SYSTEM VALUE VALUES ($1, $2, $3, 'Shard Test Project', 'shard-test-project', 'Test Address', 'Mumbai', 'Andheri', 'Maharashtra')",
 		test_id,
 		owner.id,
-		location.id
+		p_type.id
 	)
 	.execute(&state.model.db)
 	.await

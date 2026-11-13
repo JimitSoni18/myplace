@@ -17,10 +17,10 @@ pub struct DashboardRecentProject {
 	pub id: i32,
 	pub name: String,
 	pub owner_name: String,
-	pub location: String,
-	pub category: String,
-	pub total_properties: i64,
-	pub available_properties: i64,
+	pub city: String,
+	pub area: String,
+	pub project_type_name: String,
+	pub configurations_count: i64,
 }
 
 #[derive(Serialize, ts_rs::TS)]
@@ -28,9 +28,7 @@ pub struct DashboardRecentProject {
 pub struct DashboardStats {
 	pub total_owners: i64,
 	pub total_projects: i64,
-	pub total_properties: i64,
-	pub total_residential: i64,
-	pub total_commercial: i64,
+	pub total_configurations: i64,
 }
 
 #[derive(Serialize, ts_rs::TS)]
@@ -59,33 +57,19 @@ async fn get_dashboard(
 		.unwrap_or(Some(0))
 		.unwrap_or(0);
 
-	let total_properties: i64 = sqlx::query_file_scalar!("queries/dashboard/count_properties.sql")
+	let total_configurations: i64 = sqlx::query_file_scalar!("queries/dashboard/count_configurations.sql")
 		.fetch_one(db)
 		.await
-		.unwrap_or(Some(0))
-		.unwrap_or(0);
-
-	let total_residential: i64 =
-		sqlx::query_file_scalar!("queries/dashboard/count_residential.sql")
-			.fetch_one(db)
-			.await
-			.unwrap_or(Some(0))
-			.unwrap_or(0);
-
-	let total_commercial: i64 = sqlx::query_file_scalar!("queries/dashboard/count_commercial.sql")
-		.fetch_one(db)
-		.await
-		.unwrap_or(Some(0))
 		.unwrap_or(0);
 
 	struct RecentProjectRow {
 		id: i32,
 		name: String,
 		owner_name: String,
-		location: String,
-		category: String,
-		total_properties: Option<i64>,
-		available_properties: Option<i64>,
+		city: String,
+		area: String,
+		project_type_name: String,
+		configurations_count: Option<i64>,
 	}
 
 	let recent_raw =
@@ -100,10 +84,10 @@ async fn get_dashboard(
 			id: r.id,
 			name: r.name,
 			owner_name: r.owner_name,
-			location: r.location,
-			category: r.category,
-			total_properties: r.total_properties.unwrap_or(0),
-			available_properties: r.available_properties.unwrap_or(0),
+			city: r.city,
+			area: r.area,
+			project_type_name: r.project_type_name,
+			configurations_count: r.configurations_count.unwrap_or(0),
 		})
 		.collect();
 
@@ -112,9 +96,7 @@ async fn get_dashboard(
 		stats: DashboardStats {
 			total_owners,
 			total_projects,
-			total_properties,
-			total_residential,
-			total_commercial,
+			total_configurations,
 		},
 		recent_projects,
 	})

@@ -177,92 +177,22 @@ async fn test_public_canonical_slugs_and_redirects() {
 	assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
 	// -----------------------------------------------------------------------
-	// 3. Properties canonical URLs and redirects
+	// 3. Changing resource name immediately updates canonical slug and redirects old slug
 	// -----------------------------------------------------------------------
-	let prop = sqlx::query!("SELECT id, slug FROM properties WHERE deleted_at IS NULL LIMIT 1")
+	let p_type = sqlx::query!("SELECT id FROM project_types LIMIT 1")
 		.fetch_one(&state.model.db)
 		.await
-		.expect("At least one property in DB");
-	let prop_id = prop.id;
-	let prop_slug = prop.slug;
+		.unwrap();
 
-	// 3a. Canonical URL returns 200 OK
-	let res = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri(format!("/properties/{prop_id}-{prop_slug}"))
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(res.status(), StatusCode::OK);
-
-	// 3b. Wrong slug returns 301 to canonical URL
-	let res = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri(format!("/properties/{prop_id}-outdated-title"))
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(res.status(), StatusCode::MOVED_PERMANENTLY);
-	let loc = res
-		.headers()
-		.get(header::LOCATION)
-		.unwrap()
-		.to_str()
-		.unwrap();
-	assert_eq!(loc, format!("/properties/{prop_id}-{prop_slug}"));
-
-	// 3c. Legacy slug-only returns 301 to canonical URL
-	let res = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri(format!("/properties/{prop_slug}"))
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(res.status(), StatusCode::MOVED_PERMANENTLY);
-	let loc = res
-		.headers()
-		.get(header::LOCATION)
-		.unwrap()
-		.to_str()
-		.unwrap();
-	assert_eq!(loc, format!("/properties/{prop_id}-{prop_slug}"));
-
-	// 3d. Nonexistent property returns 404
-	let res = app
-		.clone()
-		.oneshot(
-			Request::builder()
-				.uri("/properties/999999-not-real")
-				.body(Body::empty())
-				.unwrap(),
-		)
-		.await
-		.unwrap();
-	assert_eq!(res.status(), StatusCode::NOT_FOUND);
-
-	// -----------------------------------------------------------------------
-	// 4. Changing resource name immediately updates canonical slug and redirects old slug
-	// -----------------------------------------------------------------------
 	// Create a new dedicated project for rename testing
 	let new_proj = sqlx::query!(
 		r#"
-		INSERT INTO projects (project_owner_id, location_id, name, slug, category)
-		VALUES ($1, (SELECT id FROM locations LIMIT 1), 'Initial Test Project Name', 'initial-test-project-name', 'Residential')
+		INSERT INTO projects (project_owner_id, project_type_id, name, slug, formatted_address, city, area, state_or_province)
+		VALUES ($1, $2, 'Initial Test Project Name', 'initial-test-project-name', 'Test Address', 'Mumbai', 'Andheri', 'Maharashtra')
 		RETURNING id, slug
 		"#,
-		owner_id
+		owner_id,
+		p_type.id
 	)
 	.fetch_one(&state.model.db)
 	.await

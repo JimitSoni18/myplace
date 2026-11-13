@@ -1,6 +1,6 @@
 import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { Search, Building2, Home, Users, Plus, ArrowRight, X } from "lucide-solid";
+import { Search, Building2, Users, Plus, ArrowRight, X } from "lucide-solid";
 import { api } from "@/shared/api/client";
 import { SearchResults } from "@/shared/api/types";
 
@@ -15,7 +15,6 @@ export function CommandPalette(props: CommandPaletteProps) {
   const [loading, setLoading] = createSignal(false);
   const [results, setResults] = createSignal<SearchResults>({
     projects: [],
-    properties: [],
     owners: [],
   });
 
@@ -26,7 +25,7 @@ export function CommandPalette(props: CommandPaletteProps) {
     clearTimeout(debounceTimer);
 
     if (q.length < 2) {
-      setResults({ projects: [], properties: [], owners: [] });
+      setResults({ projects: [], owners: [] });
       setLoading(false);
       return;
     }
@@ -65,7 +64,6 @@ export function CommandPalette(props: CommandPaletteProps) {
 
   const hasResults = () =>
     results().projects.length > 0 ||
-    results().properties.length > 0 ||
     results().owners.length > 0;
 
   return (
@@ -85,7 +83,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             <input
               type="text"
               autofocus
-              placeholder="Search projects, units, owners or run action..."
+              placeholder="Search projects, owners or run action..."
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
               class="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
@@ -119,15 +117,6 @@ export function CommandPalette(props: CommandPaletteProps) {
                   <ArrowRight class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500" />
                 </button>
                 <button
-                  onClick={() => handleSelect("/properties?action=new")}
-                  class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-800/80 hover:text-white group cursor-pointer"
-                >
-                  <span class="flex items-center gap-2.5">
-                    <Plus class="w-3.5 h-3.5 text-indigo-400" /> Add Property Unit
-                  </span>
-                  <ArrowRight class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500" />
-                </button>
-                <button
                   onClick={() => handleSelect("/owners?action=new")}
                   class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-800/80 hover:text-white group cursor-pointer"
                 >
@@ -156,33 +145,9 @@ export function CommandPalette(props: CommandPaletteProps) {
                           {p.name}
                         </span>
                         <span class="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-                          {p.category}
+                          {p.project_type_name}
                         </span>
-                      </div>
-                      <ArrowRight class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
-                    </button>
-                  )}
-                </For>
-              </div>
-            </Show>
-
-            {/* Properties Results */}
-            <Show when={results().properties.length > 0}>
-              <div class="py-2">
-                <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Home class="w-3 h-3" /> Property Units ({results().properties.length})
-                </div>
-                <For each={results().properties}>
-                  {(prop) => (
-                    <button
-                      onClick={() => handleSelect(prop.url)}
-                      class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-slate-800/80 text-left group cursor-pointer"
-                    >
-                      <div>
-                        <span class="font-medium text-slate-100 group-hover:text-indigo-400 transition-colors">
-                          {prop.unit_number || prop.building || `Unit #${prop.id}`}
-                        </span>
-                        <span class="ml-2 text-slate-400 text-[11px]">in {prop.project_name}</span>
+                        <span class="ml-2 text-slate-400 text-[11px]">{p.city}</span>
                       </div>
                       <ArrowRight class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
                     </button>
@@ -225,7 +190,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             {/* Empty state when searching and no results */}
             <Show when={query().trim().length >= 2 && !loading() && !hasResults()}>
               <div class="py-8 text-center text-xs text-slate-500">
-                No matching projects, units, or owners found for "{query()}"
+                No matching projects or owners found for "{query()}"
               </div>
             </Show>
           </div>

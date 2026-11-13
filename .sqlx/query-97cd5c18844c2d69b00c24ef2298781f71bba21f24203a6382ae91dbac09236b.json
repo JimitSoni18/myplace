@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    pc.id,\n    pc.project_id,\n    pc.name,\n    pc.bhk::FLOAT8 AS \"bhk?\",\n    pc.carpet_area::FLOAT8 AS \"carpet_area?\",\n    pc.built_up_area::FLOAT8 AS \"built_up_area?\",\n    pc.super_built_up_area::FLOAT8 AS \"super_built_up_area?\",\n    pc.price::FLOAT8 AS \"price?\",\n    pc.price_on_request,\n    pc.floor_plan_media_id,\n    m.s3_key AS \"floor_plan_key?\",\n    m.thumbnail_key AS \"floor_plan_thumb_key?\",\n    pc.sequence,\n    pc.is_active,\n    pc.created_at\nFROM project_configurations pc\nLEFT JOIN media m ON m.id = pc.floor_plan_media_id\nWHERE pc.project_id = $1\nORDER BY pc.sequence ASC, pc.id ASC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "project_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "bhk?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "carpet_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "super_built_up_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "price?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "price_on_request",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "floor_plan_media_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "floor_plan_key?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "floor_plan_thumb_key?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "sequence",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 13,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "97cd5c18844c2d69b00c24ef2298781f71bba21f24203a6382ae91dbac09236b"
+}

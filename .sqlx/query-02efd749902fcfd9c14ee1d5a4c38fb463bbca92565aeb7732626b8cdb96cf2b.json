@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\tINSERT INTO amenities (name, is_active) VALUES\n\t\t\t('Swimming Pool', true),\n\t\t\t('Gymnasium', true),\n\t\t\t('Clubhouse', true),\n\t\t\t('24/7 Security', true),\n\t\t\t('Children Play Area', true),\n\t\t\t('Jogging Track', true),\n\t\t\t('Landscaped Gardens', true),\n\t\t\t('Power Backup', true),\n\t\t\t('EV Charging Station', true)\n\t\t\tON CONFLICT (name) DO NOTHING\n\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "02efd749902fcfd9c14ee1d5a4c38fb463bbca92565aeb7732626b8cdb96cf2b"
+}

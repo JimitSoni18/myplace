@@ -1,5 +1,24 @@
 UPDATE projects
-SET project_owner_id = $1, location_id = $2, name = $3, slug = $4,
-	description = $5, category = $6, start_date = $7, launch_date = $8,
-	possession_date = $9, updated_at = NOW()
-WHERE id = $10 AND deleted_at IS NULL;
+SET project_owner_id = $2,
+    project_type_id = $3,
+    name = $4,
+    slug = $5,
+    description = $6,
+    formatted_address = $7,
+    city = $8,
+    area = $9,
+    state_or_province = $10,
+    postal_code = $11,
+    latitude = $12,
+    longitude = $13,
+    rera_number = $14,
+    rera_authority = $15,
+    total_land_area = $16,
+    towers_count = $17,
+    floors_count = $18,
+    units_count = $19,
+    start_date = $20,
+    launch_date = $21,
+    possession_date = $22,
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL;

@@ -3,8 +3,16 @@ use ts_rs::{Config, TS};
 
 /// Exports all Rust API request and response data types to TypeScript in `frontend/src/shared/api/generated/`
 pub fn export_all_types() -> Result<(), Box<dyn std::error::Error>> {
+	let out_dir = if Path::new("frontend/src").exists() {
+		"frontend/src/shared/api/generated"
+	} else if Path::new("src/shared").exists() {
+		"src/shared/api/generated"
+	} else {
+		"frontend/src/shared/api/generated"
+	};
+
 	let cfg = Config::from_env()
-		.with_out_dir("frontend/src/shared/api/generated")
+		.with_out_dir(out_dir)
 		.with_large_int("number");
 
 	// 1. Export Auth types
@@ -25,13 +33,7 @@ pub fn export_all_types() -> Result<(), Box<dyn std::error::Error>> {
 	crate::api::admin::dashboard::DashboardStats::export(&cfg)?;
 	crate::api::admin::dashboard::DashboardResponse::export(&cfg)?;
 
-	crate::api::admin::locations::LocationItem::export(&cfg)?;
-	crate::api::admin::locations::CreateOrUpdateLocationPayload::export(&cfg)?;
-	crate::api::admin::locations::LocationQuery::export(&cfg)?;
-
 	crate::api::admin::meta::LookupItem::export(&cfg)?;
-	crate::api::admin::meta::LocationLookupItem::export(&cfg)?;
-	crate::api::admin::meta::PropertyTypeLookupItem::export(&cfg)?;
 	crate::api::admin::meta::MetaOptionsResponse::export(&cfg)?;
 
 	crate::api::admin::project_owners::OwnerListQuery::export(&cfg)?;
@@ -43,22 +45,21 @@ pub fn export_all_types() -> Result<(), Box<dyn std::error::Error>> {
 
 	crate::api::admin::projects::ProjectListQuery::export(&cfg)?;
 	crate::api::admin::projects::ProjectListItem::export(&cfg)?;
-	crate::api::admin::projects::ProjectPropertySummary::export(&cfg)?;
 	crate::api::admin::projects::ProjectMediaItem::export(&cfg)?;
 	crate::api::admin::projects::ProjectDocumentItem::export(&cfg)?;
+	crate::api::admin::projects::ProjectConfigurationItem::export(&cfg)?;
+	crate::api::admin::projects::ProjectFloorPlanItem::export(&cfg)?;
+	crate::api::admin::projects::ProjectSpecificationItem::export(&cfg)?;
+	crate::api::admin::projects::ProjectLandmarkItem::export(&cfg)?;
 	crate::api::admin::projects::ProjectDetailData::export(&cfg)?;
 	crate::api::admin::projects::ProjectFormPayload::export(&cfg)?;
+	crate::api::admin::projects::ConfigurationFormPayload::export(&cfg)?;
+	crate::api::admin::projects::SaveSpecificationsPayload::export(&cfg)?;
+	crate::api::admin::projects::SaveLandmarksPayload::export(&cfg)?;
 	crate::api::admin::projects::ReorderMediaPayload::export(&cfg)?;
-
-	crate::api::admin::properties::PropertyAllQuery::export(&cfg)?;
-	crate::api::admin::properties::PropertyMediaItem::export(&cfg)?;
-	crate::api::admin::properties::PropertyGlobalItem::export(&cfg)?;
-	crate::api::admin::properties::PropertyDetailResponse::export(&cfg)?;
-	crate::api::admin::properties::PropertyFormPayload::export(&cfg)?;
 
 	crate::api::admin::search::SearchQuery::export(&cfg)?;
 	crate::api::admin::search::SearchResultProject::export(&cfg)?;
-	crate::api::admin::search::SearchResultProperty::export(&cfg)?;
 	crate::api::admin::search::SearchResultOwner::export(&cfg)?;
 	crate::api::admin::search::SearchResults::export(&cfg)?;
 
@@ -68,15 +69,15 @@ pub fn export_all_types() -> Result<(), Box<dyn std::error::Error>> {
 	crate::api::owners::OwnerDashboardResponse::export(&cfg)?;
 	crate::api::owners::OwnerProjectMediaItem::export(&cfg)?;
 	crate::api::owners::OwnerProjectDocumentItem::export(&cfg)?;
+	crate::api::owners::OwnerConfigurationItem::export(&cfg)?;
 	crate::api::owners::OwnerProjectDetailResponse::export(&cfg)?;
-	crate::api::owners::OwnerPropertyItem::export(&cfg)?;
 
 	// 4. Export Notification types
 	crate::EnquiryNotification::export(&cfg)?;
 	crate::api::notifications::NotificationsListResponse::export(&cfg)?;
 
 	// 5. Generate barrel index.ts files for clean modular imports
-	generate_barrel_indexes("frontend/src/shared/api/generated")?;
+	generate_barrel_indexes(out_dir)?;
 
 	Ok(())
 }

@@ -249,14 +249,14 @@
 					<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:3rem;">🏢</div>
 					{% endif %}
 					<div class="card-top-badges">
-						<span class="badge badge-glass">{{ p.category }}</span>
+						<span class="badge badge-glass">{{ p.project_type_name }}</span>
 						<span class="badge badge-emerald">Verified RERA</span>
 					</div>
 				</div>
 
 				<div class="card-body">
 					<h3 class="card-title">
-						<a href="/projects/{{ p.id }}-{{ p.slug }}">{{ p.name }}</a>
+						<a href="/projects/{{ p.slug }}">{{ p.name }}</a>
 					</h3>
 
 					<div class="card-location">
@@ -264,13 +264,13 @@
 							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
 							<circle cx="12" cy="10" r="3"></circle>
 						</svg>
-						<span>{{ p.location_name }}</span>
+						<span>{{ p.area }}, {{ p.city }}</span>
 					</div>
 
 					<div class="card-specs-row">
 						<div class="spec-pill">
-							<span>Units:</span>
-							<strong>{{ p.property_count }} Available</strong>
+							<span>Configurations:</span>
+							<strong>{{ p.configurations_count }} Layouts</strong>
 						</div>
 						{% if let Some(pos) = p.possession_date %}
 						<div class="spec-pill">
@@ -281,7 +281,7 @@
 					</div>
 
 					<div class="card-footer">
-						<a href="/projects/{{ p.id }}-{{ p.slug }}" class="btn btn-primary btn-sm" style="width: 100%;">
+						<a href="/projects/{{ p.slug }}" class="btn btn-primary btn-sm" style="width: 100%;">
 							<span>Explore Development</span>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 								<line x1="5" y1="12" x2="19" y2="12"></line>

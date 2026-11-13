@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug,\n\tpt.name as project_type_name,\n\tp.formatted_address, p.city, p.area,\n\tCOUNT(DISTINCT pc.id) as \"configurations_count!: i64\",\n\tp.possession_date,\n\tpo.id as owner_id,\n\tpo.name as owner_name,\n\tpo.slug as owner_slug,\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM project_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.project_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key,\n\t(\n\t\tSELECT MIN(pc2.price)\n\t\tFROM project_configurations pc2\n\t\tWHERE pc2.project_id = p.id AND pc2.price > 0 AND pc2.is_active = TRUE\n\t) as min_price,\n\t(\n\t\tSELECT string_agg(DISTINCT pc3.bhk::text || ' BHK', ', ' ORDER BY pc3.bhk::text || ' BHK')\n\t\tFROM project_configurations pc3\n\t\tWHERE pc3.project_id = p.id AND pc3.bhk IS NOT NULL AND pc3.is_active = TRUE\n\t) as bhk_summary\nFROM projects p\n\tJOIN project_owners po ON po.id = p.project_owner_id AND po.active = TRUE AND po.deleted_at IS NULL\n\tJOIN project_types pt ON pt.id = p.project_type_id\n\tLEFT JOIN project_configurations pc ON pc.project_id = p.id AND pc.is_active = TRUE\nWHERE p.deleted_at IS NULL\n  AND ($1::int IS NULL OR p.project_type_id = $1)\n  AND ($2::text IS NULL OR p.city ILIKE $2)\n  AND ($3::text IS NULL OR p.area ILIKE $3)\n  AND ($4::text IS NULL OR p.name ILIKE $4 OR p.description ILIKE $4 OR p.formatted_address ILIKE $4)\n  AND ($5::FLOAT8 IS NULL OR EXISTS (\n      SELECT 1 FROM project_configurations pc4\n      WHERE pc4.project_id = p.id AND pc4.bhk = $5 AND pc4.is_active = TRUE\n  ))\nGROUP BY p.id, pt.name, po.id, po.name, po.slug\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "project_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "area",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "configurations_count!: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "possession_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 9,
+        "name": "owner_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "owner_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "owner_slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "min_price",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 14,
+        "name": "bhk_summary",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "cf7254abec04b4b374a37467c13340baa0f24cd9405eef3a6acbb63b8dca0fd0"
+}

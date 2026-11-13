@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n\t\t\t\t\tINSERT INTO project_owners (profile_id, name, slug, bio, email, phone, active)\n\t\t\t\t\tVALUES ($1, 'Prestige Estates', 'prestige-estates', 'Leading real estate developer with luxury residential developments.', 'contact@prestige.com', '9876543210', true)\n\t\t\t\t\tRETURNING id\n\t\t\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "17443c6ef6b1393515d230cba0a89cbcae86b2e325e4ba8098656e46822457bc"
+}

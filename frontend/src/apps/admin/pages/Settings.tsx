@@ -1,11 +1,10 @@
 import { createSignal } from "solid-js";
-import { Sparkles, MapPin, ShieldAlert, Sliders } from "lucide-solid";
+import { Sparkles, ShieldAlert, Sliders } from "lucide-solid";
 import { Amenities } from "./Amenities";
-import { Locations } from "./Locations";
 import { AdminUsers } from "./AdminUsers";
 
 export function Settings() {
-  const [activeTab, setActiveTab] = createSignal<"amenities" | "locations" | "users">("amenities");
+  const [activeTab, setActiveTab] = createSignal<"amenities" | "users">("amenities");
 
   return (
     <div class="space-y-6">
@@ -16,7 +15,7 @@ export function Settings() {
           Platform Settings & Taxonomy
         </h1>
         <p class="text-xs text-slate-400 mt-1">
-          Configure system-wide master data, standardized geographic registries, and administrative access controls.
+          Configure system-wide master data and administrative access controls.
         </p>
       </div>
 
@@ -35,18 +34,6 @@ export function Settings() {
         </button>
 
         <button
-          onClick={() => setActiveTab("locations")}
-          class={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 ${
-            activeTab() === "locations"
-              ? "border-indigo-500 text-indigo-400 bg-indigo-500/10 rounded-t-lg"
-              : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
-          }`}
-        >
-          <MapPin class="w-3.5 h-3.5" />
-          Locations Registry
-        </button>
-
-        <button
           onClick={() => setActiveTab("users")}
           class={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 ${
             activeTab() === "users"
@@ -62,7 +49,6 @@ export function Settings() {
       {/* Tab Panels */}
       <div>
         {activeTab() === "amenities" && <Amenities />}
-        {activeTab() === "locations" && <Locations />}
         {activeTab() === "users" && <AdminUsers />}
       </div>
     </div>

@@ -13,26 +13,21 @@ import {
 import { Badge } from "@/shared/components/Badge";
 import { Input } from "@/shared/components/Input";
 import { api } from "@/shared/api/client";
-import { OwnerProjectDetailResponse, OwnerPropertyItem } from "@/shared/api/types";
+import { OwnerProjectDetailResponse } from "@/shared/api/types";
 
 export function ProjectDetail() {
   const params = useParams<{ id: string }>();
   const [project, setProject] = createSignal<OwnerProjectDetailResponse | null>(null);
-  const [properties, setProperties] = createSignal<OwnerPropertyItem[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
-  const [activeTab, setActiveTab] = createSignal<"overview" | "units" | "media" | "documents">("overview");
-  const [unitSearch, setUnitSearch] = createSignal("");
+  const [activeTab, setActiveTab] = createSignal<"overview" | "configurations" | "media" | "documents">("overview");
+  const [configSearch, setConfigSearch] = createSignal("");
 
   const fetchDetails = async () => {
     setLoading(true);
     try {
-      const [projData, propsData] = await Promise.all([
-        api.get<OwnerProjectDetailResponse>(`/api/owner/projects/${params.id}`),
-        api.get<OwnerPropertyItem[]>(`/api/owner/projects/${params.id}/properties`),
-      ]);
+      const projData = await api.get<OwnerProjectDetailResponse>(`/api/owner/projects/${params.id}`);
       setProject(projData);
-      setProperties(propsData);
     } catch (e: any) {
       setError(e.message || "Failed to load project details");
     } finally {
@@ -42,23 +37,24 @@ export function ProjectDetail() {
 
   onMount(fetchDetails);
 
-  const filteredProperties = () => {
-    return properties().filter((p) => {
-      const q = unitSearch().toLowerCase();
-      const unit = (p.unit_number || "").toLowerCase();
-      const bldg = (p.building || "").toLowerCase();
-      const type = p.type_name.toLowerCase();
-      return unit.includes(q) || bldg.includes(q) || type.includes(q);
+  const filteredConfigurations = () => {
+    const list = project()?.configurations || [];
+    const q = configSearch().trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => {
+      const name = c.name.toLowerCase();
+      const bhk = c.bhk != null ? `${c.bhk} bhk` : "";
+      return name.includes(q) || bhk.includes(q);
     });
   };
 
-  const formatPrice = (val: number) => {
-    if (!val || val === 0) return "Price on Request";
+  const formatPrice = (price?: number | null, priceOnRequest?: boolean) => {
+    if (priceOnRequest || !price || price === 0) return "Price on Request";
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(val);
+    }).format(price);
   };
 
   const formatFileSize = (bytes?: number | null) => {
@@ -99,25 +95,47 @@ export function ProjectDetail() {
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <div class="flex items-center gap-2.5 mb-2">
+              <div class="flex flex-wrap items-center gap-2.5 mb-2">
                 <h1 class="text-2xl font-bold tracking-tight text-white">{project()!.name}</h1>
-                <Badge variant="default">{project()!.category}</Badge>
+                <Badge variant="default">{project()!.project_type_name}</Badge>
+                {project()!.rera_number && (
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-950/70 text-emerald-400 border border-emerald-800/60">
+                    <ShieldCheck class="w-3 h-3" />
+                    RERA: {project()!.rera_number}
+                  </span>
+                )}
               </div>
               <div class="flex items-center gap-2 text-xs text-slate-400">
-                <MapPin class="w-3.5 h-3.5 text-slate-500" />
-                <span>{project()!.location}</span>
+                <MapPin class="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span>
+                  {project()!.formatted_address}
+                  {project()!.area && ` • ${project()!.area}`}
+                  {project()!.city && `, ${project()!.city}`}
+                  {project()!.state_or_province && `, ${project()!.state_or_province}`}
+                  {project()!.postal_code && ` - ${project()!.postal_code}`}
+                </span>
               </div>
             </div>
 
             <div class="flex items-center gap-3">
               <div class="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-right">
                 <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">
-                  Total Units
+                  Typologies
                 </span>
                 <span class="text-lg font-bold text-white font-mono">
-                  {project()!.properties_count}
+                  {project()!.configurations_count}
                 </span>
               </div>
+              {project()!.total_land_area != null && (
+                <div class="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-right">
+                  <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">
+                    Land Area
+                  </span>
+                  <span class="text-lg font-bold text-emerald-400 font-mono">
+                    {project()!.total_land_area} <span class="text-xs text-slate-400">sq.ft</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -134,15 +152,15 @@ export function ProjectDetail() {
               Overview
             </button>
             <button
-              onClick={() => setActiveTab("units")}
+              onClick={() => setActiveTab("configurations")}
               class={`px-4 py-3 text-xs font-medium border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                activeTab() === "units"
+                activeTab() === "configurations"
                   ? "border-emerald-500 text-emerald-400 font-semibold"
                   : "border-transparent text-slate-400 hover:text-slate-200"
               }`}
             >
               <Layers class="w-3.5 h-3.5" />
-              Units ({properties().length})
+              Typologies ({project()!.configurations.length})
             </button>
             <button
               onClick={() => setActiveTab("media")}
@@ -180,6 +198,37 @@ export function ProjectDetail() {
                 </div>
               </div>
 
+              {/* Project Scale Metrics */}
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-white mb-4">Scale & Specifications</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Total Land</span>
+                    <span class="text-sm font-semibold text-white font-mono mt-1 block">
+                      {project()!.total_land_area != null ? `${project()!.total_land_area} sq.ft` : "—"}
+                    </span>
+                  </div>
+                  <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Towers</span>
+                    <span class="text-sm font-semibold text-white font-mono mt-1 block">
+                      {project()!.towers_count != null ? project()!.towers_count : "—"}
+                    </span>
+                  </div>
+                  <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Floors</span>
+                    <span class="text-sm font-semibold text-white font-mono mt-1 block">
+                      {project()!.floors_count != null ? project()!.floors_count : "—"}
+                    </span>
+                  </div>
+                  <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Planned Units</span>
+                    <span class="text-sm font-semibold text-white font-mono mt-1 block">
+                      {project()!.units_count != null ? project()!.units_count : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Milestones / Dates */}
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h2 class="text-sm font-bold text-white mb-4">Project Timeline</h2>
@@ -207,12 +256,27 @@ export function ProjectDetail() {
             </div>
 
             <div class="space-y-6">
+              {/* Regulatory Information */}
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-white mb-3">Regulatory Compliance</h2>
+                <div class="space-y-3 text-xs">
+                  <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">RERA Number</span>
+                    <span class="font-mono text-slate-200">{project()!.rera_number || "Not specified"}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">RERA Authority</span>
+                    <span class="text-slate-200">{project()!.rera_authority || "Not specified"}</span>
+                  </div>
+                </div>
+              </div>
+
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h2 class="text-sm font-bold text-white mb-3">Developer Guarantee</h2>
                 <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-900/50 flex items-start gap-3">
                   <ShieldCheck class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <p class="text-xs text-emerald-300 leading-relaxed">
-                    This project is registered under your authenticated developer profile. All unit inventory, media, and documents are synchronized with the central catalog.
+                    This project is registered under your authenticated developer profile. All typologies, media, and documents are synchronized with the central catalog.
                   </p>
                 </div>
               </div>
@@ -220,19 +284,19 @@ export function ProjectDetail() {
           </div>
         </Show>
 
-        {/* Tab 2: Units Inventory */}
-        <Show when={activeTab() === "units"}>
+        {/* Tab 2: Typologies / Configurations */}
+        <Show when={activeTab() === "configurations"}>
           <div class="space-y-4">
             <div class="flex items-center justify-between gap-4">
               <div class="relative w-full sm:w-80">
                 <Input
-                  placeholder="Filter units by number, building, or type..."
-                  value={unitSearch()}
-                  onInput={(e) => setUnitSearch(e.currentTarget.value)}
+                  placeholder="Filter typologies by name or BHK..."
+                  value={configSearch()}
+                  onInput={(e) => setConfigSearch(e.currentTarget.value)}
                 />
               </div>
               <span class="text-xs text-slate-400 font-mono">
-                Showing {filteredProperties().length} of {properties().length} units
+                Showing {filteredConfigurations().length} of {project()!.configurations.length} typologies
               </span>
             </div>
 
@@ -241,37 +305,60 @@ export function ProjectDetail() {
                 <table class="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr class="border-b border-slate-800 bg-slate-950/50 text-slate-400 uppercase font-semibold text-[10px] tracking-wider">
-                      <th class="py-3 px-4">Unit</th>
-                      <th class="py-3 px-4">Building</th>
-                      <th class="py-3 px-4">Type</th>
-                      <th class="py-3 px-4">Area (sq.ft)</th>
+                      <th class="py-3 px-4">Floor Plan</th>
+                      <th class="py-3 px-4">Typology</th>
+                      <th class="py-3 px-4">BHK</th>
+                      <th class="py-3 px-4">Carpet Area</th>
+                      <th class="py-3 px-4">Built-up Area</th>
+                      <th class="py-3 px-4">Super Built-up Area</th>
                       <th class="py-3 px-4">Price</th>
-                      <th class="py-3 px-4">Status</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-850">
-                    <For each={filteredProperties()}>
-                      {(u) => (
+                    <For each={filteredConfigurations()}>
+                      {(c) => (
                         <tr class="hover:bg-slate-800/40 transition-colors">
-                          <td class="py-3 px-4 font-semibold text-white">
-                            {u.unit_number || `Unit #${u.id}`}
+                          <td class="py-3 px-4">
+                            <Show
+                              when={c.floor_plan_url}
+                              fallback={
+                                <div class="w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-600 text-[10px]">
+                                  No plan
+                                </div>
+                              }
+                            >
+                              <a
+                                href={c.floor_plan_url!}
+                                target="_blank"
+                                rel="noreferrer"
+                                class="block w-12 h-12 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden hover:border-emerald-500 transition-colors group"
+                                title="Click to view floor plan"
+                              >
+                                <img
+                                  src={c.floor_plan_thumb_url || c.floor_plan_url!}
+                                  alt={c.name}
+                                  class="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                                />
+                              </a>
+                            </Show>
                           </td>
-                          <td class="py-3 px-4 text-slate-300">{u.building || "—"}</td>
-                          <td class="py-3 px-4 text-slate-300">
-                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">
-                              {u.type_name}
-                            </span>
+                          <td class="py-3 px-4 font-semibold text-white">
+                            {c.name}
+                          </td>
+                          <td class="py-3 px-4 text-slate-300 font-mono">
+                            {c.bhk != null ? `${c.bhk} BHK` : "—"}
                           </td>
                           <td class="py-3 px-4 font-mono text-slate-300">
-                            {u.built_up_area ? `${u.built_up_area} sq.ft` : "—"}
+                            {c.carpet_area != null ? `${c.carpet_area} sq.ft` : "—"}
+                          </td>
+                          <td class="py-3 px-4 font-mono text-slate-300">
+                            {c.built_up_area != null ? `${c.built_up_area} sq.ft` : "—"}
+                          </td>
+                          <td class="py-3 px-4 font-mono text-slate-300">
+                            {c.super_built_up_area != null ? `${c.super_built_up_area} sq.ft` : "—"}
                           </td>
                           <td class="py-3 px-4 font-mono font-medium text-emerald-400">
-                            {formatPrice(u.price)}
-                          </td>
-                          <td class="py-3 px-4">
-                            <Badge variant={u.status === "available" ? "success" : "default"}>
-                              {u.status}
-                            </Badge>
+                            {formatPrice(c.price, c.price_on_request)}
                           </td>
                         </tr>
                       )}
@@ -280,9 +367,9 @@ export function ProjectDetail() {
                 </table>
               </div>
 
-              {filteredProperties().length === 0 && (
+              {filteredConfigurations().length === 0 && (
                 <div class="p-8 text-center text-xs text-slate-500">
-                  No unit listings match your search criteria.
+                  No typologies match your search criteria.
                 </div>
               )}
             </div>

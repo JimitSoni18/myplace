@@ -193,14 +193,14 @@ export function OwnerDetail() {
                       <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
                           <h3 class="text-sm font-bold text-white truncate">{proj.name}</h3>
-                          <Badge variant="default">{proj.category}</Badge>
+                          <Badge variant="default">{proj.project_type_name}</Badge>
                         </div>
-                        <p class="text-xs text-slate-400">{proj.location || "Location not set"}</p>
+                        <p class="text-xs text-slate-400 truncate">{proj.area ? `${proj.area}, ${proj.city}` : proj.city || proj.formatted_address}</p>
                       </div>
 
                       <div class="flex items-center justify-between pt-3 mt-4 border-t border-slate-850">
                         <span class="text-xs text-slate-500 font-mono">
-                          {proj.properties_count} units
+                          {proj.configurations_count} typologies
                         </span>
                         <A href={`/projects/${proj.id}`}>
                           <Button variant="secondary" size="sm">

@@ -1,7 +1,8 @@
 SELECT
-	p.id, p.name, p.slug, p.category,
-	loc.formatted_address as "location?",
-	COUNT(DISTINCT prop.id) as "properties_count!: i64",
+	p.id, p.name, p.slug,
+	pt.name as project_type_name,
+	p.formatted_address, p.city, p.area,
+	COUNT(DISTINCT pc.id) as "configurations_count!: i64",
 	p.possession_date,
 	(
 		SELECT m.thumbnail_key
@@ -10,10 +11,15 @@ SELECT
 		WHERE pm.project_id = p.id
 		ORDER BY pm.sequence ASC
 		LIMIT 1
-	) as hero_thumb_key
+	) as hero_thumb_key,
+	(
+		SELECT MIN(pc2.price)::FLOAT8
+		FROM project_configurations pc2
+		WHERE pc2.project_id = p.id AND pc2.price > 0 AND pc2.is_active = TRUE
+	) as "min_price?: f64"
 FROM projects p
-	LEFT JOIN locations loc ON loc.id = p.location_id
-	LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
+	JOIN project_types pt ON pt.id = p.project_type_id
+	LEFT JOIN project_configurations pc ON pc.project_id = p.id AND pc.is_active = TRUE
 WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-GROUP BY p.id, loc.formatted_address
+GROUP BY p.id, pt.name
 ORDER BY p.id DESC;

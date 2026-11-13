@@ -9,7 +9,6 @@ pub mod locations;
 pub mod meta;
 pub mod project_owners;
 pub mod projects;
-pub mod properties;
 pub mod search;
 
 pub fn router() -> Router<AppState> {
@@ -21,7 +20,6 @@ pub fn router() -> Router<AppState> {
 		.nest("/owners", project_owners::router())
 		.nest("/project_owners", project_owners::router())
 		.nest("/projects", projects::router())
-		.nest("/properties", properties::router())
 		.nest("/amenities", amenities::router())
 		.nest("/users", admin_users::router())
 		.nest("/notifications", crate::api::notifications::admin_router())

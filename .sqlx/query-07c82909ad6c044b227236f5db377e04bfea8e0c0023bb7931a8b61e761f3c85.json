@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug,\n\tpt.name as project_type_name,\n\tp.city, p.area, p.formatted_address,\n\tCOUNT(DISTINCT pc.id) as \"configurations_count!: i64\",\n\t(\n\t\tSELECT m.thumbnail_key\n\t\tFROM project_media pm\n\t\tJOIN media m ON m.id = pm.media_id\n\t\tWHERE pm.project_id = p.id\n\t\tORDER BY pm.sequence ASC\n\t\tLIMIT 1\n\t) as hero_thumb_key\nFROM projects p\n\tJOIN project_types pt ON pt.id = p.project_type_id\n\tLEFT JOIN project_configurations pc ON pc.project_id = p.id AND pc.is_active = TRUE\nWHERE p.project_owner_id = $1 AND p.deleted_at IS NULL\nGROUP BY p.id, pt.name\nORDER BY p.id DESC;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "project_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "area",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "configurations_count!: i64",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "hero_thumb_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "07c82909ad6c044b227236f5db377e04bfea8e0c0023bb7931a8b61e761f3c85"
+}

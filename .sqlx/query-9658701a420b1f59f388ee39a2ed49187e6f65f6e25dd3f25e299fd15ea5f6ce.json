@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_enquiries (project_id, name, phone, email, message, configuration_id)\nVALUES ($1, $2, $3, $4, $5, $6);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9658701a420b1f59f388ee39a2ed49187e6f65f6e25dd3f25e299fd15ea5f6ce"
+}

@@ -1,18 +1,16 @@
 SELECT
     proj.id,
     proj.name,
-    po.name   AS owner_name,
-    loc.formatted_address AS location,
-    proj.category,
-    COUNT(DISTINCT pr.id)                                                   AS "total_properties: i64",
-    COUNT(DISTINCT pl.id) FILTER (WHERE pl.status = 'active')               AS "available_properties: i64"
+    po.name AS owner_name,
+    proj.city,
+    proj.area,
+    pt.name AS project_type_name,
+    COUNT(DISTINCT pc.id) AS "configurations_count: i64"
 FROM projects proj
 JOIN project_owners po ON po.id = proj.project_owner_id
-JOIN locations     loc ON loc.id = proj.location_id
-LEFT JOIN properties pr ON pr.project_id = proj.id AND pr.deleted_at IS NULL
-LEFT JOIN property_listings pl ON pl.property_id = pr.id
+JOIN project_types pt ON pt.id = proj.project_type_id
+LEFT JOIN project_configurations pc ON pc.project_id = proj.id AND pc.is_active = TRUE
 WHERE proj.deleted_at IS NULL
-  AND proj.created_at >= NOW() - INTERVAL '30 days'
-GROUP BY proj.id, po.name, loc.formatted_address
+GROUP BY proj.id, po.name, pt.name
 ORDER BY proj.created_at DESC
-LIMIT 20;
+LIMIT 10;

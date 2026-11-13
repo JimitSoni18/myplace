@@ -140,11 +140,10 @@ async fn test_all_frontend_admin_and_owner_routes_exist() {
 		"/api/admin/search",
 		"/api/admin/users",
 		"/api/admin/amenities",
-		"/api/admin/locations",
+		"/api/admin/locations/suggestions",
 		"/api/admin/owners",
 		"/api/admin/project_owners",
 		"/api/admin/projects",
-		"/api/admin/properties",
 	];
 
 	for route in required_admin_routes {

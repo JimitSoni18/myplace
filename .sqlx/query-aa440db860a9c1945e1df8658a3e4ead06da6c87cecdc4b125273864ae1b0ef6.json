@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_specifications (project_id, category, items, sequence)\nVALUES ($1, $2, $3, $4);\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "TextArray",
+        "Int2"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "aa440db860a9c1945e1df8658a3e4ead06da6c87cecdc4b125273864ae1b0ef6"
+}

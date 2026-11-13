@@ -1,10 +1,11 @@
 SELECT
-    p.id, p.name, p.slug, p.category,
-    loc.formatted_address as "location?",
-    COUNT(prop.id) as "properties_count!: i64"
+    p.id, p.name, p.slug,
+    pt.name as project_type_name,
+    p.city, p.area, p.formatted_address,
+    COUNT(DISTINCT pc.id) as "configurations_count!: i64"
 FROM projects p
-    LEFT JOIN locations loc ON loc.id = p.location_id
-    LEFT JOIN properties prop ON prop.project_id = p.id AND prop.deleted_at IS NULL
+    JOIN project_types pt ON pt.id = p.project_type_id
+    LEFT JOIN project_configurations pc ON pc.project_id = p.id AND pc.is_active = TRUE
 WHERE p.project_owner_id = $1 AND p.deleted_at IS NULL
-GROUP BY p.id, loc.formatted_address
+GROUP BY p.id, pt.name
 ORDER BY p.id DESC;

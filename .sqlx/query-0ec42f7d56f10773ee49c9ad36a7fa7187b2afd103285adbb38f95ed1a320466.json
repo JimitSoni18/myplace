@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM project_documents WHERE media_id = $1 AND project_id = $2;\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0ec42f7d56f10773ee49c9ad36a7fa7187b2afd103285adbb38f95ed1a320466"
+}

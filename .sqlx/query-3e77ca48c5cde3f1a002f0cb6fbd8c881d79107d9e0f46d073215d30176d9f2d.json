@@ -1,0 +1,143 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n\tp.id, p.name, p.slug, p.description,\n\tpt.name as project_type_name,\n\tp.formatted_address, p.city, p.area, p.state_or_province, p.postal_code,\n\tp.latitude::FLOAT8 AS \"latitude?\", p.longitude::FLOAT8 AS \"longitude?\",\n\tp.rera_number, p.rera_authority,\n\tp.total_land_area::FLOAT8 AS \"total_land_area?\", p.towers_count, p.floors_count, p.units_count,\n\tp.start_date, p.launch_date, p.possession_date\nFROM projects p\n\tJOIN project_types pt ON pt.id = p.project_type_id\nWHERE p.id = $1 AND p.project_owner_id = $2 AND p.deleted_at IS NULL;\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "project_type_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "formatted_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "area",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "state_or_province",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "postal_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "latitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 11,
+        "name": "longitude?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 12,
+        "name": "rera_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "rera_authority",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "total_land_area?",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 15,
+        "name": "towers_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "floors_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "units_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
+        "name": "start_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 19,
+        "name": "launch_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 20,
+        "name": "possession_date",
+        "type_info": "Date"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "3e77ca48c5cde3f1a002f0cb6fbd8c881d79107d9e0f46d073215d30176d9f2d"
+}

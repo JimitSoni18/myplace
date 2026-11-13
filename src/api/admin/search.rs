@@ -24,17 +24,8 @@ pub struct SearchResultProject {
 	pub id: i32,
 	pub name: String,
 	pub slug: String,
-	pub category: String,
-	pub url: String,
-}
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export, export_to = "admin/", optional_fields = nullable)]
-pub struct SearchResultProperty {
-	pub id: i32,
-	pub unit_number: Option<String>,
-	pub building: Option<String>,
-	pub project_name: String,
+	pub project_type_name: String,
+	pub city: String,
 	pub url: String,
 }
 
@@ -51,7 +42,6 @@ pub struct SearchResultOwner {
 #[ts(export, export_to = "admin/")]
 pub struct SearchResults {
 	pub projects: Vec<SearchResultProject>,
-	pub properties: Vec<SearchResultProperty>,
 	pub owners: Vec<SearchResultOwner>,
 }
 
@@ -64,7 +54,6 @@ async fn global_search(
 	if q_str.len() < 2 {
 		return Json(SearchResults {
 			projects: vec![],
-			properties: vec![],
 			owners: vec![],
 		});
 	}
@@ -77,38 +66,16 @@ async fn global_search(
 		id: i32,
 		name: String,
 		slug: String,
-		category: String,
+		project_type_name: String,
+		city: String,
 	}
 
 	let projects_raw = sqlx::query_as::<_, DbProj>(
 		r#"
-		SELECT id, name, slug, category
-		FROM projects
-		WHERE (name ILIKE $1 OR slug ILIKE $1) AND deleted_at IS NULL
-		ORDER BY id DESC
-		LIMIT 5
-		"#,
-	)
-	.bind(&pattern)
-	.fetch_all(db)
-	.await
-	.unwrap_or_default();
-
-	#[derive(sqlx::FromRow)]
-	struct DbProp {
-		id: i32,
-		project_id: i32,
-		unit_number: Option<String>,
-		building: Option<String>,
-		project_name: String,
-	}
-
-	let properties_raw = sqlx::query_as::<_, DbProp>(
-		r#"
-		SELECT p.id, p.project_id, p.unit_number, p.building, pr.name as project_name
-		FROM properties p
-		JOIN projects pr ON p.project_id = pr.id
-		WHERE (p.unit_number ILIKE $1 OR p.building ILIKE $1) AND p.deleted_at IS NULL
+		SELECT p.id, p.name, p.slug, pt.name AS project_type_name, p.city
+		FROM projects p
+		JOIN project_types pt ON pt.id = p.project_type_id
+		WHERE (p.name ILIKE $1 OR p.slug ILIKE $1 OR p.city ILIKE $1 OR p.area ILIKE $1) AND p.deleted_at IS NULL
 		ORDER BY p.id DESC
 		LIMIT 5
 		"#,
@@ -147,17 +114,8 @@ async fn global_search(
 				id: p.id,
 				name: p.name,
 				slug: p.slug,
-				category: p.category,
-			})
-			.collect(),
-		properties: properties_raw
-			.into_iter()
-			.map(|p| SearchResultProperty {
-				url: format!("/projects/{}?tab=units", p.project_id),
-				id: p.id,
-				unit_number: p.unit_number,
-				building: p.building,
-				project_name: p.project_name,
+				project_type_name: p.project_type_name,
+				city: p.city,
 			})
 			.collect(),
 		owners: owners_raw

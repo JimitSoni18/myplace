@@ -77,7 +77,7 @@ pub fn router() -> Router<AppState> {
 		)
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema, utoipa::IntoParams)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectListQuery {
 	#[serde(default)]
@@ -88,7 +88,7 @@ pub struct ProjectListQuery {
 	pub project_type_id: Option<i32>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectListItem {
 	pub id: i32,
@@ -104,7 +104,7 @@ pub struct ProjectListItem {
 	pub thumbnail_url: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct ProjectMediaItem {
 	pub id: Uuid,
@@ -114,7 +114,7 @@ pub struct ProjectMediaItem {
 	pub sequence: i16,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectDocumentItem {
 	pub id: Uuid,
@@ -124,7 +124,7 @@ pub struct ProjectDocumentItem {
 	pub doc_type: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Clone, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectConfigurationItem {
 	pub id: i32,
@@ -143,7 +143,7 @@ pub struct ProjectConfigurationItem {
 	pub is_active: bool,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ConfigurationFormPayload {
 	pub name: String,
@@ -165,7 +165,7 @@ fn default_true() -> bool {
 	true
 }
 
-#[derive(Serialize, Deserialize, Clone, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Clone, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectFloorPlanItem {
 	pub id: Uuid,
@@ -177,7 +177,7 @@ pub struct ProjectFloorPlanItem {
 	pub thumbnail_url: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Clone, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct ProjectSpecificationItem {
 	pub id: Option<i32>,
@@ -186,13 +186,13 @@ pub struct ProjectSpecificationItem {
 	pub sequence: i16,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct SaveSpecificationsPayload {
 	pub specifications: Vec<ProjectSpecificationItem>,
 }
 
-#[derive(Serialize, Deserialize, Clone, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Clone, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectLandmarkItem {
 	pub id: Option<i32>,
@@ -206,13 +206,13 @@ pub struct ProjectLandmarkItem {
 	pub sequence: i16,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct SaveLandmarksPayload {
 	pub landmarks: Vec<ProjectLandmarkItem>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectDetailData {
 	pub id: i32,
@@ -249,7 +249,7 @@ pub struct ProjectDetailData {
 	pub landmarks: Vec<ProjectLandmarkItem>,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectFormPayload {
 	pub name: String,
@@ -1211,7 +1211,7 @@ async fn upload_project_media(
 	Ok((StatusCode::CREATED, Json(json!({ "uploaded": uploaded_ids }))))
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct ReorderMediaPayload {
 	pub order: Vec<Uuid>,

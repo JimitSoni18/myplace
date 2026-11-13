@@ -7,14 +7,14 @@ pub fn router() -> Router<AppState> {
 	Router::new().route("/options", get(get_meta_options))
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct LookupItem {
 	pub id: i32,
 	pub name: String,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct MetaOptionsResponse {
 	pub owners: Vec<LookupItem>,

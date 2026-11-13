@@ -15,7 +15,7 @@ use crate::{
 	session_store::AuthUser,
 };
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "notifications/")]
 pub struct NotificationsListResponse {
 	pub items: Vec<EnquiryNotification>,
@@ -103,20 +103,16 @@ async fn admin_list_notifications(
 	let db = &state.model.db;
 
 	let sql = r#"
-		SELECT pe.id, 'project' as enquiry_type, pe.project_id as entity_id,
-		       p.name as entity_name, p.project_owner_id as owner_id,
+		SELECT pe.id,
+		       CASE WHEN pe.configuration_id IS NOT NULL THEN 'property' ELSE 'project' END as enquiry_type,
+		       pe.project_id as entity_id,
+		       COALESCE(pc.name || ' - ' || p.name, p.name) as entity_name,
+		       p.project_owner_id as owner_id,
 		       pe.name, pe.phone, pe.email, pe.message, pe.is_read, pe.created_at
 		FROM project_enquiries pe
 		JOIN projects p ON p.id = pe.project_id
-		UNION ALL
-		SELECT pe.id, 'property' as enquiry_type, pe.property_id as entity_id,
-		       COALESCE(prop.unit_number || ' - ' || p.name, p.name) as entity_name,
-		       p.project_owner_id as owner_id,
-		       pe.name, pe.phone, pe.email, pe.message, pe.is_read, pe.created_at
-		FROM property_enquiries pe
-		JOIN properties prop ON prop.id = pe.property_id
-		JOIN projects p ON p.id = prop.project_id
-		ORDER BY created_at DESC
+		LEFT JOIN project_configurations pc ON pc.id = pe.configuration_id
+		ORDER BY pe.created_at DESC
 		LIMIT 50
 	"#;
 
@@ -126,10 +122,9 @@ async fn admin_list_notifications(
 		.unwrap_or_default();
 
 	let unread_sql = r#"
-		SELECT (
-			(SELECT COUNT(*) FROM project_enquiries WHERE is_read = false) +
-			(SELECT COUNT(*) FROM property_enquiries WHERE is_read = false)
-		) as unread_count
+		SELECT COUNT(*) as unread_count
+		FROM project_enquiries
+		WHERE is_read = false
 	"#;
 
 	let unread_count = sqlx::query_scalar::<_, Option<i64>>(unread_sql)
@@ -149,20 +144,13 @@ async fn admin_list_notifications(
 async fn admin_mark_read(
 	State(state): State<AppState>,
 	_auth_user: AuthUser,
-	Path((enquiry_type, id)): Path<(String, i32)>,
+	Path((_enquiry_type, id)): Path<(String, i32)>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
 	let db = &state.model.db;
-	if enquiry_type == "project" {
-		let _ = sqlx::query("UPDATE project_enquiries SET is_read = true WHERE id = $1")
-			.bind(id)
-			.execute(db)
-			.await;
-	} else if enquiry_type == "property" {
-		let _ = sqlx::query("UPDATE property_enquiries SET is_read = true WHERE id = $1")
-			.bind(id)
-			.execute(db)
-			.await;
-	}
+	let _ = sqlx::query("UPDATE project_enquiries SET is_read = true WHERE id = $1")
+		.bind(id)
+		.execute(db)
+		.await;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -172,9 +160,6 @@ async fn admin_read_all(
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
 	let db = &state.model.db;
 	let _ = sqlx::query("UPDATE project_enquiries SET is_read = true WHERE is_read = false")
-		.execute(db)
-		.await;
-	let _ = sqlx::query("UPDATE property_enquiries SET is_read = true WHERE is_read = false")
 		.execute(db)
 		.await;
 	Ok(StatusCode::NO_CONTENT)
@@ -210,22 +195,17 @@ async fn owner_list_notifications(
 	let owner_id = owner_user.owner_id;
 
 	let sql = r#"
-		SELECT pe.id, 'project' as enquiry_type, pe.project_id as entity_id,
-		       p.name as entity_name, p.project_owner_id as owner_id,
+		SELECT pe.id,
+		       CASE WHEN pe.configuration_id IS NOT NULL THEN 'property' ELSE 'project' END as enquiry_type,
+		       pe.project_id as entity_id,
+		       COALESCE(pc.name || ' - ' || p.name, p.name) as entity_name,
+		       p.project_owner_id as owner_id,
 		       pe.name, pe.phone, pe.email, pe.message, pe.is_read, pe.created_at
 		FROM project_enquiries pe
 		JOIN projects p ON p.id = pe.project_id
+		LEFT JOIN project_configurations pc ON pc.id = pe.configuration_id
 		WHERE p.project_owner_id = $1
-		UNION ALL
-		SELECT pe.id, 'property' as enquiry_type, pe.property_id as entity_id,
-		       COALESCE(prop.unit_number || ' - ' || p.name, p.name) as entity_name,
-		       p.project_owner_id as owner_id,
-		       pe.name, pe.phone, pe.email, pe.message, pe.is_read, pe.created_at
-		FROM property_enquiries pe
-		JOIN properties prop ON prop.id = pe.property_id
-		JOIN projects p ON p.id = prop.project_id
-		WHERE p.project_owner_id = $1
-		ORDER BY created_at DESC
+		ORDER BY pe.created_at DESC
 		LIMIT 50
 	"#;
 
@@ -236,10 +216,10 @@ async fn owner_list_notifications(
 		.unwrap_or_default();
 
 	let unread_sql = r#"
-		SELECT (
-			(SELECT COUNT(*) FROM project_enquiries pe JOIN projects p ON p.id = pe.project_id WHERE p.project_owner_id = $1 AND pe.is_read = false) +
-			(SELECT COUNT(*) FROM property_enquiries pe JOIN properties prop ON prop.id = pe.property_id JOIN projects p ON p.id = prop.project_id WHERE p.project_owner_id = $1 AND pe.is_read = false)
-		) as unread_count
+		SELECT COUNT(*) as unread_count
+		FROM project_enquiries pe
+		JOIN projects p ON p.id = pe.project_id
+		WHERE p.project_owner_id = $1 AND pe.is_read = false
 	"#;
 
 	let unread_count = sqlx::query_scalar::<_, Option<i64>>(unread_sql)
@@ -260,28 +240,18 @@ async fn owner_list_notifications(
 async fn owner_mark_read(
 	State(state): State<AppState>,
 	owner_user: OwnerUser,
-	Path((enquiry_type, id)): Path<(String, i32)>,
+	Path((_enquiry_type, id)): Path<(String, i32)>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
 	let db = &state.model.db;
 	let owner_id = owner_user.owner_id;
 
-	if enquiry_type == "project" {
-		let _ = sqlx::query(
-			"UPDATE project_enquiries SET is_read = true WHERE id = $1 AND project_id IN (SELECT id FROM projects WHERE project_owner_id = $2)",
-		)
-		.bind(id)
-		.bind(owner_id)
-		.execute(db)
-		.await;
-	} else if enquiry_type == "property" {
-		let _ = sqlx::query(
-			"UPDATE property_enquiries SET is_read = true WHERE id = $1 AND property_id IN (SELECT prop.id FROM properties prop JOIN projects p ON p.id = prop.project_id WHERE p.project_owner_id = $2)",
-		)
-		.bind(id)
-		.bind(owner_id)
-		.execute(db)
-		.await;
-	}
+	let _ = sqlx::query(
+		"UPDATE project_enquiries SET is_read = true WHERE id = $1 AND project_id IN (SELECT id FROM projects WHERE project_owner_id = $2)",
+	)
+	.bind(id)
+	.bind(owner_id)
+	.execute(db)
+	.await;
 
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -295,13 +265,6 @@ async fn owner_read_all(
 
 	let _ = sqlx::query(
 		"UPDATE project_enquiries SET is_read = true WHERE is_read = false AND project_id IN (SELECT id FROM projects WHERE project_owner_id = $1)",
-	)
-	.bind(owner_id)
-	.execute(db)
-	.await;
-
-	let _ = sqlx::query(
-		"UPDATE property_enquiries SET is_read = true WHERE is_read = false AND property_id IN (SELECT prop.id FROM properties prop JOIN projects p ON p.id = prop.project_id WHERE p.project_owner_id = $1)",
 	)
 	.bind(owner_id)
 	.execute(db)

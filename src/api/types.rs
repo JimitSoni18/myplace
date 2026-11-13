@@ -79,6 +79,16 @@ pub fn export_all_types() -> Result<(), Box<dyn std::error::Error>> {
 	// 5. Generate barrel index.ts files for clean modular imports
 	generate_barrel_indexes(out_dir)?;
 
+	// 6. Export OpenAPI JSON specification
+	use utoipa::OpenApi;
+	let openapi_json = crate::api::openapi::ApiDoc::openapi().to_pretty_json()?;
+	let openapi_path = if Path::new("frontend").exists() {
+		"frontend/openapi.json"
+	} else {
+		"openapi.json"
+	};
+	fs::write(openapi_path, openapi_json)?;
+
 	Ok(())
 }
 

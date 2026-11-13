@@ -22,7 +22,7 @@ pub fn router() -> Router<AppState> {
 		.nest("/notifications", crate::api::notifications::owner_router())
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/", optional_fields = nullable)]
 pub struct OwnerDashboardProject {
 	pub id: i32,
@@ -36,14 +36,14 @@ pub struct OwnerDashboardProject {
 	pub hero_thumb_url: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/")]
 pub struct OwnerDashboardStats {
 	pub total_projects: i64,
 	pub total_configurations: i64,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/")]
 pub struct OwnerDashboardResponse {
 	pub owner_name: String,
@@ -52,7 +52,7 @@ pub struct OwnerDashboardResponse {
 	pub projects: Vec<OwnerDashboardProject>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/")]
 pub struct OwnerProjectMediaItem {
 	pub id: Uuid,
@@ -62,7 +62,7 @@ pub struct OwnerProjectMediaItem {
 	pub sequence: i16,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/", optional_fields = nullable)]
 pub struct OwnerProjectDocumentItem {
 	pub id: Uuid,
@@ -72,7 +72,7 @@ pub struct OwnerProjectDocumentItem {
 	pub doc_type: String,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/", optional_fields = nullable)]
 pub struct OwnerConfigurationItem {
 	pub id: i32,
@@ -88,7 +88,7 @@ pub struct OwnerConfigurationItem {
 	pub sequence: i16,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "owner/", optional_fields = nullable)]
 pub struct OwnerProjectDetailResponse {
 	pub id: i32,

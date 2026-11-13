@@ -28,14 +28,14 @@ pub fn router() -> Router<AppState> {
 		.route("/me", get(get_current_user))
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "auth/")]
 pub struct LoginPayload {
 	pub username: String,
 	pub password: String,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "auth/", optional_fields = nullable)]
 pub struct UserInfo {
 	pub id: i32,
@@ -47,7 +47,7 @@ pub struct UserInfo {
 	pub owner_name: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "auth/")]
 pub struct LoginResponse {
 	pub token: String,

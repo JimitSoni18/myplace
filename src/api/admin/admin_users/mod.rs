@@ -27,14 +27,14 @@ pub fn router() -> Router<AppState> {
 		)
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema, utoipa::IntoParams)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct AdminUserListQuery {
 	#[serde(default)]
 	pub q: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct AdminUserItem {
 	pub id: i32,
@@ -43,7 +43,7 @@ pub struct AdminUserItem {
 	pub is_current_user: bool,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct CreateAdminUserPayload {
 	pub username: String,
@@ -51,7 +51,7 @@ pub struct CreateAdminUserPayload {
 	pub confirm_password: String,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct UpdateAdminUserPayload {
 	pub username: String,

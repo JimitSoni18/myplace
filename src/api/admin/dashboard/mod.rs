@@ -11,7 +11,7 @@ pub fn router() -> Router<AppState> {
 	Router::new().route("/", get(get_dashboard))
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct DashboardRecentProject {
 	pub id: i32,
@@ -23,7 +23,7 @@ pub struct DashboardRecentProject {
 	pub configurations_count: i64,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct DashboardStats {
 	pub total_owners: i64,
@@ -31,7 +31,7 @@ pub struct DashboardStats {
 	pub total_configurations: i64,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct DashboardResponse {
 	pub admin_name: String,

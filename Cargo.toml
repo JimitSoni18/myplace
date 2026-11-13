@@ -54,6 +54,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 uuid = { version = "1.21.0", features = ["v4", "serde", "v7"] }
 webp = "0.3.1"
 ts-rs = { version = "12", features = ["serde-compat", "uuid-impl"] }
+utoipa = { version = "6.0.0", features = ["axum_extras", "time", "uuid"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

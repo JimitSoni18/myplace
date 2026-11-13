@@ -1,3 +1,6 @@
+import createClient, { type Middleware } from "openapi-fetch";
+import type { paths } from "./generated/schema";
+
 declare const __APP_TARGET__: string | undefined;
 
 export function isOwnerApp(): boolean {
@@ -60,6 +63,42 @@ export function setCurrentUser(user: unknown): void {
   localStorage.setItem(getUserKey(), JSON.stringify(user));
 }
 
+// -------------------------------------------------------------
+// Type-safe OpenAPI Client
+// -------------------------------------------------------------
+
+const authMiddleware: Middleware = {
+  async onRequest({ request }) {
+    const token = getToken();
+    if (token && !request.headers.has("Authorization")) {
+      request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return request;
+  },
+  async onResponse({ response }) {
+    if (response.status === 401) {
+      clearToken();
+      // Redirect to login if unauthenticated on protected routes
+      if (typeof window !== "undefined" && !window.location.hash.includes("/login")) {
+        window.location.hash = "/login";
+      }
+      throw new ApiError(401, "Session expired or unauthorized", "UNAUTHORIZED");
+    }
+    return response;
+  },
+};
+
+export const apiClient = createClient<paths>({
+  baseUrl: BASE_URL,
+  credentials: "include",
+});
+
+apiClient.use(authMiddleware);
+
+// -------------------------------------------------------------
+// Dynamic Legacy Client (with typed OpenAPI method extensions)
+// -------------------------------------------------------------
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -91,7 +130,6 @@ async function request<T>(
     throw new ApiError(401, "Session expired or unauthorized", "UNAUTHORIZED");
   }
 
-
   if (response.status === 204) {
     return null as T;
   }
@@ -115,6 +153,18 @@ async function request<T>(
 }
 
 export const api = {
+  // Typed OpenAPI client methods
+  GET: apiClient.GET.bind(apiClient),
+  POST: apiClient.POST.bind(apiClient),
+  PUT: apiClient.PUT.bind(apiClient),
+  DELETE: apiClient.DELETE.bind(apiClient),
+  PATCH: apiClient.PATCH.bind(apiClient),
+  HEAD: apiClient.HEAD.bind(apiClient),
+  OPTIONS: apiClient.OPTIONS.bind(apiClient),
+  use: apiClient.use.bind(apiClient),
+  eject: apiClient.eject.bind(apiClient),
+
+  // Legacy dynamic methods
   get<T>(path: string, headers?: HeadersInit): Promise<T> {
     return request<T>(path, { method: "GET", headers });
   },

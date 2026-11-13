@@ -131,26 +131,61 @@ async fn test_unified_server_boundaries_and_api() {
 
 #[tokio::test]
 async fn test_all_frontend_admin_and_owner_routes_exist() {
-	let state = build_app_state().await;
+	let state = myplace::build_app_state_lazy().await;
 	let app = servers::main_router(state);
 
 	let required_admin_routes = [
-		"/api/admin/dashboard",
-		"/api/admin/meta/options",
-		"/api/admin/search",
-		"/api/admin/users",
-		"/api/admin/amenities",
-		"/api/admin/locations/suggestions",
-		"/api/admin/owners",
-		"/api/admin/project_owners",
-		"/api/admin/projects",
+		("GET", "/api/admin/dashboard"),
+		("GET", "/api/admin/meta/options"),
+		("GET", "/api/admin/search"),
+		("GET", "/api/admin/users"),
+		("POST", "/api/admin/users"),
+		("GET", "/api/admin/amenities"),
+		("POST", "/api/admin/amenities"),
+		("POST", "/api/admin/amenities/1/toggle"),
+		("DELETE", "/api/admin/amenities/1"),
+		("GET", "/api/admin/locations/suggestions"),
+		("GET", "/api/admin/owners"),
+		("GET", "/api/admin/project_owners"),
+		("POST", "/api/admin/project_owners"),
+		("GET", "/api/admin/project_owners/1"),
+		("PUT", "/api/admin/project_owners/1"),
+		("POST", "/api/admin/project_owners/1/toggle-active"),
+		("POST", "/api/admin/project_owners/1/image"),
+		("GET", "/api/admin/projects"),
+		("POST", "/api/admin/projects"),
+		("GET", "/api/admin/projects/1"),
+		("PUT", "/api/admin/projects/1"),
+		("GET", "/api/admin/projects/1/configurations"),
+		("POST", "/api/admin/projects/1/configurations"),
+		("PUT", "/api/admin/projects/1/configurations/1"),
+		("DELETE", "/api/admin/projects/1/configurations/1"),
+		("POST", "/api/admin/projects/1/configurations/1/floor-plan"),
+		("GET", "/api/admin/projects/1/floor-plans"),
+		("POST", "/api/admin/projects/1/floor-plans"),
+		("DELETE", "/api/admin/projects/1/floor-plans/00000000-0000-0000-0000-000000000000"),
+		("GET", "/api/admin/projects/1/specifications"),
+		("PUT", "/api/admin/projects/1/specifications"),
+		("GET", "/api/admin/projects/1/landmarks"),
+		("PUT", "/api/admin/projects/1/landmarks"),
+		("GET", "/api/admin/projects/1/documents"),
+		("POST", "/api/admin/projects/1/documents"),
+		("DELETE", "/api/admin/projects/1/documents/1"),
+		("GET", "/api/admin/projects/1/media"),
+		("POST", "/api/admin/projects/1/media"),
+		("POST", "/api/admin/projects/1/media/reorder"),
+		("DELETE", "/api/admin/projects/1/media/00000000-0000-0000-0000-000000000000"),
+		("GET", "/api/admin/notifications"),
+		("POST", "/api/admin/notifications/project/1/read"),
+		("POST", "/api/admin/notifications/read-all"),
 	];
 
-	for route in required_admin_routes {
+	for (method, route) in required_admin_routes {
 		let response = app
 			.clone()
 			.oneshot(
 				Request::builder()
+					.method(method)
 					.uri(route)
 					.body(Body::empty())
 					.unwrap(),
@@ -161,25 +196,35 @@ async fn test_all_frontend_admin_and_owner_routes_exist() {
 		assert_ne!(
 			response.status(),
 			StatusCode::NOT_FOUND,
-			"Route {route} was not found (returned 404)"
+			"Route {method} {route} was not found (returned 404)"
+		);
+		assert_ne!(
+			response.status(),
+			StatusCode::METHOD_NOT_ALLOWED,
+			"Route {method} {route} returned 405 METHOD NOT ALLOWED"
 		);
 		assert_eq!(
 			response.status(),
 			StatusCode::UNAUTHORIZED,
-			"Expected route {route} to be protected by admin auth middleware"
+			"Expected route {method} {route} to be protected by admin auth middleware"
 		);
 	}
 
 	let required_owner_routes = [
-		"/api/owner/dashboard",
-		"/api/owner/projects",
+		("GET", "/api/owner/dashboard"),
+		("GET", "/api/owner/projects"),
+		("GET", "/api/owner/projects/1"),
+		("GET", "/api/owner/notifications"),
+		("POST", "/api/owner/notifications/project/1/read"),
+		("POST", "/api/owner/notifications/read-all"),
 	];
 
-	for route in required_owner_routes {
+	for (method, route) in required_owner_routes {
 		let response = app
 			.clone()
 			.oneshot(
 				Request::builder()
+					.method(method)
 					.uri(route)
 					.body(Body::empty())
 					.unwrap(),
@@ -190,12 +235,17 @@ async fn test_all_frontend_admin_and_owner_routes_exist() {
 		assert_ne!(
 			response.status(),
 			StatusCode::NOT_FOUND,
-			"Route {route} was not found (returned 404)"
+			"Route {method} {route} was not found (returned 404)"
+		);
+		assert_ne!(
+			response.status(),
+			StatusCode::METHOD_NOT_ALLOWED,
+			"Route {method} {route} returned 405 METHOD NOT ALLOWED"
 		);
 		assert_eq!(
 			response.status(),
 			StatusCode::UNAUTHORIZED,
-			"Expected route {route} to be protected by owner auth middleware"
+			"Expected route {method} {route} to be protected by owner auth middleware"
 		);
 	}
 }

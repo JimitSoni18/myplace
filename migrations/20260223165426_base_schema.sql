@@ -164,7 +164,8 @@ CREATE TABLE project_documents (
 	media_id     UUID     NOT NULL REFERENCES media(id)    ON DELETE RESTRICT,
 	display_name TEXT     NOT NULL,
 	doc_type     TEXT     NOT NULL CHECK (doc_type IN ('rera', 'bu_approval', 'brochure', 'other')),
-	created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE (project_id, media_id)
 );
 
 -- ===========================================================================
@@ -183,10 +184,11 @@ CREATE TABLE project_configurations (
 	floor_plan_media_id UUID REFERENCES media(id) ON DELETE SET NULL,
 	sequence            SMALLINT NOT NULL DEFAULT 0,
 	is_active           BOOL NOT NULL DEFAULT TRUE,
-	created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE (project_id, id)
 );
 
-CREATE INDEX idx_proj_configs_project ON project_configurations(project_id);
+-- Note: (project_id) index is covered by the UNIQUE (project_id, id) constraint index
 CREATE INDEX idx_proj_configs_bhk     ON project_configurations(bhk);
 
 -- ===========================================================================
@@ -198,7 +200,8 @@ CREATE TABLE project_floor_plans (
 	media_id   UUID NOT NULL REFERENCES media(id)    ON DELETE RESTRICT,
 	title      TEXT NOT NULL,
 	sequence   SMALLINT NOT NULL DEFAULT 0,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE (project_id, media_id)
 );
 
 CREATE INDEX idx_proj_floor_plans_project ON project_floor_plans(project_id);
@@ -246,9 +249,13 @@ CREATE TABLE project_enquiries (
 	phone            TEXT NOT NULL,
 	email            TEXT,
 	message          VARCHAR(255),
-	configuration_id INT  REFERENCES project_configurations(id) ON DELETE SET NULL,
+	configuration_id INT,
 	is_read          BOOL NOT NULL DEFAULT FALSE,
-	created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CONSTRAINT fk_project_enquiries_config
+		FOREIGN KEY (project_id, configuration_id)
+		REFERENCES project_configurations (project_id, id)
+		ON DELETE SET NULL
 );
 
 CREATE INDEX idx_project_enquiries_project ON project_enquiries(project_id);

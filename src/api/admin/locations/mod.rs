@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AppState, session_store::AuthUser};
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema, utoipa::IntoParams)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct LocationSuggestionQuery {
 	pub field: Option<String>,
 	pub city: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct LocationSuggestionsResponse {
 	pub cities: Vec<String>,

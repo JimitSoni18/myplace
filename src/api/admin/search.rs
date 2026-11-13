@@ -11,14 +11,14 @@ pub fn router() -> Router<AppState> {
 	Router::new().route("/", get(global_search))
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema, utoipa::IntoParams)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct SearchQuery {
 	#[serde(default)]
 	pub q: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct SearchResultProject {
 	pub id: i32,
@@ -29,7 +29,7 @@ pub struct SearchResultProject {
 	pub url: String,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct SearchResultOwner {
 	pub id: i32,
@@ -38,7 +38,7 @@ pub struct SearchResultOwner {
 	pub url: String,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct SearchResults {
 	pub projects: Vec<SearchResultProject>,

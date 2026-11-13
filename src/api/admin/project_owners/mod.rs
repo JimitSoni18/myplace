@@ -39,14 +39,14 @@ pub fn router() -> Router<AppState> {
 		.route("/{id}/projects", get(project_owner_projects))
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema, utoipa::IntoParams)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct OwnerListQuery {
 	#[serde(default)]
 	pub q: Option<String>,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct OwnerListItem {
 	pub id: i32,
@@ -60,7 +60,7 @@ pub struct OwnerListItem {
 	pub projects_count: i64,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct OwnerProjectSummary {
 	pub id: i32,
@@ -73,7 +73,7 @@ pub struct OwnerProjectSummary {
 	pub configurations_count: i64,
 }
 
-#[derive(Serialize, ts_rs::TS)]
+#[derive(Serialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct OwnerDetailResponse {
 	pub id: i32,
@@ -92,7 +92,7 @@ pub struct OwnerDetailResponse {
 	pub projects: Vec<OwnerProjectSummary>,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectOwnerCreatePayload {
 	pub name: String,
@@ -105,7 +105,7 @@ pub struct ProjectOwnerCreatePayload {
 	pub active: Option<bool>,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/", optional_fields = nullable)]
 pub struct ProjectOwnerUpdatePayload {
 	pub name: String,

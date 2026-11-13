@@ -1,0 +1,3577 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MyPlace API",
+    "description": "Type-safe OpenAPI specification for MyPlace Real Estate Platform",
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/admin/amenities": {
+      "get": {
+        "tags": [
+          "Admin Amenities"
+        ],
+        "operationId": "list_amenities",
+        "responses": {
+          "200": {
+            "description": "List amenities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AmenityItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Amenities"
+        ],
+        "operationId": "create_amenity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmenityPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Amenity created"
+          }
+        }
+      }
+    },
+    "/api/admin/amenities/{id}": {
+      "delete": {
+        "tags": [
+          "Admin Amenities"
+        ],
+        "operationId": "delete_amenity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Amenity ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Amenity deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/amenities/{id}/toggle": {
+      "post": {
+        "tags": [
+          "Admin Amenities"
+        ],
+        "operationId": "toggle_amenity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Amenity ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Amenity active state toggled"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard": {
+      "get": {
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "operationId": "get_dashboard",
+        "responses": {
+          "200": {
+            "description": "Admin dashboard statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/locations/suggestions": {
+      "get": {
+        "tags": [
+          "Admin Locations"
+        ],
+        "operationId": "get_suggestions",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "city",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Location suggestions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationSuggestionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/meta/options": {
+      "get": {
+        "tags": [
+          "Admin Meta"
+        ],
+        "operationId": "get_meta_options",
+        "responses": {
+          "200": {
+            "description": "Lookup options for forms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "admin_list_notifications",
+        "responses": {
+          "200": {
+            "description": "List notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "admin_read_all",
+        "responses": {
+          "204": {
+            "description": "All notifications marked as read"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/{enquiry_type}/{id}/read": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "admin_mark_read",
+        "parameters": [
+          {
+            "name": "enquiry_type",
+            "in": "path",
+            "description": "Enquiry type: project or property",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notification ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Notification marked as read"
+          }
+        }
+      }
+    },
+    "/api/admin/project_owners": {
+      "get": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "project_owner_list",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List project owners",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OwnerListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "create_project_owner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectOwnerCreatePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Project owner created"
+          }
+        }
+      }
+    },
+    "/api/admin/project_owners/{id}": {
+      "get": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "project_owner_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project owner detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "update_project_owner",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectOwnerUpdatePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Project owner updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "delete_project_owner",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Project owner deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/project_owners/{id}/image": {
+      "post": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "add_project_owner_image",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile image uploaded"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "remove_project_owner_image",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Profile image removed"
+          }
+        }
+      }
+    },
+    "/api/admin/project_owners/{id}/toggle-active": {
+      "post": {
+        "tags": [
+          "Admin Project Owners"
+        ],
+        "operationId": "toggle_active_project_owner",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project owner ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project owner active toggled"
+          }
+        }
+      }
+    },
+    "/api/admin/projects": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "project_list",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "project_type_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "create_project",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectFormPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Project created"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "project_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailData"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "update_project",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectFormPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "delete_project",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Project deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/configurations": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "list_configurations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List configurations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectConfigurationItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "create_configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationFormPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Configuration created"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/configurations/{cid}": {
+      "put": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "update_configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "description": "Configuration ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationFormPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "delete_configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "description": "Configuration ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Configuration deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/configurations/{cid}/floor-plan": {
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "upload_configuration_floor_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "description": "Configuration ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Floor plan uploaded"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/documents": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "project_documents_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List project documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDocumentItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "upload_project_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document uploaded"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/documents/{did}": {
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "delete_project_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "did",
+            "in": "path",
+            "description": "Document UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Document deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/floor-plans": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "list_floor_plans",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List master floor plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectFloorPlanItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "upload_floor_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Master floor plan uploaded"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/floor-plans/{fpid}": {
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "delete_floor_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fpid",
+            "in": "path",
+            "description": "Floor plan UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Master floor plan deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/landmarks": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "get_landmarks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get project landmarks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectLandmarkItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "save_landmarks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLandmarksPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Save project landmarks"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/media": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "project_media_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List project media",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectMediaItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "upload_project_media",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Media uploaded"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/media/reorder": {
+      "post": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "reorder_project_media",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderMediaPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Media reordered"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/media/{mid}": {
+      "delete": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "delete_project_media",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mid",
+            "in": "path",
+            "description": "Media UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Media deleted"
+          }
+        }
+      }
+    },
+    "/api/admin/projects/{id}/specifications": {
+      "get": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "get_specifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get project specifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSpecificationItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Projects"
+        ],
+        "operationId": "save_specifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSpecificationsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Save project specifications"
+          }
+        }
+      }
+    },
+    "/api/admin/search": {
+      "get": {
+        "tags": [
+          "Admin Search"
+        ],
+        "operationId": "global_search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Global search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "Admin Users"
+        ],
+        "operationId": "list_admin_users",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List admin users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminUserItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Users"
+        ],
+        "operationId": "create_admin_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Admin user created"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "get": {
+        "tags": [
+          "Admin Users"
+        ],
+        "operationId": "get_admin_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Admin user ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin user detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin Users"
+        ],
+        "operationId": "update_admin_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Admin user ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Admin user updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Users"
+        ],
+        "operationId": "delete_admin_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Admin user ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Admin user deleted"
+          }
+        }
+      }
+    },
+    "/api/auth/admin/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "admin_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Admin login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Logged out successfully"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "get_current_user",
+        "responses": {
+          "200": {
+            "description": "Current authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/auth/owner/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "owner_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Owner login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/api/owner/dashboard": {
+      "get": {
+        "tags": [
+          "Owner Portal"
+        ],
+        "operationId": "owner_dashboard",
+        "responses": {
+          "200": {
+            "description": "Owner portal dashboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerDashboardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "owner_list_notifications",
+        "responses": {
+          "200": {
+            "description": "List owner notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "owner_read_all",
+        "responses": {
+          "204": {
+            "description": "All owner notifications marked as read"
+          }
+        }
+      }
+    },
+    "/api/owner/notifications/{enquiry_type}/{id}/read": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "owner_mark_read",
+        "parameters": [
+          {
+            "name": "enquiry_type",
+            "in": "path",
+            "description": "Enquiry type: project or property",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notification ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Notification marked as read"
+          }
+        }
+      }
+    },
+    "/api/owner/projects": {
+      "get": {
+        "tags": [
+          "Owner Portal"
+        ],
+        "operationId": "owner_projects_list",
+        "responses": {
+          "200": {
+            "description": "Owner projects list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OwnerDashboardProject"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owner/projects/{id}": {
+      "get": {
+        "tags": [
+          "Owner Portal"
+        ],
+        "operationId": "owner_project_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Project ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner project detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerProjectDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminUserItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "created_at",
+          "is_current_user"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_current_user": {
+            "type": "boolean"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AmenityItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "is_active",
+          "projects_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "projects_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ConfigurationFormPayload": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "bhk": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "carpet_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "floor_plan_media_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "super_built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "CreateAdminUserPayload": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "confirm_password"
+        ],
+        "properties": {
+          "confirm_password": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAmenityPayload": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardRecentProject": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner_name",
+          "city",
+          "area",
+          "project_type_name",
+          "configurations_count"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "project_type_name": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "required": [
+          "admin_name",
+          "stats",
+          "recent_projects"
+        ],
+        "properties": {
+          "admin_name": {
+            "type": "string"
+          },
+          "recent_projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRecentProject"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/DashboardStats"
+          }
+        }
+      },
+      "DashboardStats": {
+        "type": "object",
+        "required": [
+          "total_owners",
+          "total_projects",
+          "total_configurations"
+        ],
+        "properties": {
+          "total_configurations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_owners": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_projects": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "EnquiryNotification": {
+        "type": "object",
+        "required": [
+          "id",
+          "enquiry_type",
+          "entity_id",
+          "entity_name",
+          "owner_id",
+          "name",
+          "phone",
+          "is_read",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enquiry_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "entity_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_read": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationSuggestionsResponse": {
+        "type": "object",
+        "required": [
+          "cities",
+          "areas",
+          "states"
+        ],
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LoginPayload": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "user"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserInfo"
+          }
+        }
+      },
+      "LookupItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MetaOptionsResponse": {
+        "type": "object",
+        "required": [
+          "owners",
+          "project_types",
+          "amenities",
+          "cities",
+          "areas",
+          "states"
+        ],
+        "properties": {
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LookupItem"
+            }
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LookupItem"
+            }
+          },
+          "project_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LookupItem"
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NotificationsListResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "unread_count"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnquiryNotification"
+            }
+          },
+          "unread_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OwnerConfigurationItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "price_on_request",
+          "sequence"
+        ],
+        "properties": {
+          "bhk": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "carpet_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "floor_plan_thumb_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "floor_plan_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "super_built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "OwnerDashboardProject": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_name",
+          "city",
+          "area",
+          "formatted_address",
+          "configurations_count"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "hero_thumb_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "OwnerDashboardResponse": {
+        "type": "object",
+        "required": [
+          "owner_name",
+          "username",
+          "stats",
+          "projects"
+        ],
+        "properties": {
+          "owner_name": {
+            "type": "string"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerDashboardProject"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/OwnerDashboardStats"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "OwnerDashboardStats": {
+        "type": "object",
+        "required": [
+          "total_projects",
+          "total_configurations"
+        ],
+        "properties": {
+          "total_configurations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_projects": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OwnerDetailResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "username",
+          "active",
+          "created_at",
+          "projects_count",
+          "projects"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profile_image_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profile_thumb_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerProjectSummary"
+            }
+          },
+          "projects_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OwnerListItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "active",
+          "projects_count"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profile_thumb_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "projects_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OwnerProjectDetailResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_name",
+          "formatted_address",
+          "city",
+          "area",
+          "state_or_province",
+          "configurations_count",
+          "configurations",
+          "media",
+          "documents"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerConfigurationItem"
+            }
+          },
+          "configurations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerProjectDocumentItem"
+            }
+          },
+          "floors_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "launch_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerProjectMediaItem"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "possession_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postal_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "rera_authority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rera_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_or_province": {
+            "type": "string"
+          },
+          "total_land_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "towers_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "units_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "OwnerProjectDocumentItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "file_name",
+          "url",
+          "doc_type"
+        ],
+        "properties": {
+          "doc_type": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "OwnerProjectMediaItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "url",
+          "thumbnail_url",
+          "sequence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thumbnail_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "OwnerProjectSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_name",
+          "city",
+          "area",
+          "formatted_address",
+          "configurations_count"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectConfigurationItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "name",
+          "price_on_request",
+          "sequence",
+          "is_active"
+        ],
+        "properties": {
+          "bhk": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "carpet_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "floor_plan_media_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "floor_plan_thumb_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "floor_plan_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "project_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "super_built_up_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ProjectDetailData": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_id",
+          "project_type_name",
+          "owner_id",
+          "owner_name",
+          "formatted_address",
+          "city",
+          "area",
+          "state_or_province",
+          "amenities",
+          "amenity_ids",
+          "media",
+          "documents",
+          "configurations",
+          "floor_plans",
+          "specifications",
+          "landmarks"
+        ],
+        "properties": {
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "amenity_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectConfigurationItem"
+            }
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectDocumentItem"
+            }
+          },
+          "floor_plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectFloorPlanItem"
+            }
+          },
+          "floors_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "landmarks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectLandmarkItem"
+            }
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "launch_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectMediaItem"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "possession_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postal_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_type_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "rera_authority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rera_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectSpecificationItem"
+            }
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_or_province": {
+            "type": "string"
+          },
+          "total_land_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "towers_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "units_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectDocumentItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "file_name",
+          "url",
+          "doc_type"
+        ],
+        "properties": {
+          "doc_type": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectFloorPlanItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "media_id",
+          "title",
+          "sequence",
+          "url",
+          "thumbnail_url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "media_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thumbnail_url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectFormPayload": {
+        "type": "object",
+        "required": [
+          "name",
+          "project_owner_id",
+          "project_type_id",
+          "formatted_address",
+          "city",
+          "area",
+          "state_or_province"
+        ],
+        "properties": {
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "floors_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "launch_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "name": {
+            "type": "string"
+          },
+          "possession_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postal_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_owner_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "project_type_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rera_authority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rera_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_or_province": {
+            "type": "string"
+          },
+          "total_land_area": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "towers_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "units_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectLandmarkItem": {
+        "type": "object",
+        "required": [
+          "category",
+          "name",
+          "source",
+          "sequence"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "distance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectListItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_name",
+          "owner_name",
+          "city",
+          "area",
+          "formatted_address",
+          "configurations_count"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "configurations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "formatted_address": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "rera_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProjectMediaItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "url",
+          "thumbnail_url",
+          "sequence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "thumbnail_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectOwnerCreatePayload": {
+        "type": "object",
+        "required": [
+          "name",
+          "username",
+          "password"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": "string"
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProjectOwnerUpdatePayload": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProjectSpecificationItem": {
+        "type": "object",
+        "required": [
+          "category",
+          "items",
+          "sequence"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReorderMediaPayload": {
+        "type": "object",
+        "required": [
+          "order"
+        ],
+        "properties": {
+          "order": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "SaveLandmarksPayload": {
+        "type": "object",
+        "required": [
+          "landmarks"
+        ],
+        "properties": {
+          "landmarks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectLandmarkItem"
+            }
+          }
+        }
+      },
+      "SaveSpecificationsPayload": {
+        "type": "object",
+        "required": [
+          "specifications"
+        ],
+        "properties": {
+          "specifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectSpecificationItem"
+            }
+          }
+        }
+      },
+      "SearchResultOwner": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "active",
+          "url"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResultProject": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "project_type_name",
+          "city",
+          "url"
+        ],
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_type_name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResults": {
+        "type": "object",
+        "required": [
+          "projects",
+          "owners"
+        ],
+        "properties": {
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResultOwner"
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResultProject"
+            }
+          }
+        }
+      },
+      "UpdateAdminUserPayload": {
+        "type": "object",
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "confirm_password": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "owner_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "owner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

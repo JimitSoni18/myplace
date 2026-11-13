@@ -33,4 +33,13 @@ impl Model {
 		};
 		Model { db }
 	}
+
+	pub fn new_lazy() -> Self {
+		let raw_db_url = CONFIG.db_url.as_str();
+		let database_url = crate::config::normalize_db_url(raw_db_url);
+		let db = PgPoolOptions::new()
+			.connect_lazy(&database_url)
+			.expect("lazy pool creation");
+		Model { db }
+	}
 }

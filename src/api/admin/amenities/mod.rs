@@ -16,7 +16,7 @@ pub fn router() -> Router<AppState> {
 		.route("/{id}", axum::routing::delete(delete_amenity))
 }
 
-#[derive(Serialize, Deserialize, ts_rs::TS)]
+#[derive(Serialize, Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct AmenityItem {
 	pub id: i32,
@@ -25,7 +25,7 @@ pub struct AmenityItem {
 	pub projects_count: i64,
 }
 
-#[derive(Deserialize, ts_rs::TS)]
+#[derive(Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "admin/")]
 pub struct CreateAmenityPayload {
 	pub name: String,

@@ -360,7 +360,11 @@ export function ProjectDetail() {
       if (configFloorPlanFile() && configId) {
         const formData = new FormData();
         formData.append("file", configFloorPlanFile()!);
-        await api.post(`/api/admin/projects/${projectId()}/configurations/${configId}/floor_plan`, formData);
+        const { error: fpError } = await api.POST("/api/admin/projects/{id}/configurations/{cid}/floor-plan", {
+          params: { path: { id: projectId(), cid: configId } },
+          body: formData as any,
+        });
+        if (fpError) throw new Error("Failed to upload floor plan");
       }
 
       setConfigModalOpen(false);
@@ -395,7 +399,7 @@ export function ProjectDetail() {
       const formData = new FormData();
       formData.append("title", floorPlanTitle().trim());
       formData.append("file", floorPlanFile()!);
-      await api.post(`/api/admin/projects/${projectId()}/floor_plans`, formData);
+      await api.post(`/api/admin/projects/${projectId()}/floor-plans`, formData);
 
       setFloorPlanModalOpen(false);
       setFloorPlanTitle("");
@@ -411,7 +415,7 @@ export function ProjectDetail() {
   const handleDeleteFloorPlan = async (fpid: string) => {
     if (!confirm("Delete this master floor plan?")) return;
     try {
-      await api.delete(`/api/admin/projects/${projectId()}/floor_plans/${fpid}`);
+      await api.delete(`/api/admin/projects/${projectId()}/floor-plans/${fpid}`);
       fetchProject();
     } catch (err: any) {
       alert(err.message || "Failed to delete floor plan");
@@ -456,12 +460,17 @@ export function ProjectDetail() {
       const payload = {
         specifications: specs()
           .filter((s) => s.category.trim() && s.items.length > 0)
-          .map((s) => ({
+          .map((s, idx) => ({
             category: s.category.trim(),
             items: s.items.map((i) => i.trim()).filter(Boolean),
+            sequence: idx,
           })),
       };
-      await api.post(`/api/admin/projects/${projectId()}/specifications`, payload);
+      const { error: specError } = await api.PUT("/api/admin/projects/{id}/specifications", {
+        params: { path: { id: projectId() } },
+        body: payload,
+      });
+      if (specError) throw new Error("Failed to save specifications");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       fetchProject();
@@ -508,7 +517,7 @@ export function ProjectDetail() {
     setSaving(true);
     try {
       const payload = {
-        landmarks: landmarks().map((l) => ({
+        landmarks: landmarks().map((l, idx) => ({
           category: l.category,
           name: l.name,
           distance: l.distance || null,
@@ -516,9 +525,14 @@ export function ProjectDetail() {
           latitude: l.latitude,
           longitude: l.longitude,
           source: l.source || "manual",
+          sequence: idx,
         })),
       };
-      await api.post(`/api/admin/projects/${projectId()}/landmarks`, payload);
+      const { error: lmError } = await api.PUT("/api/admin/projects/{id}/landmarks", {
+        params: { path: { id: projectId() } },
+        body: payload,
+      });
+      if (lmError) throw new Error("Failed to save landmarks");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       fetchProject();

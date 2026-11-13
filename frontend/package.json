@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typegen": "SQLX_OFFLINE=true CARGO_TARGET_DIR=../target cargo run --bin gen_types --manifest-path ../Cargo.toml",
+    "typegen": "SQLX_OFFLINE=true CARGO_TARGET_DIR=../target cargo run --bin gen_types --manifest-path ../Cargo.toml && openapi-typescript openapi.json -o src/shared/api/generated/schema.d.ts",
     "dev:admin": "APP_TARGET=admin vite",
     "dev:owner": "APP_TARGET=owner vite",
     "prebuild": "npm run typegen",
@@ -19,11 +19,15 @@
     "@tailwindcss/vite": "^4.3.3",
     "autoprefixer": "^10.6.1",
     "lucide-solid": "^1.61.0",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.31",
     "solid-js": "^1.9.17",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2",
+    "typescript": "^5.9.3",
     "vite": "^6.4.5",
     "vite-plugin-solid": "^2.11.14"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
   }
 }

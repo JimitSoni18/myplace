@@ -19,7 +19,7 @@ pub mod utils;
 
 use crate::{config::CONFIG, model::Model, session_store::SessionStore};
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, ts_rs::TS, utoipa::ToSchema)]
 #[ts(export, export_to = "notifications/", optional_fields = nullable)]
 pub struct EnquiryNotification {
 	pub id: i32,
@@ -68,6 +68,22 @@ pub async fn build_s3_client() -> Client {
 
 pub async fn build_app_state() -> AppState {
 	let model = Model::new().await;
+	let session_store = SessionStore::default();
+	let s3_client = build_s3_client().await;
+	let page_cache = crate::cache::PageCache::with_db(CONFIG.page_cache_capacity, model.db.clone());
+	let (notification_tx, _) = tokio::sync::broadcast::channel(256);
+
+	Arc::new(AppStateStruct {
+		model,
+		session_store,
+		s3_client,
+		page_cache,
+		notification_tx,
+	})
+}
+
+pub async fn build_app_state_lazy() -> AppState {
+	let model = Model::new_lazy();
 	let session_store = SessionStore::default();
 	let s3_client = build_s3_client().await;
 	let page_cache = crate::cache::PageCache::with_db(CONFIG.page_cache_capacity, model.db.clone());
